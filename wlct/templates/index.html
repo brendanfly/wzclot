@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Custom Warzone Tournaments & Leagues{% endblock %}
+
+{% block content %}
+
+	<!-- Tournaments section bg -->
+<div class="row">
+	<div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+        	<div class="tabbable-panel">
+				<div class="tabbable-line">
+					<ul class="nav nav-tabs ">
+						<li class="active">
+							<a href="#tab_default_1" data-toggle="tab">
+							Tab 1 </a>
+						</li>
+						<li>
+							<a href="#tab_default_2" data-toggle="tab">
+							Tab 2 </a>
+						</li>
+						<li>
+							<a href="#tab_default_3" data-toggle="tab">
+							Tab 3 </a>
+						</li>
+					</ul>
+					<div class="tab-content">
+						<div class="tab-pane active" id="tab_default_1">
+							<p>
+								I'm in Tab 1.
+							</p>
+							<p>
+								Duis autem eum iriure dolor in hendrerit in vulputate velit esse molestie consequat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat.
+							</p>
+							<p>
+								<a class="btn btn-success" href="http://j.mp/metronictheme" target="_blank">
+									Learn more...
+								</a>
+							</p>
+						</div>
+						<div class="tab-pane" id="tab_default_2">
+							<p>
+								Howdy, I'm in Tab 2.
+							</p>
+							<p>
+								Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat. Ut wisi enim ad minim veniam, quis nostrud exerci tation.
+							</p>
+							<p>
+								<a class="btn btn-warning" href="http://j.mp/metronictheme" target="_blank">
+									Click for more features...
+								</a>
+							</p>
+						</div>
+						<div class="tab-pane" id="tab_default_3">
+							<p>
+								Howdy, I'm in Tab 3.
+							</p>
+							<p>
+								Duis autem vel eum iriure dolor in hendrerit in vulputate. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat
+							</p>
+							<p>
+								<a class="btn btn-info" href="http://j.mp/metronictheme" target="_blank">
+									Learn more...
+								</a>
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+                {% if tournaments %}
+				<div class="container" id="swiss_tournaments_pane">
+                    <h5>Open Tournaments</h5>
+
+                    {% for swiss_t in tournaments %}
+                    <div class="bs-callout bs-callout-primary">
+                        <div class="row">
+                            <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 text-center">
+                                <h3>{{ swiss_t.spots_left }}</h3>
+                                <h5>spots left</h5>
+                            </div>
+                            <div class="col-xs-10 col-sm-10 col-md-10 col-lg-10">
+                                <a class="card-link" href="{% url 'tournament_display_view' swiss_t.id %}">
+                                    <span class="card-title h5"> {{ swiss_t.name }} </span><span class="text-muted h7 mb-2"> <i class="fa fa-clock-o"></i>&nbsp;created {{ swiss_t.time_since_created }}</span></span>
+                                </a>
+                                <br/>
+                                <span class="card-text h7">
+                                    {{ swiss_t.description }}
+                                </span>
+                                <div>
+                                    <span class="badge badge-primary h5">Created By:&nbsp;
+                                        {% if swiss_t.created_by.clan %}
+                                            <a href="https://warzone.com{{ swiss_t.created_by.clan.icon_link }}" target="_blank">
+                                                <img src="{{ swiss_t.created_by.clan.image_path }}" />
+                                            </a>
+                                        {% endif %}
+                                        {{ swiss_t.created_by.name }}</span>
+                                    <a href="https://warzone.com/MultiPlayer?TemplateID={{ swiss_t.template }}" target="_blank" class="badge badge-primary">Template {{ swiss_t.template }}</a>
+                                    <span class="badge badge-primary">Players Per Team: {{ swiss_t.players_per_team }}</span>
+                                    <span class="badge badge-primary">Pace:&nbsp;{{ swiss_t.multi_day_str }}</span>
+                                    <span class="badge badge-warning">Type: {{ swiss_t.type }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+	</div>
+</div>
+{% endblock %}

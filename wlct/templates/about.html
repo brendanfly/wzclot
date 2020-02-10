@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}B's Custom Tourneys{% endblock %}
+
+{% block content %}
+
+	<!-- Tournaments section bg -->
+<div class="row">
+	<div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+                {% if swiss_tournaments %}
+				<div class="card gedf-card span8">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+								<h4>Open Swiss Tournaments</h4>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {% for swiss_t in swiss_tournaments %}
+                    <div class="card-body">
+                        <a class="card-link" href="#">
+                            <span class="card-title h5"> {{ swiss_t.name }} </span><span class="text-muted h7 mb-2"> <i class="fa fa-clock-o"></i>{{ swiss_t.time_since_created }}</span></span>
+                        </a>
+
+                        <p class="card-text">
+                            {{ swiss_t.description }}
+                        </p>
+                        <div>
+                            <span class="badge badge-primary">{{ swiss_t.created_by.name }}</span>
+                            <a href="https://warzone.com/MultiPlayer?TemplateID={{ swiss_t.template }}" target="_blank"><span class="badge badge-primary">Template {{ swiss_t.template }}</span></a>
+                            <span class="badge badge-primary">Max Players: {{ swiss_t.max_players }}</span>
+                            <span class="badge badge-primary">Node.js</span>
+                            <span class="badge badge-primary">Ruby</span>
+                            <span class="badge badge-primary">Paython</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if open_tournaments %}
+				<div class="card gedf-card span8">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+								<h4>My Tournaments</h4>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="card-body">
+                        <div class="text-muted h7 mb-2"> <i class="fa fa-clock-o"></i> 10 min ago</div>
+                        <a class="card-link" href="#">
+                            <h5 class="card-title"> Choose a tournament style </h5>
+                        </a>
+
+                        <p class="card-text">
+                            Every tournament has their own style. Choose from the following types below.
+                        </p>
+                        <div>
+                            <span class="badge badge-primary">JavaScript</span>
+                            <span class="badge badge-primary">Android</span>
+                            <span class="badge badge-primary">PHP</span>
+                            <span class="badge badge-primary">Node.js</span>
+                            <span class="badge badge-primary">Ruby</span>
+                            <span class="badge badge-primary">Paython</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+	</div>
+</div>
+{% endblock %}

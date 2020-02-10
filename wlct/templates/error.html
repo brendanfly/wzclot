@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+	<!-- Big Banner section -->
+
+	<!--
+	<header class="business-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12  text-center">
+                    <br><br><br><br><br><br>
+                    <hr>
+                    <h1 class="tagline">Run your own clan leagues, tournaments and more!</h1>
+                    <hr>
+                    <p>ntroduce the visitor to the business using clear, informative text. </p>
+                    <p></p>Use well-targeted keywords within your sentences to make sure search engines can find the business.</p>
+                    <br>
+                    <a class="btn btn-success btn-md" href="#">Call to Action »</a>
+                </div>
+            </div>
+        </div>
+	</header>
+	-->
+	<!-- Tournaments section bg -->
+<div class="row">
+	<div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+        <div class="span8">
+            {% if errors.msgs %}
+            <div class="{{ errors.html_style }}">
+                {{ errors.msgs.error }}
+            </div>
+        {% endif %}
+        </div>
+	</div>
+</div>
+{% endblock %}

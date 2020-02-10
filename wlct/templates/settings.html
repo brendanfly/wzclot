@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Custom Warzone Tournaments & Leagues{% endblock %}
+
+{% block content %}
+
+	<!-- Tournaments section bg -->
+<div class="row">
+	<div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+		{% if player %}
+		<div class="card">
+			<h5 class="card-header">{{ player.name }}'s Settings</h5>
+			<div class="card-body">
+				<h6 class="card-title">Player Bot Token</h6>
+				{% if player.discord_id == "" %}
+				<p class="card-text">Status: <span class="text-danger">Not Linked</span></p>
+				{% else %}
+				<p class="card-text">Status: <span class="text-success">Linked</span></p>
+				{% endif %}
+				<p class="card-text" style="font-size:14px;">A bot token is something you can use to link your discord account to your warzone
+					profile by means of the discord bot. This will allow you to view tournament data as well as join
+					real-time ladders and eventually use a simple create game API all through discord.
+					<br/><br/>To get started, join the CLOT discord server. <a href="https://discord.gg/yAg3ESu" class="btn btn-info">Join Discord Server</a><br/><br/>
+					Once there, please send a direct private message to "WarzoneBot", in the format "bb!linkme [bot_token_from_below]"
+				</p>
+				<div class="input-group mb-3">
+					<input type="text" class="form-control" aria-label="Player Bot Token" value="{{ player.bot_token }}" aria-describedby="basic-addon2">
+					<div class="input-group-append">
+						<span class="input-group-text" id="basic-addon2"><a href="#" id="player_bot_token">generate new link</a></span>
+					</div>
+				</div>
+			</div>
+		</div>
+		{% endif %}
+	</div>
+</div>
+{% endblock %}

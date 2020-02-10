@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}B's Custom Tourneys{% endblock %}
+
+{% block content %}
+
+	<!-- Tournaments section bg -->
+<div class="row">
+	<div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+		<ul class="nav nav-tabs" id="myTab" role="tablist">
+			<li class="nav-item">
+				<a class="nav-link active" id="tournaments-tab" href="#tournaments" data-toggle="tab">Tournaments</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" id="leagues-tab" href="#leagues" data-toggle="tab">Leagues</a>
+			</li>
+		</ul>
+		<div class="tab-content">
+			<div class="tab-pane show active" id="tournaments">
+				 {% if tournaments %}
+				<div class="container" id="swiss_tournaments_pane">
+                    {% for t in tournaments %}
+                    {% if t.has_started %}
+                    <div class="bs-callout bs-callout-success">
+                    {% else %}
+                    <div class="bs-callout bs-callout-primary">
+                    {% endif %}
+                        <div class="row">
+                            <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 text-center">
+                            {% if t.has_started %}
+                                {% if t.is_finished %}
+                                <h3>Finished</h3>
+                                {% else %}
+                                <h3>In Progress</h3>
+                                {% endif %}
+                            {% else %}
+                                <h3>{{ t.spots_left }}</h3>
+                                <h5>spots left</h5>
+                            {% endif %}
+                            </div>
+                            <div class="col-xs-10 col-sm-10 col-md-10 col-lg-10">
+                                <a class="card-link" href="{% url 'tournament_display_view' t.id %}">
+                                    <span class="card-title h5"> {{ t.name }} </span><span class="text-muted h7 mb-2"> <i class="fa fa-clock-o"></i>&nbsp;created {{ t.time_since_created }}</span></span>
+                                </a>
+                                <br/>
+                                <span class="card-text h7">
+                                    {{ t.description }}
+                                </span>
+                                <div>
+                                    <span class="badge badge-primary h5">Created By:&nbsp;
+                                        {% if t.created_by.clan %}
+                                            <a href="https://warzone.com/Clans/?ID={{ t.created_by.clan.icon_link }}" target="_blank">
+                                                <img src="{{ t.created_by.clan.image_path }}" />
+                                            </a>
+                                        {% endif %}
+                                        {{ t.created_by.name }}</span>
+                                    <a href="https://warzone.com/MultiPlayer?TemplateID={{ t.template }}" target="_blank" class="badge badge-primary">Template {{ t.template }}</a>
+                                    <span class="badge badge-primary">Players Per Team: {{ t.players_per_team }}</span>
+                                    <span class="badge badge-primary">Pace:&nbsp;{{ t.multi_day_str }}</span>
+                                    <span class="badge badge-warning">Type: {{ t.type }}</span>
+                                </div>
+                                {% if t.Wplayer_invited %}
+                                <div>
+                                    <span class="text-info h6">Please join or decline this tournament</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+			</div>
+			<div class="tab-pane" id="leagues">
+				{% if leagues %}
+				<div class="container" id="leagues_pane">
+                    {% for league in leagues %}
+                    <div class="bs-callout bs-callout-primary">
+                        <div class="row">
+                            <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 text-center">
+								<h3>{{ league.number_players }} <br>players</h3>
+							</div>
+                            <div class="col-xs-10 col-sm-10 col-md-10 col-lg-10">
+                                <a class="card-link" href="{% url 'league_display_view' league.id %}">
+                                    <span class="card-title h5"> {{ league.name }} </span><span class="text-muted h7 mb-2"> <i class="fa fa-clock-o"></i>&nbsp;created {{ league.time_since_created }}</span></span>
+                                </a>
+                                <br/>
+                                <span class="card-text h7">
+                                    {{ league.description }}
+                                </span>
+                                <div>
+                                    <span class="badge badge-primary h5">Created By:&nbsp;
+                                        {% if league.created_by.clan %}
+                                            <a href="https://warzone.com/Clans/?ID={{ league.created_by.clan.icon_link }}" target="_blank">
+                                                <img src="{{ league.created_by.clan.image_path }}" />
+                                            </a>
+                                        {% endif %}
+                                        {{ league.created_by.name }}</span>
+									{% if league.current_template %}
+                                    <a href="https://warzone.com/MultiPlayer?TemplateID={{ league.current_template }}" target="_blank" class="badge badge-primary">Template {{ league.current_template }}</a>
+									{% endif %}
+                                    <span class="badge badge-primary">Players Per Team: {{ league.players_per_team }}</span>
+                                    <span class="badge badge-primary">Pace:&nbsp;{{ league.multi_day_str }}</span>
+                                    <span class="badge badge-warning">Type: {{ league.type }}</span>
+                                </div>
+                                {% if league.player_invited %}
+                                <div>
+                                    <span class="text-info h6">Please join or decline this tournament</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+				{% endif %}
+			</div>
+		</div>
+
+
+
+	</div>
+</div>
+{% endblock %}

@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create New Tournament{% endblock %}
+
+{% block content %}
+	<!-- Tournaments section bg -->
+<div class="row">
+	<div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+        <div class="card gedf-card span8">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% if tournament_type %}
+                            <h4>Create New {{ tournament_type }} Tournament</h4>
+                        {% else %}
+                            <h4>Create New Tournament</h4>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+            {% if type %}
+            <div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+                <div id="form_status">
+                    <div class="alert alert-danger">
+                        <span type="button" class="close" aria-label="Close" id="form_status_close"><span aria-hidden="true">&times;</span></span>
+                        <span id="form_status_text"></span>
+                    </div>
+                </div>
+                <form id="create_tourney_form" method="post">
+                    {% csrf_token %}
+
+                    <!-- All common controls for all tournament types -->
+                      <div class="form-group row">
+                          <label class="col-form-label" for="name"><b>Tournament Name</b></label>
+                          <input name="name" value="{{ form.name }}" class="form-control form-control-md rounded-0" id="name" type="text" placeholder="what will be displayed on the dashboard">
+                      </div>
+
+                      <div class="form-group row">
+                          <label class="col-form-label" for="name"><b>Tournament Description</b></label>
+                          <textarea name="description" rows="5" cols="100" class="form-control form-control-md rounded-0" id="description" placeholder="description of your tournament to others">{{ form.description }}</textarea>
+                      </div>
+
+                    <div class="form-group row">
+                        <label class="col-form-label"><b>Private tournament: </b></label>
+                        <select name="private" id="private" class="form-control form-control-md rounded-0">
+                            <option name="yes">yes</option>
+                            <option name="no" selected="selected">no</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group row">
+                          <label class="col-form-label" for="templateid"><b>Template ID</b></label>
+                          <div class="input-group">
+                              <div class="input-group-prepend">
+                                <span class="input-group-text" id="inputGroupPrepend">https://warzone.com/MultiPlayer/?TemplateID=</span>
+                              </div>
+                            <input onblur="getTemplateSettings();" name="templateid" value="{{ form.template }}" class="form-control form-control-md rounded-0" id="templateid" type="number" placeholder="numeric template id">
+                          </div>
+                    </div>
+
+                      <div class="form-group row">
+                          <label class="col-form-label"><b>Template Settings</b></label>
+                          <div class="input-group">
+                              <span id="templatestatus">Please enter a template id above to load it's settings</span>
+                          </div>
+                      </div>
+                      <div class="form-group row">
+                          <div class="input-group">
+                              <b>Template Pace:</b>&nbsp;<span id="templatepace">N/A</span>
+                          </div>
+                      </div>
+
+                    <div class="form-group row">
+                        <label class="col-for-label" for="players_team"><b>Players Per Team: </b><span id="players_team_text">1</span></label>
+                        <div class="input-group">
+                            <input type="range" min="1" max="4" value="1" class="slider" id="players_team" name="players_team" oninput="playersPerTeamChanged();"/>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-for-label" for="teams_per_game"><b>Teams Per Game: </b><span id="teamspergame">2 (right now only 2 teams per game is supported)</span></label>
+                        <input type="hidden" id="teams_per_game" name="teams_per_game" value="2" />
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-for-label" for="number_teams"><b>Max Number of Teams: </b><span id="number_teams_text">4</span></label>
+                        <div class="input-group">
+                            {% ifequal type '1' %}
+                            <input type="range" min="8" max="256" value="8" class="slider" id="number_teams" name="number_teams" oninput="numberOfTeamsChanged();"/>
+                            {% endifequal %}
+
+                            {% ifequal type '2' %}
+                            <input type="range" min="4" max="256" value="4" class="slider" id="number_teams" name="number_teams" oninput="numberOfTeamsChanged();"/>
+                            {% endifequal %}
+
+                            {% ifequal type '3' %}
+                            <input type="range" min="4" max="256" value="4" class="slider" id="number_teams" name="number_teams" oninput="numberOfTeamsChanged();"/>
+                            {% endifequal %}
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-for-label" for="number_players"><b>Max Number of Players: </b><span id="number_players_text">4</span></label>
+                        <div class="input-group">
+                            <input type="hidden" id="number_players" name="number_players" value="4" />
+                        </div>
+                    </div>
+
+                    <!-- Group stage tournaments -->
+                    {% ifequal type '1' %}
+                    <div class="form-group row">
+                        <label class="col-for-label" for="rounds"><b>Number of Groups: </b><span id="rounds_text">4</span></label>
+                        <input type="hidden" value="4" id="rounds" name="rounds" />
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-for-label" for="rounds"><b>Players Per Group: </b><span id="players_per_group_text">4</span></label>
+                        <input type="hidden" value="4" id="players_per_group" name="players_per_group" />
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-for-label" for="knockout_teams"><b>Teams participating in knockouts: </b><span id="knockout_teams_text">4</span></label>
+                        <input type="hidden" value="2" id="knockout_teams" name="knockout_teams" />
+                    </div>
+                    {% endifequal %}
+
+                    {% ifequal type '2' %}
+                    <!-- Custom controls for Swiss tournaments -->
+
+                    <div class="form-group row">
+                        <label class="col-for-label" for="rounds"><b>Number of Rounds: </b><span id="rounds_text">4</span></label>
+                        <input type="hidden" value="4" id="rounds" name="rounds" />
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-form-label"><b>Auto start when tournament fills:</b></label>
+                        <select name="start_options_when_full" id="start_option_when_full" class="form-control form-control-md rounded-0">
+                            <option name="yes" selected="selected">yes</option>
+                            <option name="no">no</option>
+                        </select>
+                    </div>
+                    {% endifequal %}
+
+                    <!-- Seeded tournaments -->
+                    {% ifequal type '3' %}
+
+                    <div class="form-group row">
+                        <label class="col-for-label" for="rounds"><b>Number of Rounds: </b><span id="rounds_text">4</span></label>
+                        <input type="hidden" value="4" id="rounds" name="rounds" />
+                    </div>
+                    {% endifequal %}
+
+                  <div class="form-group row">
+                    <div class="offset-4 col-8">
+                        <input type="hidden" value="{{ type }}" name="type" id="type" />
+                        <input type="hidden" value="" name="templatesettings" id="templatesettings" />
+                      <button name="submit_create_new_tourney" class="btn btn-primary btn-lg" id="submit_create_new_tourney" type="button">Create Tournament</button>
+                    </div>
+                  </div>
+                </form>
+            </div>
+            {% else %}
+
+                    <h5 class="card-title"> Choose a tournament style to create </h5>
+
+                <p class="card-text">
+                    All tournaments can be either public (open to other players in the open tournaments section on the dashboard) or private where you choose the players to invite.
+                    Invited players must have already logged into the site previously.
+                </p>
+
+                <div class="container mb-5 mt-5">
+                    <div class="pricing card-deck flex-column flex-md-row mb-3">
+                        <div class="card card-pricing text-center px-3 mb-4">
+                            <span class="h6 w-60 mx-auto px-4 py-1 rounded-bottom bg-primary text-white shadow-sm">Group Stage</span>
+                            <div class="bg-transparent card-header pt-4 border-0">
+                                <h1 class="h1 font-weight-normal text-primary text-center mb-0" data-pricing-value="15"><span class="price">8-256</span><span class="h6 text-muted ml-2">/ players</span></h1>
+                            </div>
+                            <div class="card-body pt-0">
+                                <ul class="list-unstyled mb-4">
+                                    <li>Min. 2 Groups</li>
+                                    <li>4 Players Per Group</li>
+                                    <li>Max 2 teams per game</li>
+                                    <li><a href="https://en.wikipedia.org/wiki/Tournament#Multi-stage_tournaments" target="_blank">Read More</a></li>
+                                </ul>
+                                <a href="{% url 'create_new_tourney_specific_view' 1 %}" class="btn btn-outline-primary mb-3" target="_self">+Create</a>
+                            </div>
+                        </div>
+                        <div class="card card-pricing text-center px-3 mb-4">
+                            <span class="h6 w-60 mx-auto px-4 py-1 rounded-bottom bg-primary text-white shadow-sm">Swiss</span>
+                            <div class="bg-transparent card-header pt-4 border-0">
+                                <h1 class="h1 font-weight-normal text-primary text-center mb-0" data-pricing-value="30"><span class="price">4-256</span><span class="h6 text-muted ml-2">/ players</span></h1>
+                            </div>
+                            <div class="card-body pt-0">
+                                <ul class="list-unstyled mb-4">
+                                    <li>Real-time or Multi-Day</li>
+                                    <li>Maximum of 2 teams</li>
+                                    <li><a href="https://en.wikipedia.org/wiki/Swiss-system_tournament" target="_blank">Read More</a></li>
+                                </ul>
+                                <a href="{% url 'create_new_tourney_specific_view' 2 %}" class="btn btn-outline-primary mb-3" target="_self">+Create</a>
+                            </div>
+                        </div>
+                        <div class="card card-pricing text-center px-3 mb-4">
+                            <span class="h6 w-60 mx-auto px-4 py-1 rounded-bottom bg-primary text-white shadow-sm">Seeded</span>
+                            <div class="bg-transparent card-header pt-4 border-0">
+                                <h1 class="h1 font-weight-normal text-primary text-center mb-0" data-pricing-value="45"><span class="price">4-256</span><span class="h6 text-muted ml-2">/ players</span></h1>
+                            </div>
+                            <div class="card-body pt-0">
+                                <ul class="list-unstyled mb-4">
+                                    <li>Real-time or Multi-Day</li>
+                                    <li>Maximum of 2 teams</li>
+                                </ul>
+                                <a href="{% url 'create_new_tourney_specific_view' 3 %}" class="btn btn-outline-primary mb-3" target="_self">+Create</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% endif %}
+        </div>
+	</div>
+</div>
+{% endblock %}
+
+{% block post_js %}
+
+{% endblock %}

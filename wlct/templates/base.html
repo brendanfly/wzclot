@@ -1,0 +1,86 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css' %}" />
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+	<!-- Stylesheets - CUSTOM - MUST COME AFTER THE MAIN ONES FOR OVERRIDING -->
+    <link rel="stylesheet" href="{% static 'css/brackets.min.css' %}"/>
+	<link rel="stylesheet" href="{% static 'css/custom_styles.css' %}"/>
+    <link rel="stylesheet" href="{% static 'css/jquery.dataTables.min.css' %}"/>
+
+	<!--[if lt IE 9]>
+	  <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+	  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+	<![endif]-->
+
+      <style>
+          .background-body {
+            background-repeat: repeat;
+          }
+      </style>
+      <script src="https://sak.userreport.com/wzclot/launcher.js" async id="userreport-launcher-script"></script>
+	  <title>{% block title %} {% endblock %}</title>
+  </head>
+<body>
+	<!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+      <div class="container">
+        <a class="navbar-brand" href="#">Warzone Tournaments & Leagues</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item {% if request.session.token %}dropdown{% endif %}">
+               {% if request.session.token %}
+                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
+                Welcome, {% if request.session.clan_icon_link %}<img src="{{ request.session.clan_image_path }}" />{% endif %}
+                    {{ request.session.player_name }}</a>
+                <div class="dropdown-menu">
+                    <a href="{% url 'settings_view' %}" class="dropdown-item">Settings</a>
+                </div>
+               {% else %}
+                 <a class="nav-link" href="https://www.Warzone.com/CLOT/Auth?p={{ request.session.account_token }}">Login</a>
+               {% endif %}
+            </li>
+            <li class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Dashboard</a>
+                <div class="dropdown-menu">
+                    {% if request.session.token %}
+                    <a href="{% url 'mytourneys_view' %}" class="dropdown-item">My Tournaments/Leagues</a>
+                    <a href="{% url 'mygames_view' %}" class="dropdown-item">Game History</a>
+                    {% endif %}
+                    <a href="{% url 'index' %}" class="dropdown-item">Open Tournaments/Leagues</a>
+                </div>
+            </li>
+                {% if request.session.token %}
+            <li class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Create New</a>
+                <div class="dropdown-menu">
+                    <a href="{% url 'create_new_tourney_view' %}" class="dropdown-item">Custom Tournament</a>
+                    <a href="{% url 'create_new_league_view' %}" class="dropdown-item">League <span class="badge badge-primary">New</span></a>
+                </div>
+            </li>
+              {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="main-body background-body"> {% block content %}{% endblock %} </div>
+
+	<!--====== Javascripts & Jquery ======-->
+	<script src="{% static 'js/jquery-3.2.1.min.js' %}"></script>
+	<script src="{% static 'js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'js/cookies.js' %}"></script>
+    <script src="{% static 'js/jquery.brackets.min.js' %}"></script>
+    <script src="{% static 'js/tournament.js' %}"></script>
+    <script src="{% static 'js/jquery.nestable.js' %}"></script>
+    <script src="{% static 'js/datatables.js' %}"></script>
+
+
+    {% block post_js %} {% endblock %}
+    </body>
+</html>

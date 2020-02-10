@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Custom Warzone Tournaments & Leagues{% endblock %}
+
+{% block content %}
+
+<!-- Tournaments section bg -->
+<div class="row">
+    <div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+        {% if tournament %}
+        {% for t in tournament %}
+        <div class="card gedf-card span8">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4>{{ t.name }} &nbsp;
+                            <span class="text-muted h7 mb-2">
+                                            <i class="fa fa-clock-o">
+                                            </i> created {{ t.time_since_created }} by
+                                            &nbsp;
+                                            {% if t.created_by.clan %}
+                                            <a href="https://warzone.com{{ t.created_by.clan.icon_link }}"
+                                               target="_blank"><img src="{{ t.created_by.clan.image_path }}"/></a>
+                                            {% endif %}
+                                            <a href="https://warzone.com/Profile?p={{ t.created_by.token }}"
+                                               target="_blank">{{ t.created_by.name }}</a>
+                                        </span>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <input type="hidden" value="{{ t.template }}" id="templateid">
+                <input type="hidden" value="{{ t.id }}" id="tournamentid">
+
+                {% if t.created_by.token == request.session.token and not t.has_started %}
+                {% if t.can_start_tourney %}
+                <button type="button" class="btn btn-md btn-success" id="start_tournament">Start Tournament</button>
+                {% else %}
+                <button type="button" class="btn btn-md btn-success" id="start_tournament" disabled>Start Tournament
+                </button>
+                {% endif %}
+                <button type="button" class="btn btn-md btn-danger" id="delete_tournament">Delete Tournament (Creator
+                    Only)
+                </button>
+                {% endif %}
+
+                {% if not t.is_finished %}
+                <button type="button" class="btn btn-md btn-primary" id="refresh_tournament">Refresh Tournament</button>
+                {% endif %}
+                {% if not t.has_started and player_in_tourney and not t.private %}
+                <button type="button" class="btn btn-md btn-primary invite_players">+ Invite Players</button>
+                {% elif not t.has_started and t.created_by.token == request.session.token %}
+                <button type="button" class="btn btn-md btn-primary invite_players">+ Invite Players</button>
+                {% endif %}
+                {% if not t.is_finished %}
+                <br/><br/>
+                {% endif %}
+                <p class="card-text h7">
+                    <b>Tournament Description</b>&nbsp;<a
+                        href="https://warzone.com/MultiPlayer?TemplateID={{ t.template }}" target="_blank"
+                        class="badge badge-primary">Click to create game with template settings</a>
+                    <br/> {{ t.description }}
+                </p>
+                <div class="row">
+                    <div class="col-xs-12 col-sm-12 col-md-3 col-lg-3">
+                        {% if t.is_finished %}
+                        <div class="bs-callout bs-callout-primary">
+                            STATUS: <br/>Tournament is finished
+                        </div>
+                        {% elif t.has_started %}
+                        <div class="bs-callout bs-callout-success">
+                            STATUS: Tournament has started
+                        </div>
+                        {% else %}
+                        <div class="bs-callout bs-callout-danger">
+                            STATUS: <br/>Waiting on players
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xs-12 col-sm-12 col-md-3 col-lg-3">
+                        <div class="bs-callout bs-callout-primary">
+                            {% if not t.has_started %}
+                            {{ t.max_rounds }} <br/>max rounds
+                            {% else %}
+                            {{ t.current_rounds }} <br/>rounds
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-sm-12 col-md-3 col-lg-3">
+                        <div class="bs-callout bs-callout-primary">
+                            {% if not t.has_started %}
+                            {{ t.max_players }} <br/>max players
+                            {% else %}
+                            {{ t.number_players }} <br/>players
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-sm-12 col-md-3 col-lg-3">
+                        <div class="bs-callout bs-callout-primary">
+                            {% if not t.has_started %}
+                            {% if t.start_option_when_full %}
+                            Tournament auto-starts when full
+                            {% else %}
+                            Creator must start tournament
+                            {% endif %}
+                            {% else %}
+                            {{ t.current_filled_teams }} <br/>teams
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% if t.is_finished %}
+                <div class="container">
+                    <div class="row h4 success">
+                        {{ t.winning_team_data|safe }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <br/><br/>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <ul class="nav nav-tabs" id="myTab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="lobby-tab" href="#lobbytab" data-toggle="tab">{{ t.type }} Tournament Lobby</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="games-tab" href="#gamestab" data-toggle="tab">Bracket/Games</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="log-tab" href="#logtab" data-toggle="tab">Tournament Game Log</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="invite-tab" href="#invitetab" data-toggle="tab">Invited Players</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="settings-tab" href="#settingstab" data-toggle="tab">Template Settings</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane show active" id="lobbytab">{{ team_table|safe }}
+                        </div>
+                        <div class="tab-pane" id="gamestab">
+                            {% if not t.bracket_seeded_async %}
+                                {{ bracket_game_data|safe }}
+                            {% else %}
+                            <div class="container">
+                                <div class="row">
+                                    <div class="h6">Click on a match to view the game</div>
+                                    <hr/>
+                                </div>
+                                <div class="row">
+                                    <div id="bracket_seeded_async">
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% endif %}
+                        </div>
+                        <div class="tab-pane" id="logtab">{{ game_log|safe }}
+                        </div>
+                        <div class="tab-pane" id="invitetab">{{ invited_players|safe }}
+                        </div>
+                        <div class="tab-pane" id="settingstab">{{ template_settings|safe }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Modal to display errors from the ajax requests on the page -->
+    <div class="modal" tabindex="-1" role="dialog" id="tournament_status">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tournament_status_title"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p id="tournament_status_text"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal to display the start_locked_data for the tournament -->
+    <div class="modal" tabindex="-1" role="dialog" id="tournament_start_request_modal">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tournament_start_request_title"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="tournament_start_request_text" style="overflow-y:auto;">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="tournament_start_request">Start Tournament
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal to display the list of players on the site to invited -->
+    <div class="modal" tabindex="-1" role="dialog" id="tournament_invites">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tournament_invites_title">Invite Players</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="tournament_invites_text">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

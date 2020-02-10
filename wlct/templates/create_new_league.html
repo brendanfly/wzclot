@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create New League{% endblock %}
+
+{% block content %}
+	<!-- Tournaments section bg -->
+<div class="row">
+	<div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+        <div class="card gedf-card span8">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% if league_type %}
+                            <h4>Create New {{ league_type }}</h4>
+                        {% else %}
+                            <h4>Create New League</h4>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+            {% if type %}
+            <div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+                <div id="form_status">
+                    <div class="alert alert-danger">
+                        <span type="button" class="close" aria-label="Close" id="form_status_close"><span aria-hidden="true">&times;</span></span>
+                        <span id="form_status_text"></span>
+                    </div>
+                </div>
+                <form id="create_tourney_form" method="post">
+                    {% csrf_token %}
+
+                    <!-- All common controls for all tournament types -->
+                      <div class="form-group row">
+                          <label class="col-form-label" for="name"><b>League Name</b></label>
+                          <input name="name" value="{{ form.name }}" class="form-control form-control-md rounded-0" id="name" type="text" placeholder="what will be displayed on the dashboard">
+                      </div>
+
+                      <div class="form-group row">
+                          <label class="col-form-label" for="name"><b>League Description</b></label>
+                          <textarea name="description" rows="5" cols="100" class="form-control form-control-md rounded-0" id="description" placeholder="description of your tournament to others">{{ form.description }}</textarea>
+                      </div>
+
+                    <div class="form-group row">
+                        <label class="col-form-label"><b>Private league: </b></label>
+                        <select name="private" id="private" class="form-control form-control-md rounded-0">
+                            <option name="yes">yes</option>
+                            <option name="no" selected="selected">no</option>
+                        </select>
+                    </div>
+
+                    {% if type == "mtc" %}
+                    <div class="form-group row">
+                          <label class="col-form-label" for="templateid"><b>Template ID</b></label>
+                          <div class="input-group">
+                              <span>Please enter the first month's template</span>
+                              <div class="input-group-prepend">
+                                <span class="input-group-text" id="inputGroupPrepend">https://warzone.com/MultiPlayer/?TemplateID=</span>
+                              </div>
+                            <input onblur="getTemplateSettings();" name="templateid" value="{{ form.template }}" class="form-control form-control-md rounded-0" id="templateid" type="number" placeholder="numeric template id">
+                          </div>
+                    </div>
+
+                    <div class="form-group row">
+                          <label class="col-form-label"><b>Template Settings</b></label>
+                          <div class="input-group">
+                              <span id="templatestatus">Please enter the first month's template above to load it's settings</span>
+                          </div>
+                      </div>
+                      <div class="form-group row">
+                          <div class="input-group">
+                              <b>Template Pace:</b>&nbsp;<span id="templatepace">N/A</span>
+                          </div>
+                      </div>
+                    {% endif %}
+
+                    {% if type != 'cl' %}
+                    <div class="form-group row">
+                        <label class="col-for-label" for="players_team"><b>Players Per Team: </b><span id="players_team_text">1</span></label>
+                        <div class="input-group">
+                            <input type="hidden" id="players_team" name="players_team" />
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if type == 'cl' %}
+                    <input type="hidden" id="players_team" name="players_team" value="0" />
+                    <input type="hidden" id="templateid" name="templateid" value="0" />
+                    {% endif %}
+
+                    <div class="form-group row">
+                        <label class="col-for-label" for="teams_per_game"><b>Teams Per Game: </b><span id="teamspergame">2 (right now only 2 teams per game is supported)</span></label>
+                        <input type="hidden" id="teams_per_game" name="teams_per_game" value="2" />
+                    </div>
+
+                    <div class="form-group row">
+                        <div class="offset-4 col-8">
+                            <input type="hidden" value="{{ type }}" name="type" id="type" />
+                            <input type="hidden" value="" name="templatesettings" id="templatesettings" />
+                            <button name="submit_create_new_tourney" class="btn btn-primary btn-lg" id="submit_create_new_tourney" type="button">Create League</button>
+                        </div>
+                  </div>
+                </form>
+            </div>
+            {% else %}
+
+                    <h5 class="card-title"> Choose a league style to create </h5>
+
+                <p class="card-text">
+                    All leagues can be either public (open to other players in the dashboard) or private where you choose the players to invite.
+                    Invited players must have already logged into the site previously.
+                </p>
+
+                <div class="container mb-5 mt-5">
+                    <div class="pricing card-deck flex-column flex-md-row mb-3">
+                        <div class="card card-pricing text-center px-3 mb-4">
+                            <span class="h6 w-60 mx-auto px-4 py-1 rounded-bottom bg-primary text-white shadow-sm">Monthly Template Circuit</span>
+                            <div class="bg-transparent card-header pt-4 border-0">
+                                <h1 class="h1 font-weight-normal text-primary text-center mb-0" data-pricing-value="15"><span class="price">Unlimited</span><span class="h6 text-muted ml-2">/ players</span></h1>
+                            </div>
+                            <div class="card-body pt-0">
+                                <ul class="list-unstyled mb-4">
+                                    <li>Min 2 players</li>
+                                    <li>1 Player Per Team</li>
+                                    <li>Multi-day Only</li>
+                                    <li>Creator determines templates for each month</li>
+                                </ul>
+                                <a href="{% url 'create_new_league_specific_view' 'mtc' %}" class="btn btn-outline-primary mb-3" target="_self">+Create</a>
+                            </div>
+                        </div>
+                        <div class="card card-pricing text-center px-3 mb-4">
+                            <span class="h6 w-60 mx-auto px-4 py-1 rounded-bottom bg-primary text-white shadow-sm">Promotion/Relegation</span>
+                            <div class="bg-transparent card-header pt-4 border-0">
+                                <h1 class="h1 font-weight-normal text-primary text-center mb-0" data-pricing-value="30"><span class="price">Unlimited</span><span class="h6 text-muted ml-2">/ players</span></h1>
+                            </div>
+                            <div class="card-body pt-0">
+                                <ul class="list-unstyled mb-4">
+                                    <li>1 Player Per Team</li>
+                                    <li>Multi-Day Only</li>
+                                    <li>Creator determines divisions and templates for every season</li>
+                                </ul>
+                                <a href="{% url 'create_new_league_specific_view' 'pr' %}" class="btn btn-outline-primary mb-3" target="_self">+Create</a>
+                            </div>
+                        </div>
+
+                         <div class="card card-pricing text-center px-3 mb-4">
+                            <span class="h6 w-60 mx-auto px-4 py-1 rounded-bottom bg-primary text-white shadow-sm">Clan League</span>
+                            <div class="bg-transparent card-header pt-4 border-0">
+                                <h1 class="h1 font-weight-normal text-primary text-center mb-0" data-pricing-value="30"><span class="price">Unlimited</span><span class="h6 text-muted ml-2">/ players</span></h1>
+                            </div>
+                            <div class="card-body pt-0">
+                                <ul class="list-unstyled mb-4">
+                                    <li>1, 2, or 3 Players Per Team</li>
+                                    <li>Multi-Day Only</li>
+                                    <li>Creator determines divisions, templates and manages rosters</li>
+                                </ul>
+                                <a href="{% url 'create_new_league_specific_view' 'cl' %}" class="btn btn-outline-primary mb-3" target="_self">+Create</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% endif %}
+        </div>
+	</div>
+</div>
+{% endblock %}
+
+{% block post_js %}
+
+{% endblock %}
