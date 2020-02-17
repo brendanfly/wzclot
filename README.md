@@ -59,4 +59,16 @@ Please see bot.py
 # Engine  
 Running in a separate process on the server, the engine runs every 180 seconds and processes ALL tournaments/leagues that are not finished  
 
-Please see engine.py  
+Please see engine.py 
+
+
+# Want the Discord Bot in your Server? 
+If you want the discord bot in your server please contact -B#0292. If the bot is already in your server you can create special channels that the bot will use to communicate updates to accordingly.  
+
+Create a channel named any of the following:  
+real-time-ladder  
+real_time_ladder  
+monthly-template-circuit  
+monthly_template_circuit  
+clan-league-bot-chat  
+clan_league_bot_chat  
