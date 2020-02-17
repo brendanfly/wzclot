@@ -41,6 +41,7 @@ class Player(models.Model):
     clan_text = models.CharField(max_length=64, default=invalid_clan_string)
     clan = models.ForeignKey('Clan', blank=True, null=True, on_delete=models.SET_NULL)
     is_on_vacation = models.BooleanField(default=False, blank=True, null=True)
+    discord_id = models.CharField(max_length=255, default="", blank=True, null=True)
     bot_token = models.CharField(max_length=34, default=invalid_token_string, db_index=True)
     link_mention = models.BooleanField(default=False, blank=True, null=True)
     discord_member = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.CASCADE, related_name='discord')
