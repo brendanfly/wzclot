@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterField(
             model_name='player',
-            name='discord',
+            name='discord_member',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='discord_user', to='wlct.DiscordUser'),
         ),
     ]

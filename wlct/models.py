@@ -43,7 +43,7 @@ class Player(models.Model):
     is_on_vacation = models.BooleanField(default=False, blank=True, null=True)
     bot_token = models.CharField(max_length=34, default=invalid_token_string, db_index=True)
     link_mention = models.BooleanField(default=False, blank=True, null=True)
-    discord = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.CASCADE, related_name='discord')
+    discord_member = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.CASCADE, related_name='discord')
 
     def set_player_data(self, token, playerData):
         self.token = token
