@@ -184,7 +184,7 @@ def tournament_engine():
         # the logic
         #validate_game_entries()
         check_games()
-        #cleanup_logs()
+        cleanup_logs()
         check_bot_data()
     except Exception as e:
         log_exception()

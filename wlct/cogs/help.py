@@ -22,7 +22,8 @@ def get_help_embed(cog):
         cmds = ""
         for command in cog.get_commands():
             cmds += "*{}*\n".format(command.name)
-        emb.add_field(name="__**{} commands**__".format(cog.qualified_name), value="{}".format(cmds), inline=True)
+        if len(cmds) > 0:
+            emb.add_field(name="__**{} commands**__".format(cog.qualified_name), value="{}".format(cmds), inline=True)
 
     emb.add_field(name="Useful Links:", value="[CLOT Website](http://wztourney.herokuapp.com)", inline=False)
     return emb
