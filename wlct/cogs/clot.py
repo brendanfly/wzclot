@@ -1,5 +1,5 @@
 import discord
-from wlct.models import Clan, Player
+from wlct.models import Clan, Player, DiscordUser
 from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data
 from discord.ext import commands
 from django.conf import settings
@@ -20,11 +20,13 @@ class Clot(commands.Cog, name="clot"):
             player = Player.objects.filter(bot_token=arg)
             if player:
                 player = player[0]
-                if player.discord_id == str(ctx.message.author.id):
+                if player.discord.discord_id == ctx.message.author.id:
                     await ctx.send("You're account is already linked on the CLOT.")
-                elif player.discord_id == "" or player.discord_id is None:
-                    print("Saving discord id: {} for user".format(str(ctx.message.author.id)))
-                    player.discord_id = str(ctx.message.author.id)
+                elif player.discord is None:
+                    print("Saving discord id: {} for user".format(ctx.message.author.id))
+                    discord_obj = DiscordUser(discord_id=ctx.message.author.id)
+                    discord_obj.save()
+                    player.discord = discord_obj
                     player.save()
                     await ctx.send("You've successfully linked your discord account to the CLOT.")
             else:
@@ -114,9 +116,9 @@ class Clot(commands.Cog, name="clot"):
 
     @commands.command(brief="Display your Warzone Profile Link")
     async def profile(self, ctx):
-        discord_id = str(ctx.message.author.id)
+        discord_id = ctx.message.author.id
 
-        player = Player.objects.filter(discord_id=discord_id)
+        player = Player.objects.filter(discord__discord_id=discord_id)
         if player:
             await ctx.send("{} | https://warzone.com/Profile?p={}".format(player.name, player.token))
         else:

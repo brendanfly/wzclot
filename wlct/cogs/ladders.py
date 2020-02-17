@@ -35,7 +35,7 @@ class Ladders(commands.Cog, name="ladders"):
             emb.set_footer(text="Bot created and maintained by -B#0292")
             if arg_id.isnumeric():
                 ladder = get_real_time_ladder(int(arg_id))
-                discord_id = str(ctx.message.author.id)
+                discord_id = ctx.message.author.id
                 if ladder is not None:
                     if arg_cmd == "-p":
                         # display current players in the ladder

@@ -12,6 +12,9 @@ invalid_name_string = "missing no"
 class User(AbstractUser):
     pass
 
+class DiscordUser(models.Model):
+    discord_id = models.IntegerField(default=0, blank=True, null=True, db_index=True)
+
 
 class Engine(models.Model):
     last_run_time = models.DateTimeField(default=timezone.now)
@@ -39,9 +42,9 @@ class Player(models.Model):
     clan_text = models.CharField(max_length=64, default=invalid_clan_string)
     clan = models.ForeignKey('Clan', blank=True, null=True, on_delete=models.SET_NULL)
     is_on_vacation = models.BooleanField(default=False, blank=True, null=True)
-    discord_id = models.CharField(max_length=255, default="", blank=True, null=True)
     bot_token = models.CharField(max_length=34, default=invalid_token_string, db_index=True)
     link_mention = models.BooleanField(default=False, blank=True, null=True)
+    discord = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.CASCADE)
 
     def set_player_data(self, token, playerData):
         self.token = token
@@ -54,7 +57,10 @@ class Player(models.Model):
 
 
     def __str__(self):
-        return self.name + "({}), discord id: {}".format(self.token, self.discord_id)
+        if self.discord:
+            return self.name + "({}), discord id: {}".format(self.token, self.discord.discord_id)
+        else:
+            return self.name + "({})".format(self.token)
 
 class PlayerAdmin(admin.ModelAdmin):
     pass

@@ -31,15 +31,15 @@ class Tasks(commands.Cog, name="tasks"):
                 team2 = game.teams.split('.')[1]
                 player1 = ladder.get_player_from_teamid(team1)
                 player2 = ladder.get_player_from_teamid(team2)
-                data += "<@{}> vs. <@{}> [Game Link]({})\n".format(player1.discord_id, player2.discord_id,
+                data += "<@{}> vs. <@{}> [Game Link]({})\n".format(player1.discord.discord_id, player2.discord.discord_id,
                                                                    game.game_link)
                 emb.add_field(name="Game", value=data, inline=True)
                 if player1:
-                    user = self.bot.get_user(int(player1.discord_id))
+                    user = self.bot.get_user(player1.discord.discord_id)
                     if user:
                         await user.send(embed=emb)
                 if player2:
-                    user = self.bot.get_user(int(player2.discord_id))
+                    user = self.bot.get_user(player2.discord.discord_id)
                     if user:
                         await user.send(embed=emb)
                         game.mentioned = True
@@ -84,9 +84,9 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_rtl_tasks()
 
     async def process_member_join(self, memid):
-        player = Player.objects.filter(discord_id=str(memid))
+        player = Player.objects.filter(discord__discord_id=memid)
         member = self.bot.get_user(memid)
-        if not player and member:
+        if member:
             emb = discord.Embed(color=self.bot.embed_color)
             emb.set_author(icon_url=self.bot.user.avatar_url, name="WarzoneBot")
             emb.title = "It's nice to meet you!"
@@ -97,11 +97,9 @@ class Tasks(commands.Cog, name="tasks"):
             msg += " on how to link the two accounts together.\n\nThis will allow you to participate in the bot's"
             msg += " new real-time-ladder, as well as help to become verified in the Warzone discord server."
             emb.add_field(name="Welcome", value=msg)
-            print("Sending {} a welcome message!".format(member.name))
 
-            #await member.send(embed=emb)
-            #player[0].link_mention = True
-            #player[0].save()
+            if is_admin(str(memid)):
+                await member.send(embed=emb)
 
     @tasks.loop(seconds=10.0)
     async def bg_task(self):

@@ -4091,7 +4091,7 @@ class RealTimeLadder(Tournament):
 
     def join_leave_impl(self, discord_id, join):
         try:
-            player = Player.objects.get(discord_id=discord_id)
+            player = Player.objects.get(discord__discord_id=discord_id)
             tplayer = TournamentPlayer.objects.filter(player=player, tournament=self)
             if tplayer:
                 tplayer = tplayer[0]
@@ -4121,7 +4121,7 @@ class RealTimeLadder(Tournament):
 
     def get_current_vetoes(self, discord_id):
         try:
-            player = Player.objects.get(discord_id=discord_id)
+            player = Player.objects.get(discord__discord_id=discord_id)
         except ObjectDoesNotExist:
             return "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions."
         try:
@@ -4151,7 +4151,7 @@ class RealTimeLadder(Tournament):
             if template:
                 template = template[0]
                 try:
-                    player = Player.objects.get(discord_id=discord_id)
+                    player = Player.objects.get(discord__discord_id=discord_id)
                     tp = TournamentPlayer.objects.get(player=player, tournament=self)
                 except ObjectDoesNotExist:
                     return "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions."
