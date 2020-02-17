@@ -52,7 +52,8 @@ class WZBot(commands.AutoShardedBot):
 
     async def on_disconnect(self):
         for channel in self.rtl_channels:
-            await channel.send("Updating my code...be right back...")
+            # await channel.send("Updating my code...be right back...")
+            pass
 
     async def on_message(self, msg):
         if not self.is_ready() or msg.author.bot:
