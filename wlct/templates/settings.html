@@ -13,7 +13,7 @@
 			<h5 class="card-header">{{ player.name }}'s Settings</h5>
 			<div class="card-body">
 				<h6 class="card-title">Player Bot Token</h6>
-				{% if not player.discord %}
+				{% if not player.discord_member %}
 				<p class="card-text">Status: <span class="text-danger">Not Linked</span></p>
 				{% else %}
 				<p class="card-text">Status: <span class="text-success">Linked</span></p>
