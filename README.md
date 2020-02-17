@@ -35,9 +35,9 @@ DATABASES = {
 You must create .env file in the project root...and set the following variables  
 
 WZ_ENDPOINT=http://127.0.0.1:8000  
-WZ_ACCOUNT_EMAIL=<WZEmailAddress>  
-WZ_API_TOKEN=<WZAPIToken> - can be retrieved from https://www.warzone.com/wiki/Get_API_Token_API  
-WZ_ACCOUNT_TOKEN=<AccountToke> - visit public profile e.g. https://www.warzone.com/Profile?p=2719017226 and use the p value 2719017226  
+WZ_ACCOUNT_EMAIL=WZEmailAddress  
+WZ_API_TOKEN=WZAPIToken - can be retrieved from https://www.warzone.com/wiki/Get_API_Token_API  
+WZ_ACCOUNT_TOKEN=AccountToken - visit public profile e.g. https://www.warzone.com/Profile?p=2719017226 and use the p value 2719017226  
 WZ_TEST_BOT_TOKEN=  
 
 Migrate database to the latest schema  
