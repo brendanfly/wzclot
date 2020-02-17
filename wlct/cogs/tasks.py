@@ -116,10 +116,10 @@ class Tasks(commands.Cog, name="tasks"):
             players = Player.objects.all()
             for player in players:
                 if player.discord_id != "" and player.discord_id is not None:
-                    print("Patching up {} with new discord user.".format(player.name))
-                    discord = DiscordUser(memberid=int(player.discord_id))
-                    discord.save()
-                    player.discord_member = discord
+                    print("Patching up {} with new discord user with id: {}".format(player.name, player.discord_id))
+                    discorduser = DiscordUser(memberid=int(player.discord_id))
+                    discorduser.save()
+                    player.discord_member = discorduser
                     player.save()
         except:
             print_exc()
