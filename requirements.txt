@@ -9,7 +9,7 @@ chardet==3.0.4
 discord==0.0.2
 discord.py==1.2.5
 dj-database-url==0.4.0
-Django==2.1.4
+Django==2.2.10
 django-apscheduler==0.2.13
 django-debug-toolbar==1.11
 django-extensions==2.1.6
