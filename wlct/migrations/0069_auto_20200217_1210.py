@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             name='DiscordUser',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('discord_id', models.IntegerField(blank=True, db_index=True, default=0, null=True)),
+                ('memberid', models.IntegerField(blank=True, db_index=True, default=0, null=True)),
             ],
         ),
         migrations.AddField(
