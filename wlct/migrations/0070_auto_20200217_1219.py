@@ -11,10 +11,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='player',
-            name='discord_id',
-        ),
         migrations.AlterField(
             model_name='player',
             name='discord',
