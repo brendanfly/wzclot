@@ -31,15 +31,15 @@ class Tasks(commands.Cog, name="tasks"):
                 team2 = game.teams.split('.')[1]
                 player1 = ladder.get_player_from_teamid(team1)
                 player2 = ladder.get_player_from_teamid(team2)
-                data += "<@{}> vs. <@{}> [Game Link]({})\n".format(player1.discord.discord_id, player2.discord.discord_id,
+                data += "<@{}> vs. <@{}> [Game Link]({})\n".format(player1.discord.memberid, player2.discord.memberid,
                                                                    game.game_link)
                 emb.add_field(name="Game", value=data, inline=True)
                 if player1:
-                    user = self.bot.get_user(player1.discord.discord_id)
+                    user = self.bot.get_user(player1.discord.memberid)
                     if user:
                         await user.send(embed=emb)
                 if player2:
-                    user = self.bot.get_user(player2.discord.discord_id)
+                    user = self.bot.get_user(player2.discord.memberid)
                     if user:
                         await user.send(embed=emb)
                         game.mentioned = True
@@ -84,7 +84,7 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_rtl_tasks()
 
     async def process_member_join(self, memid):
-        player = Player.objects.filter(discord__discord_id=memid)
+        player = Player.objects.filter(discord__memberid=memid)
         member = self.bot.get_user(memid)
         if member:
             emb = discord.Embed(color=self.bot.embed_color)

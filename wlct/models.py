@@ -13,8 +13,7 @@ class User(AbstractUser):
     pass
 
 class DiscordUser(models.Model):
-    discord_id = models.IntegerField(default=0, blank=True, null=True, db_index=True)
-
+    memberid = models.IntegerField(default=0, blank=True, null=True, db_index=True)
 
 class Engine(models.Model):
     last_run_time = models.DateTimeField(default=timezone.now)
