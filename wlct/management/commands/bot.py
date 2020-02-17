@@ -83,17 +83,6 @@ class WZBot(commands.AutoShardedBot):
         if not hasattr(self, 'uptime'):
             self.uptime = timezone.now()
 
-
-        # get all players with discord ids
-        players = Player.objects.all()
-        for player in players:
-            if player.discord_id != "" and player.discord_id is not None:
-                print("Patching up {} with new discord user.".format(player.name))
-                discord = DiscordUser(discord_id=int(player.discord_id))
-                discord.save()
-                player.discord = discord
-                player.save()
-
     def get_channel_list(self):
         return self.rtl_channels
 
