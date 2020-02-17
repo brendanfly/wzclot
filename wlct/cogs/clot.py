@@ -20,9 +20,9 @@ class Clot(commands.Cog, name="clot"):
             player = Player.objects.filter(bot_token=arg)
             if player:
                 player = player[0]
-                if player.discord.memberid == ctx.message.author.id:
+                if player.discord_member.memberid == ctx.message.author.id:
                     await ctx.send("You're account is already linked on the CLOT.")
-                elif player.discord is None:
+                elif player.discord_member is None:
                     print("Saving discord id: {} for user".format(ctx.message.author.id))
                     discord_obj = DiscordUser(memberid=ctx.message.author.id)
                     discord_obj.save()
@@ -118,7 +118,7 @@ class Clot(commands.Cog, name="clot"):
     async def profile(self, ctx):
         discord_id = ctx.message.author.id
 
-        player = Player.objects.filter(discord__memberid=discord_id)
+        player = Player.objects.filter(discord_member__memberid=discord_id)
         if player:
             await ctx.send("{} | https://warzone.com/Profile?p={}".format(player.name, player.token))
         else:

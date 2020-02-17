@@ -1,5 +1,5 @@
 import discord
-from wlct.models import Clan, Player
+from wlct.models import Clan, Player, DiscordUser
 from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame
 from discord.ext import commands, tasks
 from wlct.cogs.common import is_admin
@@ -31,15 +31,15 @@ class Tasks(commands.Cog, name="tasks"):
                 team2 = game.teams.split('.')[1]
                 player1 = ladder.get_player_from_teamid(team1)
                 player2 = ladder.get_player_from_teamid(team2)
-                data += "<@{}> vs. <@{}> [Game Link]({})\n".format(player1.discord.memberid, player2.discord.memberid,
+                data += "<@{}> vs. <@{}> [Game Link]({})\n".format(player1.discord_member.memberid, player2.discord_member.memberid,
                                                                    game.game_link)
                 emb.add_field(name="Game", value=data, inline=True)
                 if player1:
-                    user = self.bot.get_user(player1.discord.memberid)
+                    user = self.bot.get_user(player1.discord_member.memberid)
                     if user:
                         await user.send(embed=emb)
                 if player2:
-                    user = self.bot.get_user(player2.discord.memberid)
+                    user = self.bot.get_user(player2.discord_member.memberid)
                     if user:
                         await user.send(embed=emb)
                         game.mentioned = True
@@ -84,7 +84,7 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_rtl_tasks()
 
     async def process_member_join(self, memid):
-        player = Player.objects.filter(discord__memberid=memid)
+        player = Player.objects.filter(discord_member__memberid=memid)
         member = self.bot.get_user(memid)
         if member:
             emb = discord.Embed(color=self.bot.embed_color)
@@ -117,9 +117,9 @@ class Tasks(commands.Cog, name="tasks"):
             for player in players:
                 if player.discord_id != "" and player.discord_id is not None:
                     print("Patching up {} with new discord user.".format(player.name))
-                    discord = DiscordUser(discord_id=int(player.discord_id))
+                    discord = DiscordUser(memberid=int(player.discord_id))
                     discord.save()
-                    player.discord = discord
+                    player.discord_member = discord
                     player.save()
         except:
             print_exc()
