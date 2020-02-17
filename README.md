@@ -2,14 +2,22 @@
 Warzone CLOT focused around custom leagues and tournaments, initially developed by -B and now publically available to contribute to.
 
 # Setting up your test server
+Fork the repo to a local directory. 
+
 This web application is written in the Django framework and the server side pieces are entirely written in python. The database used is postgreSQL and connection pooling with max 20 active connections runs on the server.
 To setup a local test site you will need to do the following. 
 
-Install Python 3.7 - 
-Install virtualenv - 
-Install postgreSQL 11.6-3 - 
+Install Python 3.7 - <link here>
+Install virtualenv - <link here>
+Install postgreSQL 11.6-3 - <link here>
 
+You must create .env file in the project root...and set the following variables
 
+WZ_ENDPOINT=http://127.0.0.1:8000
+WZ_ACCOUNT_EMAIL=
+WZ_API_TOKEN=
+WZ_ACCOUNT_TOKEN=
+WZ_TEST_BOT_TOKEN=
 
 # Object Model
 There are a handful of top level objects that are used on the CLOT
