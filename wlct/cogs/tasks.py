@@ -111,16 +111,6 @@ class Tasks(commands.Cog, name="tasks"):
             await self.handle_all_tasks()
             self.last_task_run = timezone.now()
             self.executions += 1
-
-            # get all players with discord ids
-            players = Player.objects.all()
-            for player in players:
-                if player.discord_id != "" and player.discord_id is not None:
-                    print("Patching up {} with new discord user with id: {}".format(player.name, player.discord_id))
-                    discorduser = DiscordUser(memberid=int(player.discord_id))
-                    discorduser.save()
-                    player.discord_member = discorduser
-                    player.save()
         except:
             print_exc()
             raise
