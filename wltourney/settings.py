@@ -11,7 +11,8 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 
 import os
 import dj_database_url
-
+from os.path import join, dirname
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -173,6 +174,10 @@ LOGGING = {
         },
     }
 }
+
+dotenv_path = join(BASE_DIR, '.env')
+print(".env path: {}".format(dotenv_path))
+load_dotenv(dotenv_path)
 
 # load local settings if there are any
 # you must have a settings_local.py file next to settings.py for this to not pass on ImportError
