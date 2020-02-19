@@ -17,7 +17,8 @@ pip install -r requirements.txt
 Create settings_local.py in the wltourney folder with the following:  
 
 DEBUG=True  
-TEMPLATE_DEBUG=True  
+TEMPLATE_DEBUG=True
+DEBUG_ISSUES=False
 
 ALLOWED_HOSTS=['*'] # any url django will serve  
 
@@ -41,7 +42,10 @@ WZ_ACCOUNT_TOKEN=AccountToken - visit public profile e.g. https://www.warzone.co
 WZ_TEST_BOT_TOKEN=  
 
 Migrate database to the latest schema  
-python manage.py migrate  
+python manage.py migrate
+
+Create a super user account for your local django database to be able to view the admin site (127.0.0.1:8000/admin)
+python manage.py createsuperuser
 
 Run the testserver locally  
 python manage.py runserver --noreload  
