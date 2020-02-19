@@ -48,7 +48,13 @@ Create a super user account for your local django database to be able to view th
 python manage.py createsuperuser
 
 Run the testserver locally  
-python manage.py runserver --noreload  
+python manage.py runserver --noreload
+
+# Logging into the Local CLOT Server
+The local server you're running will actually hit the warzone endpoint to log you in, however you need to set up the login redirect
+since you'll be using your own credentials for use with the Warzone API. 
+
+Visit  https://www.warzone.com/CLOT/Config and setup your redirect URL, which should always be http://127.0.0.1:8000/login
 
 # Object Model  
 There are a handful of top level objects that are used on the CLOT  
