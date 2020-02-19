@@ -176,7 +176,6 @@ LOGGING = {
 }
 
 dotenv_path = join(BASE_DIR, '.env')
-print(".env path: {}".format(dotenv_path))
 load_dotenv(dotenv_path)
 
 # load local settings if there are any
