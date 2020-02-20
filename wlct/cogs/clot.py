@@ -26,7 +26,7 @@ class Clot(commands.Cog, name="clot"):
                     print("Saving discord id: {} for user".format(ctx.message.author.id))
                     discord_obj = DiscordUser(memberid=ctx.message.author.id)
                     discord_obj.save()
-                    player.discord = discord_obj
+                    player.discord_member = discord_obj
                     player.save()
                     await ctx.send("You've successfully linked your discord account to the CLOT.")
             else:
