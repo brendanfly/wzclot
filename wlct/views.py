@@ -276,14 +276,12 @@ def league_editor_view(request):
         if request.method == 'POST' and is_player_token_valid(request):
             leagueid = request.POST['leagueid']
             league = find_league_by_id(leagueid)
-
             if league is not None:
                 # get the editing content
                 context.update({'league_editor': league.get_league_editor()})
                 context.update({'success': 'true'})
                 ret = JsonResponse(context)
                 return ret
-
     except:
         log_exception()
 
