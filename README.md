@@ -17,7 +17,8 @@ pip install -r requirements.txt
 Create settings_local.py in the wltourney folder with the following:  
 
 DEBUG=True  
-TEMPLATE_DEBUG=True  
+TEMPLATE_DEBUG=True
+DEBUG_ISSUES=False
 
 ALLOWED_HOSTS=['*'] # any url django will serve  
 
@@ -41,10 +42,19 @@ WZ_ACCOUNT_TOKEN=AccountToken - visit public profile e.g. https://www.warzone.co
 WZ_TEST_BOT_TOKEN=  
 
 Migrate database to the latest schema  
-python manage.py migrate  
+python manage.py migrate
+
+Create a super user account for your local django database to be able to view the admin site (127.0.0.1:8000/admin)
+python manage.py createsuperuser
 
 Run the testserver locally  
-python manage.py runserver --noreload  
+python manage.py runserver --noreload
+
+# Logging into the Local CLOT Server
+The local server you're running will actually hit the warzone endpoint to log you in, however you need to set up the login redirect
+since you'll be using your own credentials for use with the Warzone API. 
+
+Visit  https://www.warzone.com/CLOT/Config and setup your redirect URL, which should always be http://127.0.0.1:8000/login
 
 # Object Model  
 There are a handful of top level objects that are used on the CLOT  

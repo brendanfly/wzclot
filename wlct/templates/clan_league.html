@@ -9,22 +9,21 @@
 <div class="row">
     <div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
         {% if tournament %}
-        {% for t in tournament %}
         <div class="card gedf-card span8">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4>{{ t.name }} &nbsp;
+                        <h4>{{ tournament.name }} &nbsp;
                             <span class="text-muted h7 mb-2">
                                             <i class="fa fa-clock-o">
-                                            </i> created {{ t.time_since_created }} by
+                                            </i> created {{ tournament.time_since_created }} by
                                             &nbsp;
-                                            {% if t.created_by.clan %}
-                                            <a href="https://warzone.com{{ t.created_by.clan.icon_link }}"
-                                               target="_blank"><img src="{{ t.created_by.clan.image_path }}"/></a>
+                                            {% if tournament.created_by.clan %}
+                                            <a href="https://warzone.com{{ tournament.created_by.clan.icon_link }}"
+                                               target="_blank"><img src="{{ tournament.created_by.clan.image_path }}"/></a>
                                             {% endif %}
-                                            <a href="https://warzone.com/Profile?p={{ t.created_by.token }}"
-                                               target="_blank">{{ t.created_by.name }}</a>
+                                            <a href="https://warzone.com/Profile?p={{ tournament.created_by.token }}"
+                                               target="_blank">{{ tournament.created_by.name }}</a>
                                         </span>
                         </h4>
                     </div>
@@ -32,13 +31,13 @@
             </div>
 
             <div class="card-body">
-                {% if t.has_started %}
+                {% if tournament.has_started %}
                 <span id="pause_resume_buttons">{{ pause_resume_buttons|safe }}</span>
                 {% endif %}
-                <input type="hidden" value="{{ t.id }}" id="tournamentid">
+                <input type="hidden" value="{{ tournament.id }}" id="tournamentid">
 
-                {% if t.created_by.token == request.session.token and not t.has_started %}
-                {% if t.can_start_tourney %}
+                {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
+                {% if tournament.can_start_tourney %}
                 <button type="button" class="btn btn-md btn-success" id="start_tournament">Finalize Divisions/Templates</button>
                 {% else %}
                 <button type="button" class="btn btn-md btn-success" id="start_tournament" disabled>Finalize Divisions/Templates
@@ -49,7 +48,7 @@
                 </button>
                 {% endif %}
 
-                {% if not t.is_finished and t.has_started %}
+                {% if not tournament.is_finished and tournament.has_started %}
                     <button type="button" class="btn btn-md btn-primary" id="refresh_tournament">Refresh League</button>
                 {% endif %}
             </div>
@@ -59,7 +58,7 @@
         <div class="container">
             <div class="row">
                 <div>
-                    {% if not t.has_started %}
+                    {% if not tournament.has_started %}
                     <div class="jumbotron">
                         <h3 class="display-4">Clan League</h3>
                         <hr class="my-6">
@@ -88,7 +87,7 @@
 
         <div class="col-md-12">
             <ul class="nav nav-tabs" id="myTab" role="tablist">
-                {% if t.has_started %}
+                {% if tournament.has_started %}
                 <li class="nav-item">
                    <a class="nav-link" id="cl-player-setup-tab" href="#cl-player-setup" data-toggle="tab">Lineups</a>
                 </li>
@@ -99,7 +98,7 @@
                 <li class="nav-item">
                     <a class="nav-link" id="template-tab" href="#templatetab" data-toggle="tab">Templates</a>
                 </li>
-                {% if t.has_started %}
+                {% if tournament.has_started %}
                 <li class="nav-item">
                     <a class="nav-link" id="game-log-tab" href="#gamelogtab" data-toggle="tab">Game Log</a>
                 </li>
@@ -108,17 +107,17 @@
         </div>
 
         <div class="tab-content">
-            {% if t.has_started %}
+            {% if tournament.has_started %}
             <div class="tab-pane" id="cl-player-setup">
-                {% if t.created_by.token == request.session.token %}
-                {{ t.get_editable_roster_data|safe }}
+                {% if tournament.created_by.token == request.session.token %}
+                {{ tournament.get_editable_roster_data|safe }}
                 {% else %}
-                {{ t.get_roster_data|safe }}
+                {{ tournament.get_roster_data|safe }}
                 {% endif %}
             </div>
             {% endif %}
             <div class="tab-pane" id="divisions">
-                {% if t.created_by.token == request.session.token and not t.has_started %}
+                {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
                 <table class="table table-hover">
                    <tr>
                     <td align="right">Add New Division:&nbsp;</td>
@@ -130,16 +129,16 @@
                 </table>
                 <br/>
                 <div id="division_list">
-                {{ t.get_editable_divisions_data|safe }}
+                {{ tournament.get_editable_divisions_data|safe }}
                 </div>
                 {% else %}
                 <div id="division_list">
-                {{ t.get_divisions_data|safe }}
+                {{ tournament.get_divisions_data|safe }}
                 </div>
                 {% endif %}
             </div>
             <div class="tab-pane" id="templatetab">
-                {% if t.created_by.token == request.session.token and not t.has_started %}
+                {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
                 <div class="form-group row">
                     <label class="col-form-label" for="templatename"><b>Template Name:</b></label>
                     <div class="input-group">
@@ -183,25 +182,24 @@
                 </div>
                 <br/>
                 {% endif %}
-                {% if t.created_by.token == request.session.token %}
+                {% if tournament.created_by.token == request.session.token %}
                 <div id="templates">
-                {{ t.get_editable_template_data|safe }}
+                {{ tournament.get_editable_template_data|safe }}
                 </div>
                 {% else %}
                 <div id="templates">
-                {{ t.get_template_data|safe }}
+                {{ tournament.get_template_data|safe }}
                 </div>
                 {% endif %}
             </div>
-            {% if t.has_started %}
+            {% if tournament.has_started %}
             <div class="tab-pane" style="padding-top:20px;" id="gamelogtab">
-                {{ t.get_game_log|safe }}
+                {{ tournament.get_game_log|safe }}
             </div>
             {% endif %}
         </div>
 
 
-    {% endfor %}
     {% endif %}
 
     <!-- Modal to display the start_locked_data for the tournament -->

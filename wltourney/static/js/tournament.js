@@ -578,10 +578,6 @@ $(function () {
                           {
                                $("#gamelogtab").html(data.game_log);
                                $('#game_log_data_table').DataTable();
-
-                               $('.time_to_boot').each(function () {
-                                    handle_game_countdown(jQuery(this));
-                               });
                           }
                       }
                    }
