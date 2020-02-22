@@ -56,8 +56,8 @@ class Player(models.Model):
 
 
     def __str__(self):
-        if self.discord:
-            return self.name + "({}), discord id: {}".format(self.token, self.discord.discord_id)
+        if self.discord_member:
+            return self.name + "({}), discord id: {}".format(self.token, self.discord_member.memberid)
         else:
             return self.name + "({})".format(self.token)
 

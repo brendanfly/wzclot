@@ -77,29 +77,29 @@ def check_games():
             if child_tournament:
                 log("Checking games for tournament: {}".format(tournament.name), LogLevel.informational)
                 try:
-                    if child_tournament[0].update_in_progress:
+                    if child_tournament.update_in_progress:
                         continue
-                    elif not child_tournament[0].game_creation_allowed:
+                    elif not child_tournament.game_creation_allowed:
                         continue
-                    child_tournament[0].update_in_progress = True
-                    child_tournament[0].save()
+                    child_tournament.update_in_progress = True
+                    child_tournament.save()
                     games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
                     log("Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.informational)
                     for game in games.iterator():
                         # process the game
                         # query the game status
-                        child_tournament[0].process_game(game)
+                        child_tournament.process_game(game)
                     # in case tournaments get stalled for some reason
                     # for it to process new games based on current tournament data
-                    child_tournament[0].process_new_games()
+                    child_tournament.process_new_games()
 
                     # after we process games we always cache the latest data for quick reads
-                    child_tournament[0].cache_data()
+                    child_tournament.cache_data()
                 except Exception as e:
                     log_exception()
                 finally:
-                    child_tournament[0].update_in_progress = False
-                    child_tournament[0].save()
+                    child_tournament.update_in_progress = False
+                    child_tournament.save()
             gc.collect()
 
 def cleanup_logs():

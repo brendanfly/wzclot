@@ -53,7 +53,7 @@ def get_current_day_month_year():
     return tuple_return
 
 def get_team_by_id(tournament, id):
-    team = TournamentTeam.objects.filter(tournament=tournament, pk=int(id))
+    team = TournamentTeam.objects.filter(tournament=tournament.id, pk=int(id))
     return team
 
 def calculate_new_elo_rating(win, rating1, rating2):
@@ -225,15 +225,15 @@ def find_league_by_id(id):
         print("Trying to find league {}".format(id))
         child_league = PromotionalRelegationLeague.objects.filter(pk=id)
         if child_league:
-            return child_league
+            return child_league[0]
 
         child_league = MonthlyTemplateRotation.objects.filter(pk=id)
         if child_league:
-            return child_league
+            return child_league[0]
 
         child_league = ClanLeague.objects.filter(pk=id)
         if child_league:
-            return child_league
+            return child_league[0]
     except:
         # league wasn't found
         log("League wasn't found: {}".format(id), LogLevel.informational)
@@ -243,27 +243,27 @@ def find_tournament_by_id(id, query_all=False):
         # try to get the tournament that has this id
         child_tourney = SwissTournament.objects.filter(pk=id)
         if child_tourney:
-            return child_tourney
+            return child_tourney[0]
 
         child_tourney = SeededTournament.objects.filter(pk=id)
         if child_tourney:
-            return child_tourney
+            return child_tourney[0]
 
         child_tourney = GroupStageTournament.objects.filter(pk=id)
         if child_tourney:
-            return child_tourney
+            return child_tourney[0]
 
         child_tourney = ClanLeagueTournament.objects.filter(pk=id)
         if child_tourney:
-            return child_tourney
+            return child_tourney[0]
 
         child_tourney = RoundRobinTournament.objects.filter(pk=id)
         if child_tourney:
-            return child_tourney
+            return child_tourney[0]
 
         child_tourney = RealTimeLadder.objects.filter(pk=id)
         if child_tourney:
-            return child_tourney
+            return child_tourney[0]
 
         if query_all:
             child_tourney = find_league_by_id(id)
@@ -2422,12 +2422,20 @@ class TournamentGame(models.Model):
         self.is_finished = True
 
         self.current_state = "Finished"
+        self.tournament = find_tournament_by_id(self.tournament.id)
         log_tournament("Finish Game/Game Entry: {}".format(self.teams), self.tournament)
         team1 = self.teams.split('.')[0]
         team2 = self.teams.split('.')[1]
 
         tournament_team1 = get_team_by_id(self.tournament, int(team1))
         tournament_team2 = get_team_by_id(self.tournament, int(team2))
+
+        # if tournament is actually a sub-tournament, look for TournamentTeam in parent tournament
+        if not tournament_team1:
+            tournament_team1 = get_team_by_id(self.tournament.parent_tournament, int(team1))
+        if not tournament_team2:
+            tournament_team2 = get_team_by_id(self.tournament.parent_tournament, int(team2))
+
         if tournament_team1 and tournament_team2:
             team1Entry = TournamentGameEntry.objects.filter(team=tournament_team1[0], team_opp=tournament_team2[0], game=self.pk,
                                              tournament=self.tournament)
@@ -2447,6 +2455,9 @@ class TournamentGame(models.Model):
 
             self.game_finished_time = timezone.now()
             self.save()
+
+        else:
+            log_tournament('Could not find tournament teams with id\'s: {} {} in tournament {}'.format(team1, team2, self.tournament.id), self.tournament)
 
     def create_entry(self, team1, team2):
         team1Entry = TournamentGameEntry(team=team1, team_opp=team2, game=self,
@@ -3820,15 +3831,17 @@ class ClanLeague(Tournament):
             players = TournamentPlayer.objects.filter(tournament=self)
             self.number_players = players.count()
             self.save()
-        log = '<table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table"><thead><tr><th>Tournament</th><th>Division</th><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Time To Boot</th></tr></thead>'
-        log += '<tbody>'
+        log('Updating game log for Clan League "{}" (id={})'.format(self.name, self.id), LogLevel.informational)
+        game_log = '<table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table"><thead><tr><th>Tournament</th><th>Division</th><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
+        game_log += '<tbody>'
         tournaments = ClanLeagueTournament.objects.filter(parent_tournament=self)
+        
         for t in tournaments:
             games = TournamentGame.objects.filter(tournament=t)
             for game in games:
-                log += '<tr>'
-                log += '<td>{}</td>'.format(t.clan_league_template.name)
-                log += '<td>{}</td>'.format(t.division.title)
+                game_log += '<tr>'
+                game_log += '<td>{}</td>'.format(t.clan_league_template.name)
+                game_log += '<td>{}</td>'.format(t.division.title)
 
                 # create the match-up text for the game
                 game_data = game.teams.split('.')
@@ -3838,36 +3851,33 @@ class ClanLeague(Tournament):
                 if team_1:
                     team_2 = TournamentTeam.objects.filter(id=int(team2))
                     if team_2:
-                        log += '<td data-search="{} {} {} {}">{}</td>'.format(team_1[0].clan_league_clan.clan.name, team_2[0].clan_league_clan.clan.name, get_team_data_no_clan(team_1[0]), get_team_data_no_clan(team_2[0]), get_matchup_data(team_1[0], team_2[0]))
-                log += '<td><a href="{}" target="_blank">Game Link</a></td>'.format(game.game_link)
+                        game_log += '<td data-search="{} {} {} {}">{}</td>'.format(team_1[0].clan_league_clan.clan.name, team_2[0].clan_league_clan.clan.name, get_team_data_no_clan(team_1[0]), get_team_data_no_clan(team_2[0]), get_matchup_data(team_1[0], team_2[0]))
+                game_log += '<td><a href="{}" target="_blank">Game Link</a></td>'.format(game.game_link)
 
                 if game.is_finished:
                     finished_text = '<span class="text-success"><b>Finished</b></span>'
                 else:
                     finished_text = '<span class="text-info">{}</span>'.format(game.current_state)
-                log += '<td>{}</td>'.format(finished_text)
+                game_log += '<td>{}</td>'.format(finished_text)
 
                 if game.is_finished:
                     winning_team = '{}'.format(get_team_data(game.winning_team))
                 else:
                     winning_team = ''
-                log += '<td>{}</td>'.format(winning_team)
+                game_log += '<td>{}</td>'.format(winning_team)
                 time_to_boot_calculate = 0
-                if game.game_boot_time != "" and game.game_boot_time is not None:
-                    if game.is_finished:
-                        time_to_boot = game.game_finished_time
-                    elif game.game_boot_time.replace(tzinfo=None) < datetime.datetime.now().replace(tzinfo=None) and game.current_state == "WaitingForPlayers":
-                        time_to_boot = game.game_boot_time.strftime("%b %d, %Y %H:%M:%S %p")
-                        time_to_boot_calculate = 1
-                    else:
-                        time_to_boot = "N/A"
-                else:
-                    time_to_boot = "N/A"
-                log += '<td class="time_to_boot" data-calculate="{}">{}</td>'.format(time_to_boot_calculate, time_to_boot)
-                log += '</tr>'
+                
+                start_time = game.game_start_time.strftime("%b %d, %Y %H:%M:%S %p")
 
-        log += '</tbody></table>'
-        self.game_log = log
+                # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
+                end_time = game.game_finished_time.strftime("%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
+
+                game_log += '<td>{}</td>'.format(start_time)
+                game_log += '<td>{}</td>'.format(end_time)
+                game_log += '</tr>'
+
+        game_log += '</tbody></table>'
+        self.game_log = game_log
         self.save()
 
     def get_join_leave(self, allow_buttons, logged_in, request_player):

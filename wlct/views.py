@@ -48,8 +48,7 @@ def tournament_start_request(request):
 
             tournamentid = request.POST['tournamentid']
             tournament = find_tournament_by_id(tournamentid, True)
-            if tournament and (tournament[0].created_by.token == player.token):
-                tournament = tournament[0]
+            if tournament and (tournament.created_by.token == player.token):
                 if settings.DEBUG:
                     tournament.fill_teams()
 
@@ -87,8 +86,7 @@ def tournament_cancel_request(request):
 
             tournamentid = request.POST['tournamentid']
             tournament = find_tournament_by_id(tournamentid, True)
-            if tournament and (tournament[0].created_by.token == player.token):
-                tournament = tournament[0]
+            if tournament and (tournament.created_by.token == player.token):
                 if tournament.start_locked:
                     # cancel the request
                     tournament.start_locked = False
@@ -127,10 +125,10 @@ def tournament_start(request):
             player = Player.objects.get(token=request.session['token'])
 
             tournament = find_tournament_by_id(tournamentid, True)
-            if tournament is not None and request.session['token'] == tournament[0].created_by.token:
-                tournament[0].start(tournament_data)
+            if tournament is not None and request.session['token'] == tournament.created_by.token:
+                tournament.start(tournament_data)
                 context.update({"success": "true"})
-                if tournament[0].is_league:
+                if tournament.is_league:
                     context.update({'redirect_url': '/leagues/{}/'.format(tournamentid)})
                 else:
                     context.update({'redirect_url': '/tournaments/{}/'.format(tournamentid)})
@@ -162,8 +160,8 @@ def tournament_delete(request):
             player = Player.objects.get(token=request.session['token'])
 
             tournament = find_tournament_by_id(tournamentid, True)
-            if tournament is not None and request.session['token'] == tournament[0].created_by.token:
-                tournament[0].delete()
+            if tournament is not None and request.session['token'] == tournament.created_by.token:
+                tournament.delete()
                 context.update({"success": "true"})
             else:
                 log("Player {} is trying to delete tournament {} but they didn't create it!".format(player.token, tournamentid), LogLevel.warning)
@@ -190,7 +188,7 @@ def refresh_tournament(request):
                 try:
                     player = Player.objects.get(token=request.session['token'])
 
-                    player_tourney = TournamentPlayer.objects.filter(player=player, tournament=tournament[0])
+                    player_tourney = TournamentPlayer.objects.filter(player=player, tournament=tournament)
                     if player_tourney:
                         context.update({'player_in_tourney': True})
 
@@ -200,11 +198,11 @@ def refresh_tournament(request):
                         request.session['token']), LogLevel.warning)
                     return HttpResponseRedirect('/index/')
 
-            allowed_join = is_player_allowed_join(player, tournament[0].template)
-            context.update({'team_table': tournament[0].get_team_table(allowed_join, is_player_token_valid(request), player)})
-            context.update({'can_start_tourney': tournament[0].can_start_tourney})
-            context.update({'bracket_game_data': tournament[0].get_bracket_game_data()})
-            context.update({'game_log': tournament[0].get_game_log()})
+            allowed_join = is_player_allowed_join(player, tournament.template)
+            context.update({'team_table': tournament.get_team_table(allowed_join, is_player_token_valid(request), player)})
+            context.update({'can_start_tourney': tournament.can_start_tourney})
+            context.update({'bracket_game_data': tournament.get_bracket_game_data()})
+            context.update({'game_log': tournament.get_game_log()})
             # now grab the entire tournament log and invited players list and send that back over as well
             # this should already be properly formatted html, so just pass the strings back
             context.update({'success': 'true'})
@@ -231,15 +229,15 @@ def league_update_status(request):
             league = find_league_by_id(leagueid)
             if league is not None:
                 if 'pause' in request.POST:
-                    league[0].update_game_creation_allowed(False)
+                    league.update_game_creation_allowed(False)
                     print("Games cannot be created")
                 elif 'resume' in request.POST:
-                    league[0].update_game_creation_allowed(True)
+                    league.update_game_creation_allowed(True)
                     print("Games can be created")
 
                 player = Player.objects.get(token=request.session['token'])
                 context.update({'success': 'true'})
-                context.update({'pause_resume_buttons': league[0].get_pause_resume(player)})
+                context.update({'pause_resume_buttons': league.get_pause_resume(player)})
 
                 return JsonResponse(context)
     except:
@@ -254,14 +252,14 @@ def league_submit_editing_window(request):
             league = find_league_by_id(leagueid)
             if league is not None:
                 if 'league_editing_data' in request.POST:
-                    update_ret = league[0].update_league_editing(request.POST['league_editing_data'])
+                    update_ret = league.update_league_editing(request.POST['league_editing_data'])
                     if 'editing_window_status_text' in update_ret:
                         editing_window_status_text = update_ret['editing_window_status_text']
 
                     print("Submit window with ret: {}".format(update_ret))
                     context.update({'success': "true"})
                     context.update({'editing_window_status_text': editing_window_status_text})
-                    context.update({'league_editor': league[0].get_league_editor()})
+                    context.update({'league_editor': league.get_league_editor()})
                 else:
                     context.update({'editing_window_status_text': 'There was no data sent to the server!'})
             else:
@@ -281,7 +279,7 @@ def league_editor_view(request):
 
             if league is not None:
                 # get the editing content
-                context.update({'league_editor': league[0].get_league_editor()})
+                context.update({'league_editor': league.get_league_editor()})
                 context.update({'success': 'true'})
                 ret = JsonResponse(context)
                 return ret
@@ -302,7 +300,7 @@ def league_display_view(request, id):
             if is_player_token_valid(request):
                 try:
                     player = Player.objects.get(token=request.session['token'])
-                    player_tourney = TournamentPlayer.objects.filter(player=player, tournament=league[0])
+                    player_tourney = TournamentPlayer.objects.filter(player=player, tournament=league)
                     if player_tourney:
                         context.update({'player_in_tourney': True})
                         context.update({'tourney_player': player_tourney[0]})
@@ -314,35 +312,35 @@ def league_display_view(request, id):
 
                 # get the api to check to see if we can display join buttons
                 apirequestJson = {}
-                if hasattr(league[0], 'current_template'):
-                    allowed_join = is_player_allowed_join(player, league[0].current_template)
+                if hasattr(league, 'current_template'):
+                    allowed_join = is_player_allowed_join(player, league.current_template)
                 else:
-                    allowed_join = is_player_allowed_join(player, league[0].template)
+                    allowed_join = is_player_allowed_join(player, league.template)
 
             # clan-league is a special case, as it contains many sub-leagues underneath it
             # with the right requirements...if the league type is of clan league
             # we want to display this separately on a different page.
-            if league[0].type == "Clan League":
-                context.update({'pause_resume_buttons': league[0].get_pause_resume(player)})
+            if league.type == "Clan League":
+                context.update({'pause_resume_buttons': league.get_pause_resume(player)})
                 context.update({'tournament': league})
                 return render(request, 'clan_league.html', context)
-            if allowed_join and league[0].private:
+            if allowed_join and league.private:
                 # if the template works and this tournament is private we are only
                 # allowed to join if we've been invited by the host
-                invites = TournamentInvite.objects.filter(tournament=league[0], player=player, joined=False)
-                if not invites and player.id != league[0].created_by.id:
+                invites = TournamentInvite.objects.filter(tournament=league, player=player, joined=False)
+                if not invites and player.id != league.created_by.id:
                     print("Player {} is not allowed to join.".format(player.name))
                     allowed_join = False
 
             context.update(
-                {'team_table': league[0].get_team_table(allowed_join, is_player_token_valid(request), player)})
+                {'team_table': league.get_team_table(allowed_join, is_player_token_valid(request), player)})
             context.update({'tournament': league})
-            context.update({'pause_resume_buttons': league[0].get_pause_resume(player)})
-            context.update({'join_leave_buttons': league[0].get_join_leave(allowed_join, is_player_token_valid(request), player)})
-            context.update({'invited_players': league[0].get_invited_players_table()})
-            context.update({'bracket_game_data': league[0].get_bracket_game_data()})
-            context.update({'template_settings': league[0].get_template_settings_table()})
-            context.update({'game_log': league[0].get_game_log()})
+            context.update({'pause_resume_buttons': league.get_pause_resume(player)})
+            context.update({'join_leave_buttons': league.get_join_leave(allowed_join, is_player_token_valid(request), player)})
+            context.update({'invited_players': league.get_invited_players_table()})
+            context.update({'bracket_game_data': league.get_bracket_game_data()})
+            context.update({'template_settings': league.get_template_settings_table()})
+            context.update({'game_log': league.get_game_log()})
             return render(request, 'league.html', context)
         else:
             return HttpResponseRedirect('/index/')
@@ -362,7 +360,6 @@ def update_max_games_at_once(request):
             player = player[0]
             tournament = find_tournament_by_id(request.POST['leagueid'], True)
             if tournament and 'team_id' in request.POST:
-                tournament = tournament[0]
                 tplayer = TournamentPlayer.objects.filter(tournament=tournament, player=player, team=int(request.POST['team_id']))
                 if tplayer:
                     tplayer = tplayer[0]
@@ -390,8 +387,7 @@ def cl_update_templates(request):
             player = Player.objects.filter(token=request.session['token'])
             player = player[0]
             tournament = find_tournament_by_id(request.POST['tournamentid'], True)
-            if tournament and tournament[0].created_by.id == player.id:
-                tournament = tournament[0]
+            if tournament and tournament.created_by.id == player.id:
                 optype = request.POST['optype']
                 # what kind of operations are we performing?
                 if optype == "add":
@@ -420,9 +416,9 @@ def cl_start_template(request):
         if request.method == "POST" and 'tournamentid' in request.POST and 'templateid' in request.POST and is_player_token_valid(request):
             player = Player.objects.get(token=request.session['token'])
             tournament = find_tournament_by_id(request.POST['tournamentid'], True)
-            if tournament and tournament[0].created_by.id == player.id:
-                tournament[0].start_template(request.POST['templateid'])
-                context.update({'template_data': tournament[0].get_editable_template_data()})
+            if tournament and tournament.created_by.id == player.id:
+                tournament.start_template(request.POST['templateid'])
+                context.update({'template_data': tournament.get_editable_template_data()})
                 context.update({'success': 'true'})
             else:
                 context.update({'error': "Your are not authorized to start this template tournament."})
@@ -444,8 +440,7 @@ def cl_update_divisions(request):
             player = Player.objects.filter(token=request.session['token'])
             player = player[0]
             tournament = find_tournament_by_id(request.POST['tournamentid'], True)
-            if tournament and tournament[0].created_by.id == player.id:
-                tournament = tournament[0]
+            if tournament and tournament.created_by.id == player.id:
                 optype = request.POST['optype']
                 # what kind of operations are we performing?
                 if optype == "add":  # adding a new division
@@ -486,7 +481,7 @@ def tournament_display_view(request, id):
                 try:
                     player = Player.objects.get(token=request.session['token'])
 
-                    player_tourney = TournamentPlayer.objects.filter(player=player, tournament=tournament[0])
+                    player_tourney = TournamentPlayer.objects.filter(player=player, tournament=tournament)
                     if player_tourney:
                         context.update({'player_in_tourney': True})
                 except ObjectDoesNotExist:
@@ -496,19 +491,19 @@ def tournament_display_view(request, id):
 
                 # get the api to check to see if we can display join buttons
                 apirequestJson = {}
-                allowed_join = is_player_allowed_join(player, tournament[0].template)
-            if allowed_join and tournament[0].private:
+                allowed_join = is_player_allowed_join(player, tournament.template)
+            if allowed_join and tournament.private:
                 # if the template works and this tournament is private we are only
                 # allowed to join if we've been invited by the host
                 invites = TournamentInvite.objects.filter(player=request.session['token'], joined=False)
                 if not invites:
                     allowed_join = False
 
-            context.update({'team_table': tournament[0].get_team_table(allowed_join, is_player_token_valid(request), player)})
+            context.update({'team_table': tournament.get_team_table(allowed_join, is_player_token_valid(request), player)})
             context.update({'tournament': tournament})
-            context.update({'invited_players': tournament[0].get_invited_players_table()})
-            context.update({'bracket_game_data': tournament[0].get_bracket_game_data()})
-            context.update({'template_settings': tournament[0].get_template_settings_table()})
+            context.update({'invited_players': tournament.get_invited_players_table()})
+            context.update({'bracket_game_data': tournament.get_bracket_game_data()})
+            context.update({'template_settings': tournament.get_template_settings_table()})
             return render(request, 'tournament.html', context)
         else:
             log("Tournament could not be found!", LogLevel.informational)
@@ -527,7 +522,6 @@ def tournament_invite_players(request):
         try:
             tournament = find_tournament_by_id(request.POST['tournamentid'], True)
             if tournament:
-                tournament = tournament[0]
                 # get the list of uninvited players (inverse list)
                 print("Getting list of invited players")
                 tournament.invite_player(request.POST)
@@ -577,20 +571,20 @@ def tournament_player_status_change(request):
                         player = Player.objects.filter(token=request.session['token'])
                         if player:
                             if "join" in buttonid:
-                                tournament[0].join_tournament(request.session['token'], buttonid)
+                                tournament.join_tournament(request.session['token'], buttonid)
                             elif "decline" in buttonid:
-                                tournament[0].decline_tournament(request.session['token'])
+                                tournament.decline_tournament(request.session['token'])
 
                             # now refresh the list of players
-                            allowed_join = is_player_allowed_join(player[0], tournament[0].template)
-                            context.update({'team_table': tournament[0].get_team_table(allowed_join,
+                            allowed_join = is_player_allowed_join(player[0], tournament.template)
+                            context.update({'team_table': tournament.get_team_table(allowed_join,
                                                                                        is_player_token_valid(
                                                                                            request), player[0])})
                             # we should always get this far
-                            context.update({'is_league': tournament[0].is_league})
-                            if tournament[0].is_league:
-                                context.update({'join_leave_buttons': tournament[0].get_join_leave(allowed_join, is_player_token_valid(request), player[0])})
-                            context.update({'can_start_tourney': tournament[0].can_start_tourney})
+                            context.update({'is_league': tournament.is_league})
+                            if tournament.is_league:
+                                context.update({'join_leave_buttons': tournament.get_join_leave(allowed_join, is_player_token_valid(request), player[0])})
+                            context.update({'can_start_tourney': tournament.can_start_tourney})
                             context.update({'success': 'true'})
                         else:
                             log("Player not found for token {} ".format(request.session['token']), LogLevel.critical)
@@ -646,8 +640,8 @@ def mytourneys_view(request):
                     elif tourney.tournament.id not in leagues_found and tourney.tournament.is_league:
                         child_league = find_league_by_id(tourney.tournament.id)
                         if child_league:
-                            league_list.append(child_league[0])
-                            leagues_found.append(child_league[0].id)
+                            league_list.append(child_league)
+                            leagues_found.append(child_league.id)
 
             # now grab all tournament the player is actually in
             joined = TournamentPlayer.objects.filter(player=player).select_related('tournament')
@@ -661,8 +655,8 @@ def mytourneys_view(request):
                     elif tourney.tournament.id not in leagues_found and tourney.tournament.is_league:
                         child_league = find_league_by_id(tourney.tournament.id)
                         if child_league:
-                            league_list.append(child_league[0])
-                            leagues_found.append(child_league[0].id)
+                            league_list.append(child_league)
+                            leagues_found.append(child_league.id)
 
             swiss_tournaments = SwissTournament.objects.filter(created_by=player).select_related('tournament_ptr').order_by('-created_date')
             if swiss_tournaments:
@@ -692,8 +686,8 @@ def mytourneys_view(request):
             for league in leagues:
                 child_league = find_league_by_id(league.id)
                 if child_league and league.id not in leagues_found:
-                    league_list.append(child_league[0])
-                    leagues_found.append(child_league[0].id)
+                    league_list.append(child_league)
+                    leagues_found.append(child_league.id)
 
             context.update({'leagues': league_list})
             context.update({'tournaments': result_list})
@@ -781,14 +775,14 @@ def index(request):
         for tournament in tournaments:
             child_tournament = find_tournament_by_id(tournament.id)
             if child_tournament:
-                result_list.append(child_tournament[0])
+                result_list.append(child_tournament)
 
         league_list = []
         leagues = Tournament.objects.filter(private=False, is_finished=False, is_league=True).order_by("-is_official", "-created_date")
         for league in leagues:
             child_league = find_league_by_id(league.id)
             if child_league:
-                league_list.append(child_league[0])
+                league_list.append(child_league)
 
         context.update({'leagues': league_list})
         context.update({'tournaments': result_list})
