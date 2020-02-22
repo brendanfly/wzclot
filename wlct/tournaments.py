@@ -223,6 +223,7 @@ def get_games_finished_for_team_since(teamid, tournament, days):
 def find_league_by_id(id):
     try:
         print("Trying to find league {}".format(id))
+        id = int(id)
         child_league = PromotionalRelegationLeague.objects.filter(pk=id)
         if child_league:
             return child_league[0]
@@ -280,6 +281,7 @@ def find_tournament_by_id(id, query_all=False):
 
 def find_tournament_public(id):
     try:
+        id = int(id)
         # try to get the tournament that has this id
         child_tourney = SwissTournament.objects.filter(pk=id, private=False)
         if child_tourney:

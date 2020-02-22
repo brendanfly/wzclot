@@ -19,10 +19,10 @@
                                             </i> created {{ tournament.time_since_created }} by
                                             &nbsp;
                                             {% if tournament.created_by.clan %}
-                                            <a href="https://warzone.com{{ t.created_by.clan.icon_link }}"
-                                               target="_blank"><img src="{{ t.created_by.clan.image_path }}"/></a>
+                                            <a href="https://warzone.com{{ tournament.created_by.clan.icon_link }}"
+                                               target="_blank"><img src="{{ tournament.created_by.clan.image_path }}"/></a>
                                             {% endif %}
-                                            <a href="https://warzone.com/Profile?p={{ t.created_by.token }}"
+                                            <a href="https://warzone.com/Profile?p={{ tournament.created_by.token }}"
                                                target="_blank">{{ tournament.created_by.name }}</a>
                                         </span>
                         </h4>
@@ -32,8 +32,8 @@
 
             <div class="card-body">
                 <span id="pause_resume_buttons">{{ pause_resume_buttons|safe }}</span>
-                <input type="hidden" value="{{ t.get_current_template_id }}" id="templateid">
-                <input type="hidden" value="{{ t.id }}" id="tournamentid">
+                <input type="hidden" value="{{ tournament.get_current_template_id }}" id="templateid">
+                <input type="hidden" value="{{ tournament.id }}" id="tournamentid">
 
                 {% if not tournament.is_finished %}
                     <button type="button" class="btn btn-md btn-primary" id="refresh_tournament">Refresh League</button>
@@ -51,7 +51,7 @@
                 {% endif %}
                 <p class="card-text h7">
                     <b>League Description</b>&nbsp;<a
-                        href="https://warzone.com/MultiPlayer?TemplateID={{ t.get_current_template_id }}" target="_blank"
+                        href="https://warzone.com/MultiPlayer?TemplateID={{ tournament.get_current_template_id }}" target="_blank"
                         class="badge badge-primary">Click to create game with template settings</a>
                     <br/> {{ tournament.description }}
                 </p>
