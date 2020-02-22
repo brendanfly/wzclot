@@ -118,7 +118,7 @@ class TournamentRoundAdmin(admin.ModelAdmin):
 admin.site.register(TournamentRound, TournamentRoundAdmin)
 
 class TournamentTeamAdmin(admin.ModelAdmin):
-    search_fields = ['id']
+    search_fields = ['id', 'tournament__name']
 
 
 admin.site.register(TournamentTeam, TournamentTeamAdmin)
