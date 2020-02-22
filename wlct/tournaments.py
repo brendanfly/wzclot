@@ -268,7 +268,7 @@ def find_tournament_by_id(id, query_all=False):
         if query_all:
             child_tourney = find_league_by_id(id)
             if child_tourney:
-                return child_tourney
+                return child_tourney[0]
     except:
         # tournament wasn't found
         log("Tournament wasn't found: {}".format(id), LogLevel.informational)
