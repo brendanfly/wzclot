@@ -9,22 +9,21 @@
 <div class="row">
     <div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
         {% if tournament %}
-        {% for t in tournament %}
         <div class="card gedf-card span8">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4>{{ t.name }} &nbsp;
+                        <h4>{{ tournament.name }} &nbsp;
                             <span class="text-muted h7 mb-2">
                                             <i class="fa fa-clock-o">
-                                            </i> created {{ t.time_since_created }} by
+                                            </i> created {{ tournament.time_since_created }} by
                                             &nbsp;
-                                            {% if t.created_by.clan %}
+                                            {% if tournament.created_by.clan %}
                                             <a href="https://warzone.com{{ t.created_by.clan.icon_link }}"
                                                target="_blank"><img src="{{ t.created_by.clan.image_path }}"/></a>
                                             {% endif %}
                                             <a href="https://warzone.com/Profile?p={{ t.created_by.token }}"
-                                               target="_blank">{{ t.created_by.name }}</a>
+                                               target="_blank">{{ tournament.created_by.name }}</a>
                                         </span>
                         </h4>
                     </div>
@@ -36,37 +35,37 @@
                 <input type="hidden" value="{{ t.get_current_template_id }}" id="templateid">
                 <input type="hidden" value="{{ t.id }}" id="tournamentid">
 
-                {% if not t.is_finished %}
+                {% if not tournament.is_finished %}
                     <button type="button" class="btn btn-md btn-primary" id="refresh_tournament">Refresh League</button>
                 {% endif %}
 
-                {% if request.session.token == t.created_by.token %}
-                    <button type="button" class="btn btn-md btn-secondary" id="league_editor">{{ t.league_editor_button_text|safe }}</button>
+                {% if request.session.token == tournament.created_by.token %}
+                    <button type="button" class="btn btn-md btn-secondary" id="league_editor">{{ tournament.league_editor_button_text|safe }}</button>
                 {% endif %}
 
-                {% if t.show_invite_button and t.created_by.token == request.session.token %}
+                {% if tournament.show_invite_button and tournament.created_by.token == request.session.token %}
                 <button type="button" class="btn btn-md btn-primary invite_players" id="invite_players">+ Invite Players</button>
                 {% endif %}
-                {% if not t.is_finished %}
+                {% if not tournament.is_finished %}
                 <br/><br/>
                 {% endif %}
                 <p class="card-text h7">
                     <b>League Description</b>&nbsp;<a
                         href="https://warzone.com/MultiPlayer?TemplateID={{ t.get_current_template_id }}" target="_blank"
                         class="badge badge-primary">Click to create game with template settings</a>
-                    <br/> {{ t.description }}
+                    <br/> {{ tournament.description }}
                 </p>
                 <span id="join_leave_buttons">
                     {{ join_leave_buttons|safe }}
                 </span>
-                {% if t.should_show_max_games_option %}
+                {% if tournament.should_show_max_games_option %}
                     {% if tourney_player %}
                         Max Games:&nbsp;{{ tourney_player.get_max_games_at_once_option|safe }}
                     {% endif %}
                 {% endif %}
                 <div class="container">
                     <div class="row h4 success">
-                        {{ t.get_template_data_text }}
+                        {{ tournament.get_template_data_text }}
                     </div>
                 </div>
             </div>
@@ -97,7 +96,7 @@
                         <div class="tab-pane show active" id="lobbytab">{{ team_table|safe }}
                         </div>
                         <div class="tab-pane" id="gamestab">
-                            {% if not t.bracket_seeded_async %}
+                            {% if not tournament.bracket_seeded_async %}
                                 {{ bracket_game_data|safe }}
                             {% else %}
                             <div class="container">
@@ -124,7 +123,6 @@
             </div>
         </div>
     </div>
-    {% endfor %}
     {% endif %}
 
     <!-- Modal to display errors from the ajax requests on the page -->
