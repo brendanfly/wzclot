@@ -112,6 +112,10 @@ def cleanup_logs():
         log.delete()
         gc.collect()
 
+        # only get 3 minutes to run, the engine must continue
+        if (datetime.datetime.now(tz=pytz.UTC) - nowdate).total_seconds() >= get_run_time():
+            return
+
     if logs:
         print("Cleaned up {} logs.".format(logs.count()))
 
@@ -119,6 +123,10 @@ def cleanup_logs():
     for tournament_log in tournament_logs.iterator():
         tournament_log.delete()
         gc.collect()
+
+        # only get 3 minutes to run, the engine must continue
+        if (datetime.datetime.now(tz=pytz.UTC) - nowdate).total_seconds() >= get_run_time():
+            return
 
     if tournament_logs:
         print("Cleaned up {} tournament logs.".format(tournament_logs.count()))
