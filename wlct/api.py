@@ -13,6 +13,7 @@ LIVE_ENDPOINT = os.environ['WZ_ENDPOINT']
 LIVE_ACCOUNT = os.environ['WZ_ACCOUNT_EMAIL']
 LIVE_API_TOKEN = os.environ['WZ_API_TOKEN']
 LIVE_ACCOUNT_TOKEN = os.environ['WZ_ACCOUNT_TOKEN']
+LIVE_WARZONE_ENDPOINT = os.environ['WZ_LIVE_ENDPOINT']
 
 # load local settings if there are any
 # you must have a settings_local.py file next to settings.py for this to not pass on ImportError
@@ -133,7 +134,7 @@ class API2:
         params = {"Email": self.client_email, "APIToken": self.client_token, "Token": token}
         log("Validate token API call: {}".format(params), LogLevel.informational)
 
-        endpoint = LIVE_ENDPOINT + self.validate_invite_token_url
+        endpoint = LIVE_WARZONE_ENDPOINT + self.validate_invite_token_url
         request = requests.post(endpoint, params=params)
         log("Validate API token response: {}".format(request.json()), LogLevel.informational)
         return request

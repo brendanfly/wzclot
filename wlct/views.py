@@ -634,7 +634,7 @@ def mytourneys_view(request):
                     if tourney.tournament.id not in tournaments_found and not tourney.tournament.is_league:
                         child_tourney = find_tournament_by_id(tourney.tournament.id)
                         if child_tourney:
-                            result_list.append(child_tourney[0])
+                            result_list.append(child_tourney)
                             tournaments_found.append(tourney.tournament.id)
                             tourney.tournament.setPlayerInvited(True)
                     elif tourney.tournament.id not in leagues_found and tourney.tournament.is_league:
@@ -650,7 +650,7 @@ def mytourneys_view(request):
                     if tourney.tournament.id not in tournaments_found and not tourney.tournament.is_league:
                         child_tourney = find_tournament_by_id(tourney.tournament.id)
                         if child_tourney:
-                            result_list.append(child_tourney[0])
+                            result_list.append(child_tourney)
                             tournaments_found.append(tourney.tournament.id)
                     elif tourney.tournament.id not in leagues_found and tourney.tournament.is_league:
                         child_league = find_league_by_id(tourney.tournament.id)
