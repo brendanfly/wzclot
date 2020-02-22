@@ -20,7 +20,7 @@ class Clot(commands.Cog, name="clot"):
             player = Player.objects.filter(bot_token=arg)
             if player:
                 player = player[0]
-                if player.discord_member.memberid == ctx.message.author.id:
+                if player.discord_member is not None and player.discord_member.memberid == ctx.message.author.id:
                     await ctx.send("You're account is already linked on the CLOT.")
                 elif player.discord_member is None:
                     print("Saving discord id: {} for user".format(ctx.message.author.id))
