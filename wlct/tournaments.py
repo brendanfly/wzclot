@@ -236,6 +236,7 @@ def find_league_by_id(id):
             return child_league[0]
     except:
         # league wasn't found
+        log_exception()
         log("League wasn't found: {}".format(id), LogLevel.informational)
 
 def find_tournament_by_id(id, query_all=False):
@@ -271,6 +272,7 @@ def find_tournament_by_id(id, query_all=False):
                 return child_tourney
     except:
         # tournament wasn't found
+        log_exception()
         log("Tournament wasn't found: {}".format(id), LogLevel.informational)
 
     return None
