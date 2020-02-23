@@ -665,9 +665,9 @@ class Tournament(models.Model):
             game_status = game_status.json()
 
             if game_status:
-                log_game_status("Checking game status for game {}: {} ".format(game.gameid, game_status), self, game)
                 if 'map' in game_status:
                     del game_status['map']
+                log_game_status("Checking game status for game {}: {} ".format(game.gameid, game_status), self, game)
 
             players_data = None
             # process the game here
