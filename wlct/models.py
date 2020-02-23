@@ -16,6 +16,9 @@ class DiscordUser(models.Model):
     memberid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
     link_mention = models.BooleanField(default=False, blank=True, null=True)
 
+    def __str__(self):
+        return "Member: {}, LinkMention: {}".format(self.memberid, self.link_mention)
+
 class Engine(models.Model):
     last_run_time = models.DateTimeField(default=timezone.now)
     next_run_time = models.DateTimeField(blank=True, null=True)
