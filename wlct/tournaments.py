@@ -4093,7 +4093,7 @@ class RealTimeLadder(Tournament):
         if 'players' in game_info:
             players_data = game_info['players']
             for data in players_data:
-                if 'state' in data and data['state'] == 'Invited' or data['state'] == 'Booted' or data['state'] == 'Declined':
+                if 'state' in data and (data['state'] == 'Invited' or data['state'] == 'Booted' or data['state'] == 'Declined'):
                     # force remove this player from the ladder
                     if 'id' in data:
                         token = data['id']
