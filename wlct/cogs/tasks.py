@@ -49,16 +49,6 @@ class Tasks(commands.Cog, name="tasks"):
         # every 4 hours if you haven't linked your WZ account to the CLOT, you should do so
         # get all the members in all servers
         print("Running 4 hours tasks")
-        member_list = []
-        for guild in self.bot.guilds:
-            for member in guild.members:
-                if member.id not in member_list:
-                    member_list.append(member.id)
-
-        # now that we have all the members...let's look up the player for the ids...if there is no player
-        # we should PM them that they need to link their CLOT account discord, only do this once
-        for memid in member_list:
-            await self.process_member_join(memid)
 
     async def handle_hours_tasks(self):
         print("Running hourly task")
