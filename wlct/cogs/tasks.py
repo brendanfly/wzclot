@@ -109,7 +109,6 @@ class Tasks(commands.Cog, name="tasks"):
             else:
                 discord_user = discord_user[0]
 
-            discord_user.link_mention = False
             if not discord_user.link_mention or send_message:
                 print("Sending welcome message to {}".format(member.name))
                 await member.send(embed=emb)
