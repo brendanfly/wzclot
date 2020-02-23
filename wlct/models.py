@@ -14,6 +14,7 @@ class User(AbstractUser):
 
 class DiscordUser(models.Model):
     memberid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
+    link_mention = models.BooleanField(default=False, blank=True, null=True)
 
 class Engine(models.Model):
     last_run_time = models.DateTimeField(default=timezone.now)
@@ -42,7 +43,6 @@ class Player(models.Model):
     clan = models.ForeignKey('Clan', blank=True, null=True, on_delete=models.SET_NULL)
     is_on_vacation = models.BooleanField(default=False, blank=True, null=True)
     bot_token = models.CharField(max_length=34, default=invalid_token_string, db_index=True)
-    link_mention = models.BooleanField(default=False, blank=True, null=True)
     discord_member = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.CASCADE, related_name='discord')
 
     def set_player_data(self, token, playerData):

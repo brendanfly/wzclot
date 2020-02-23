@@ -36,8 +36,12 @@ class Clot(commands.Cog, name="clot"):
                     await ctx.send("You're account is already linked on the CLOT.")
                 elif player.discord_member is None:
                     print("Saving discord id: {} for user".format(ctx.message.author.id))
-                    discord_obj = DiscordUser(memberid=ctx.message.author.id)
-                    discord_obj.save()
+                    discord_obj = DiscordUser.objects.filter(memberid=ctx.message.author.id)
+                    if not discord_obj:
+                        discord_obj = DiscordUser(memberid=ctx.message.author.id)
+                        discord_obj.save()
+                    else:
+                        discord_obj = discord_obj[0]
                     player.discord_member = discord_obj
                     player.save()
                     await ctx.send("You've successfully linked your discord account to the CLOT.")
