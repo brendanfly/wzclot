@@ -62,7 +62,7 @@ class Player(models.Model):
             return self.name + "({})".format(self.token)
 
 class PlayerAdmin(admin.ModelAdmin):
-    search_fields = ['name', 'token', 'clan']
+    search_fields = ['name', 'token', 'clan__name']
 
 admin.site.register(Player, PlayerAdmin)
 
