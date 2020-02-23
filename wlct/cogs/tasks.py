@@ -99,8 +99,9 @@ class Tasks(commands.Cog, name="tasks"):
                 msg += " new real-time-ladder, as well as help to become verified in the Warzone discord server."
                 emb.add_field(name="Welcome", value=msg)
 
-                discord_user = DiscordUser(memberid=memid)
-                discord_user.save()
+                if not discord_user:
+                    discord_user = DiscordUser(memberid=memid)
+                    discord_user.save()
                 if not discord_user.link_mention:
                     print("Sending welcome message to {}".format(member.name))
                     await member.send(embed=emb)
