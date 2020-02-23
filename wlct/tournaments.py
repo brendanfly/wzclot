@@ -4089,6 +4089,7 @@ class RealTimeLadder(Tournament):
 
     def finish_game_with_info(self, game_info):
         # handle the game info here
+        log_tournament("[RTL]: Finished game_info: {}".format(game_info), self)
         if 'players' in game_info:
             players_data = game_info['players']
             for data in players_data:
