@@ -2757,7 +2757,9 @@ class MonthlyTemplateRotation(Tournament):
             team_list = []
             tournament_teams = TournamentTeam.objects.filter(tournament=self, active=True).order_by('-rating') # order by rating descending
             for team in tournament_teams.iterator():
-                team_list.append(team)
+                # only add teams that aren't on vacation
+                if not self.is_team_on_vacation(team):
+                    team_list.append(team)
                 # look up how many match-ups this team has currently that are not finished
                 # if less then 2 find a player closest in rating
             team_list_opp = team_list.copy()
