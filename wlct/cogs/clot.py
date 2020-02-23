@@ -20,6 +20,18 @@ class Clot(commands.Cog, name="clot"):
             player = Player.objects.filter(bot_token=arg)
             if player:
                 player = player[0]
+                # make sure the discord id is not already here
+                current_discord = Player.objects.filter(discord_member__memberid=ctx.message.author.id)
+                if current_discord:
+                    current_discord = current_discord[0]
+                    cd_name = self.bot.get_user(current_discord.discord_member.memberid)
+                    new_name = ctx.message.author.name
+
+                    # do the unlinking
+                    player.discord_member = None
+                    player.save()
+                    await ctx.send("Your discord ID is already associated with another account, unlinking {} and linking {}.".format(cd_name, new_name))
+
                 if player.discord_member is not None and player.discord_member.memberid == ctx.message.author.id:
                     await ctx.send("You're account is already linked on the CLOT.")
                 elif player.discord_member is None:
