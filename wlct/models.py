@@ -75,4 +75,4 @@ admin.site.register(User, UserAdmin)
 class DiscordUserAdmin(admin.ModelAdmin):
     pass
 
-admin.site.register(DiscordUser, DiscourdUserAdmin)
+admin.site.register(DiscordUser, DiscordUserAdmin)
