@@ -84,29 +84,31 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_rtl_tasks()
 
     async def process_member_join(self, memid):
-        discord_user = DiscordUser.objects.filter(memberid=memid)
         member = self.bot.get_user(memid)
         if member:
-            if not discord_user or not discord_user.link_mention:
-                emb = discord.Embed(color=self.bot.embed_color)
-                emb.set_author(icon_url=self.bot.user.avatar_url, name="WarzoneBot")
-                emb.title = "It's nice to meet you!"
-                emb.set_footer(text="Bot created and maintained by -B#0292")
-                msg = "Hello {},\n\nI'm a homemade Warzone Discord Bot. \n\nI'm reaching out because your discord account".format(
-                    member.name)
-                msg += " is not linked to the CLOT (custom ladder or tournament). Please see http://wztourney.herokuapp.com/me/ for instructions"
-                msg += " on how to link the two accounts together.\n\nThis will allow you to participate in the bot's"
-                msg += " new real-time-ladder, as well as help to become verified in the Warzone discord server."
-                emb.add_field(name="Welcome", value=msg)
+            discord_user = DiscordUser.objects.filter(memberid=memid)
+            emb = discord.Embed(color=self.bot.embed_color)
+            emb.set_author(icon_url=self.bot.user.avatar_url, name="WarzoneBot")
+            emb.title = "It's nice to meet you!"
+            emb.set_footer(text="Bot created and maintained by -B#0292")
+            msg = "Hello {},\n\nI'm a homemade Warzone Discord Bot. \n\nI'm reaching out because your discord account".format(
+                member.name)
+            msg += " is not linked to the CLOT (custom ladder or tournament). Please see http://wztourney.herokuapp.com/me/ for instructions"
+            msg += " on how to link the two accounts together.\n\nThis will allow you to participate in the bot's"
+            msg += " new real-time-ladder, as well as help to become verified in the Warzone discord server."
+            emb.add_field(name="Welcome", value=msg)
+            if not discord_user:
+                discord_user = DiscordUser(memberid=memid)
+                discord_user.save()
+            else:
+                discord_user = discord_user[0]
 
-                if not discord_user:
-                    discord_user = DiscordUser(memberid=memid)
-                    discord_user.save()
-                if not discord_user.link_mention:
-                    print("Sending welcome message to {}".format(member.name))
-                    await member.send(embed=emb)
+            if not discord_user.link_mention:
+                print("Sending welcome message to {}".format(member.name))
+                #await member.send(embed=emb)
                 discord_user.link_mention = True
                 discord_user.save()
+
 
     @tasks.loop(seconds=10.0)
     async def bg_task(self):
