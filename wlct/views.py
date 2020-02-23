@@ -475,6 +475,7 @@ def tournament_display_view(request, id):
         if tournament is not None:
             # look-up if the current player is in the tournament
             context.update({'player_in_tourney': False})
+            allowed_join = False
             if is_player_token_valid(request):
                 try:
                     player = Player.objects.get(token=request.session['token'])
@@ -490,12 +491,12 @@ def tournament_display_view(request, id):
                 # get the api to check to see if we can display join buttons
                 apirequestJson = {}
                 allowed_join = is_player_allowed_join(player, tournament.template)
-            if allowed_join and tournament.private:
-                # if the template works and this tournament is private we are only
-                # allowed to join if we've been invited by the host
-                invites = TournamentInvite.objects.filter(player=request.session['token'], joined=False)
-                if not invites:
-                    allowed_join = False
+                if allowed_join and tournament.private:
+                    # if the template works and this tournament is private we are only
+                    # allowed to join if we've been invited by the host
+                    invites = TournamentInvite.objects.filter(player=request.session['token'], joined=False)
+                    if not invites:
+                        allowed_join = False
 
             context.update({'team_table': tournament.get_team_table(allowed_join, is_player_token_valid(request), player)})
             context.update({'tournament': tournament})
