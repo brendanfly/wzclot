@@ -22,8 +22,10 @@ from django.core.exceptions import ObjectDoesNotExist
 
 def is_player_allowed_join(request_player, templateid):
     # get the api to check to see if we can display join buttons
-    apirequestJson = {}
     allowed_join = False
+
+    if not request_player:
+        return allowed_join
 
     api = API()
     apirequest = api.api_validate_token_for_template(request_player.token, templateid)
