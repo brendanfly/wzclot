@@ -2424,7 +2424,6 @@ class TournamentGame(models.Model):
         self.is_finished = True
 
         self.current_state = "Finished"
-        self.tournament = find_tournament_by_id(self.tournament.id)
         log_tournament("Finish Game/Game Entry: {}".format(self.teams), self.tournament)
         team1 = self.teams.split('.')[0]
         team2 = self.teams.split('.')[1]
@@ -2457,7 +2456,6 @@ class TournamentGame(models.Model):
 
             self.game_finished_time = timezone.now()
             self.save()
-
         else:
             log_tournament('Could not find tournament teams with id\'s: {} {} in tournament {}'.format(team1, team2, self.tournament.id), self.tournament)
 
