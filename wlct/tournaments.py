@@ -330,6 +330,9 @@ class Tournament(models.Model):
     is_official = models.BooleanField(default=False)
     vacation_force_interval = 20
 
+    def should_process_in_engine(self):
+        return True
+
     def player_data_in_name(self):
         return False
 
@@ -3947,6 +3950,9 @@ class RealTimeLadder(Tournament):
     direct_seconds_per_turn = models.IntegerField(default=180, blank=True, null=True)
     auto_boot_seconds = models.IntegerField(default=180, blank=True, null=True)
     seconds_banked = models.IntegerField(default=300, blank=True, null=True)
+
+    def should_process_in_engine(self):
+        return True
 
     def player_data_in_name(self):
         return True
