@@ -74,7 +74,7 @@ def check_games():
         tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
         for tournament in tournaments:
             child_tournament = find_tournament_by_id(tournament.id, True)
-            if child_tournament:
+            if child_tournament and child_tournament.should_process_in_engine():
                 log("Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
                 try:
                     if child_tournament.update_in_progress:
@@ -108,8 +108,8 @@ def cleanup_logs():
     nowdate = datetime.datetime.now(tz=pytz.UTC)
     enddate = nowdate - datetime.timedelta(days=2)
     logs = Logger.objects.filter(timestamp__lt=enddate)
-    for log in logs.iterator():
-        log.delete()
+    for log_obj in logs.iterator():
+        log_obj.delete()
         gc.collect()
 
         # only get 3 minutes to run, the engine must continue
