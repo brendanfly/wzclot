@@ -573,6 +573,9 @@ class Tournament(models.Model):
 
         return template_settings_table
 
+    def handle_finish_game_with_info(self, game_info):
+        pass
+
     # the button id's for this are as follows
     # join button id = "join{team id}-{team slot id}"
     # decline button id = "decline" as we can look up the slot and free up the space
@@ -2422,6 +2425,12 @@ class TournamentGame(models.Model):
     def finish_game_with_info(self, game_info):
         self.finish_game()
 
+        # get the child tournament object and see if there is some post processing needed for games with specific
+        # game info
+        child_tournament = find_tournament_by_id(self.tournament, True)
+        if child_tournament:
+            child_tournament.handle_finish_game_with_info(game_info)
+
     def finish_game(self):
         self.is_finished = True
 
@@ -4090,7 +4099,7 @@ class RealTimeLadder(Tournament):
         print("Extra game settings: {}".format(settings))
         return settings
 
-    def finish_game_with_info(self, game_info):
+    def handle_finish_game_with_info(self, game_info):
         # handle the game info here
         log_tournament("[RTL]: Finished game_info: {}".format(game_info), self)
         if 'players' in game_info:
