@@ -48,7 +48,7 @@ def parse_and_update_clan_logo():
 
         text_soup = BeautifulSoup(clan_page, features="html.parser")
 
-        log("Refreshing clans", LogLevel.informational)
+        log("Refreshing clans", LogLevel.engine)
         links = text_soup.findAll("a")
         for link in links:
             try:
@@ -61,7 +61,7 @@ def parse_and_update_clan_logo():
                     if not clan_exist:
                         clan = Clan(name=clan_name, icon_link=clan_href, image_path=image)
                         clan.save()
-                        log("Added new clan: {}".format(clan_name), LogLevel.informational)
+                        log("Added new clan: {}".format(clan_name), LogLevel.engine)
                     elif clan_exist and clan_exist[0].image_path != image:  # updated image code path
                         clan_exist[0].image_path = image
                         clan_exist[0].save()
@@ -75,7 +75,7 @@ def check_games():
         for tournament in tournaments:
             child_tournament = find_tournament_by_id(tournament.id, True)
             if child_tournament:
-                log("Checking games for tournament: {}".format(tournament.name), LogLevel.informational)
+                log("Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
                 try:
                     if child_tournament.update_in_progress:
                         continue
@@ -84,7 +84,7 @@ def check_games():
                     child_tournament.update_in_progress = True
                     child_tournament.save()
                     games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
-                    log("Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.informational)
+                    log("Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.engine)
                     for game in games.iterator():
                         # process the game
                         # query the game status
@@ -94,6 +94,7 @@ def check_games():
                     child_tournament.process_new_games()
 
                     # after we process games we always cache the latest data for quick reads
+                    log("Caching data for {}".format(tournament.name), LogLevel.engine)
                     child_tournament.cache_data()
                 except Exception as e:
                     log_exception()
@@ -104,7 +105,6 @@ def check_games():
 
 def cleanup_logs():
     # get all the logs older than 2 days
-    print("Cleaning up logs, thread {}".format(threading.currentThread().ident))
     nowdate = datetime.datetime.now(tz=pytz.UTC)
     enddate = nowdate - datetime.timedelta(days=2)
     logs = Logger.objects.filter(timestamp__lt=enddate)
@@ -113,11 +113,13 @@ def cleanup_logs():
         gc.collect()
 
         # only get 3 minutes to run, the engine must continue
-        if (datetime.datetime.now(tz=pytz.UTC) - nowdate).total_seconds() >= get_run_time():
+        time_spent = datetime.datetime.now(tz=pytz.UTC) - nowdate
+        if time_spent.total_seconds() >= get_run_time():
+            log("Returned early from cleaning up logs, spent {} seconds cleaning.".format(time_spent.total_seconds()), LogLevel.engine)
             return
 
     if logs:
-        print("Cleaned up {} logs.".format(logs.count()))
+        log("Cleaned up {} logs.".format(logs.count()), LogLevel.engine)
 
     tournament_logs = TournamentLog.objects.filter(timestamp__lt=enddate)
     for tournament_log in tournament_logs.iterator():
@@ -125,11 +127,14 @@ def cleanup_logs():
         gc.collect()
 
         # only get 3 minutes to run, the engine must continue
-        if (datetime.datetime.now(tz=pytz.UTC) - nowdate).total_seconds() >= get_run_time():
+        time_spent = datetime.datetime.now(tz=pytz.UTC) - nowdate
+        if time_spent.total_seconds() >= get_run_time():
+            log("Returned early from cleaning up logs, spent {} seconds cleaning.".format(time_spent.total_seconds()),
+                LogLevel.engine)
             return
 
     if tournament_logs:
-        print("Cleaned up {} tournament logs.".format(tournament_logs.count()))
+        log("Cleaned up {} tournament logs.".format(tournament_logs.count()), LogLevel.engine)
 
 
 def check_leagues():
@@ -197,8 +202,8 @@ def tournament_engine():
     except Exception as e:
         log_exception()
     finally:
-        print("Engine done running....waiting until next run")
         engine.last_run_time = timezone.now()
         engine.next_run_time = timezone.now() + datetime.timedelta(seconds=get_run_time())
         engine.save()
+        log("Engine done running at {}, next run at {}".format(engine.last_run_time, engine.next_run_time), LogLevel.engine)
         pass

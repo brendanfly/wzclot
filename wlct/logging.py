@@ -13,7 +13,7 @@ class LogLevel():
     tournament = "Tournament"
     game = "TournamentGame"
     game_status = "TournamentGameStatus"
-
+    engine = "Engine"
 
 def log_exception():
     log(traceback.format_exc(), LogLevel.critical)
