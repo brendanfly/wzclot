@@ -2435,11 +2435,11 @@ class TournamentGame(models.Model):
 
         # if tournament is actually a sub-tournament, look for TournamentTeam in parent tournament
         if not tournament_team1:
-            parent_tournament = find_tournament_by_id(self.tournament, True)
-            tournament_team1 = get_team_by_id(parent_tournament, int(team1))
+            child_tournament = find_tournament_by_id(self.tournament, True)
+            tournament_team1 = get_team_by_id(child_tournament.parent_tournament, int(team1))
         if not tournament_team2:
-            parent_tournament = find_tournament_by_id(self.tournament, True)
-            tournament_team2 = get_team_by_id(parent_tournament, int(team2))
+            child_tournament = find_tournament_by_id(self.tournament, True)
+            tournament_team2 = get_team_by_id(child_tournament.parent_tournament, int(team2))
 
         if tournament_team1 and tournament_team2:
             team1Entry = TournamentGameEntry.objects.filter(team=tournament_team1[0], team_opp=tournament_team2[0], game=self.pk,
@@ -2461,7 +2461,7 @@ class TournamentGame(models.Model):
             self.game_finished_time = timezone.now()
             self.save()
         else:
-            log_tournament('Could not find tournament teams with id\'s: {} {} in tournament {}'.format(team1, team2, self.tournament.id), self.tournament)
+            log_tournament("Could not find tournament teams with ids: {} {} in tournament {}".format(team1, team2, self.tournament.id), self.tournament)
 
     def create_entry(self, team1, team2):
         team1Entry = TournamentGameEntry(team=team1, team_opp=team2, game=self,
