@@ -459,7 +459,7 @@ class Tournament(models.Model):
         else:
             # not good, error, TODO: Log???
             print("Error in creating game: {}".format(gameInfo))
-            log_game("Error in creating tournament game response {}:, data: {}".format(gameInfo, data), self.id, game)
+            log_game("Error in creating tournament game response {}:, data: {}".format(gameInfo, data), self, game)
 
     def create_game(self, tournament_round, game):
         self.create_game_with_template_and_data(tournament_round, game, self.template, None)
@@ -2435,9 +2435,11 @@ class TournamentGame(models.Model):
 
         # if tournament is actually a sub-tournament, look for TournamentTeam in parent tournament
         if not tournament_team1:
-            tournament_team1 = get_team_by_id(self.tournament.parent_tournament, int(team1))
+            parent_tournament = find_tournament_by_id(self.tournament, True)
+            tournament_team1 = get_team_by_id(parent_tournament, int(team1))
         if not tournament_team2:
-            tournament_team2 = get_team_by_id(self.tournament.parent_tournament, int(team2))
+            parent_tournament = find_tournament_by_id(self.tournament, True)
+            tournament_team2 = get_team_by_id(parent_tournament, int(team2))
 
         if tournament_team1 and tournament_team2:
             team1Entry = TournamentGameEntry.objects.filter(team=tournament_team1[0], team_opp=tournament_team2[0], game=self.pk,
@@ -3985,6 +3987,7 @@ class RealTimeLadder(Tournament):
         self.save()
 
     def process_new_games(self):
+        print("REAL TIME LADDER PROCESS GAMES")
         # handles creating new ladder games between players
         templates_list = []
         templates = RealTimeLadderTemplate.objects.filter(ladder=self)
@@ -4052,7 +4055,7 @@ class RealTimeLadder(Tournament):
                                 # that's hard to do since the indexes could be different so
                                 # after we create a game we explicitly remove them from each
                                 # list
-                                print("Teams haven't had a game in 12 hours")
+                                print("Teams haven't had a game in 1 hour")
                                 teams_find_games.pop(team1_idx)
                                 teams_find_games_against.pop(team2_idx)
 
@@ -4067,7 +4070,7 @@ class RealTimeLadder(Tournament):
                                 # this resets our indexes
                                 raise ContinueOnError
                             else:
-                                print("Teams have had a game in 12 hours, continue looking")
+                                print("Teams have had a game in 1 hour, continue looking")
                     # if we get here, we must pop the item from the list and keep going
                     teams_find_games.pop(team1_idx)
                     raise ContinueOnError
