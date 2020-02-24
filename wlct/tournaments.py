@@ -4114,7 +4114,6 @@ class RealTimeLadder(Tournament):
                             print("Removing player {} ({}) from ladder".format(player[0].player.name, player[0].player.token))
                             player[0].team.active = False
                             player[0].team.save()
-        super('RealTimeLadder', self).finish_game()
 
     def join_leave_impl(self, discord_id, join):
         try:
