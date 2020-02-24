@@ -202,8 +202,13 @@ def tournament_engine():
     except Exception as e:
         log_exception()
     finally:
-        engine.last_run_time = timezone.now()
-        engine.next_run_time = timezone.now() + datetime.timedelta(seconds=get_run_time())
+        finished_time = timezone.now()
+        next_run = timezone.now() + datetime.timedelta(seconds=get_run_time())
+        total_run_time = (finished_time - engine.last_run_time).total_seconds()
+        log("Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time, total_run_time, next_run),
+            LogLevel.engine)
+        engine.last_run_time = finished_time
+        engine.next_run_time = next_run
         engine.save()
-        log("Engine done running at {}, next run at {}".format(engine.last_run_time, engine.next_run_time), LogLevel.engine)
+
         pass
