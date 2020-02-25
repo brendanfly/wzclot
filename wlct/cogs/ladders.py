@@ -110,6 +110,7 @@ class Ladders(commands.Cog, name="ladders"):
     '''
     async def send_ladder_message(self, msg, is_embed, guild_original_msg):
         # loop through all rtl channels sending the appropriate message
+        msg = "**New Ladder Activity**\n\n" + msg
         for rtl_channel in self.bot.rtl_channels:
             print("Server id to send message to: {}, server original message came from: {}".format(rtl_channel.guild.id, guild_original_msg.guild.id))
             if rtl_channel.guild.id == guild_original_msg.guild.id:
@@ -118,7 +119,6 @@ class Ladders(commands.Cog, name="ladders"):
             if is_embed:
                 await rtl_channel.send(embed=msg)
             else:
-                msg = "**New Ladder Activity**\n\n" + msg
                 await rtl_channel.send(msg)
 
 def setup(bot):
