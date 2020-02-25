@@ -462,7 +462,7 @@ class Tournament(models.Model):
         else:
             # not good, error, TODO: Log???
             print("Error in creating game: {}".format(gameInfo))
-            log_game("Error in creating tournament game response {}:, data: {}".format(gameInfo, data), self, game)
+            log("Error in creating tournament game response {}:, data: {}".format(gameInfo, data), LogLevel.critical)
 
     def create_game(self, tournament_round, game):
         self.create_game_with_template_and_data(tournament_round, game, self.template, None)
