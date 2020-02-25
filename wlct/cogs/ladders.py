@@ -42,12 +42,14 @@ class Ladders(commands.Cog, name="ladders"):
                         retStr = ladder.get_current_joined()
                     elif arg_cmd == "-j":
                         retStr = ladder.join_ladder(discord_id)
-                        retStr += "\n\n" + ladder.get_current_joined()
-                        do_all_channels = True
+                        current_joined = ladder.get_current_joined()
+                        retStr += "\n\n" + current_joined + "\n"
+                        await self.send_ladder_message(current_joined, False, ctx.message)
                     elif arg_cmd == "-l":
                         retStr = ladder.leave_ladder(discord_id)
-                        retStr += "\n\n" + ladder.get_current_joined()
-                        do_all_channels = True
+                        current_joined = ladder.get_current_joined()
+                        retStr += "\n\n" + current_joined + "\n"
+                        await self.send_ladder_message(current_joined, False, ctx.message)
                     elif arg_cmd == "-t":
                         retStr = ladder.get_current_templates()
                         do_embed = True
@@ -102,6 +104,22 @@ class Ladders(commands.Cog, name="ladders"):
         else:
             await ctx.send(retStr)
 
+    '''
+    Sends updates to guilds that are not guild_original_msg.
+    This is mainly used to communicate people are doing things with the ladder across servers. 
+    '''
+    async def send_ladder_message(self, msg, is_embed, guild_original_msg):
+        # loop through all rtl channels sending the appropriate message
+        for rtl_channel in self.bot.rtl_channels:
+            print("Server id to send message to: {}, server original message came from: {}".format(rtl_channel.guild.id, guild_original_msg.guild.id))
+            if rtl_channel.guild.id == guild_original_msg.guild.id:
+                # skip this one, it came from here
+                continue
+            if is_embed:
+                await rtl_channel.send(embed=msg)
+            else:
+                msg = "**New Ladder Activity**\n\n" + msg
+                await rtl_channel.send(msg)
 
 def setup(bot):
     bot.add_cog(Ladders(bot))
