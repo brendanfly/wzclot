@@ -3952,7 +3952,7 @@ class RealTimeLadder(Tournament):
     seconds_banked = models.IntegerField(default=300, blank=True, null=True)
 
     def should_process_in_engine(self):
-        return True
+        return False
 
     def player_data_in_name(self):
         return True

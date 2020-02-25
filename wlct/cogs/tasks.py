@@ -5,6 +5,8 @@ from discord.ext import commands, tasks
 from wlct.cogs.common import is_admin
 from django.utils import timezone
 from traceback import print_exc
+from wlct.logging import log_exception, log, LogLevel
+import gc
 
 class Tasks(commands.Cog, name="tasks"):
     def __init__(self, bot):
@@ -54,6 +56,36 @@ class Tasks(commands.Cog, name="tasks"):
         print("Running hourly task")
         pass
 
+    async def handle_rtl_ladder(self):
+        tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
+        for tournament in tournaments:
+            child_tournament = find_tournament_by_id(tournament.id, True)
+            if child_tournament and not child_tournament.should_process_in_engine():
+                try:
+                    if child_tournament.update_in_progress:
+                        continue
+                    elif not child_tournament.game_creation_allowed:
+                        continue
+                    child_tournament.update_in_progress = True
+                    child_tournament.save()
+                    games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
+                    for game in games.iterator():
+                        # process the game
+                        # query the game status
+                        child_tournament.process_game(game)
+                    # in case tournaments get stalled for some reason
+                    # for it to process new games based on current tournament data
+                    child_tournament.process_new_games()
+
+                    # after we process games we always cache the latest data for quick reads
+                    child_tournament.cache_data()
+                except Exception as e:
+                    log_exception()
+                finally:
+                    child_tournament.update_in_progress = False
+                    child_tournament.save()
+            gc.collect()
+
     async def handle_all_tasks(self):
         # calculate the time different here
         # determine if we need hours run or 4 hours run
@@ -61,11 +93,14 @@ class Tasks(commands.Cog, name="tasks"):
         hours_executions = 360
         hours = (self.executions % 360 == 0)
         hours4 = (self.executions % (360*4) == 0)
+        two_minute = (self.executions % 12 == 0)
 
         if hours:
             await self.handle_hours_tasks()
         if hours4:
             await self.handle_hours4_tasks()
+        if two_minute:
+            await self.handle_rtl_ladder()
 
         # always tasks
         await self.handle_always_tasks()
@@ -78,10 +113,6 @@ class Tasks(commands.Cog, name="tasks"):
         if member:
             send_message = False
             discord_user = DiscordUser.objects.filter(memberid=memid)
-            if discord_user:
-                player = Player.objects.filter(discord_member=discord_user[0])
-                if not player:
-                    send_message = True  # no player with this discord account means it's not linked to anyone, send msg
             emb = discord.Embed(color=self.bot.embed_color)
             emb.set_author(icon_url=self.bot.user.avatar_url, name="WarzoneBot")
             emb.title = "It's nice to meet you!"
@@ -99,7 +130,7 @@ class Tasks(commands.Cog, name="tasks"):
             else:
                 discord_user = discord_user[0]
 
-            if not discord_user.link_mention or send_message:
+            if not discord_user.link_mention:
                 print("Sending welcome message to {}".format(member.name))
                 #await member.send(embed=emb)
                 discord_user.link_mention = True
