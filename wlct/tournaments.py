@@ -4207,21 +4207,30 @@ class RealTimeLadder(Tournament):
     def leave_ladder(self, discord_id):
         return self.join_leave_impl(discord_id, False)
 
+    def get_game_data(self, game_list):
+        data = ""
+        for game in game_list:
+            teams = game.teams
+            team1 = TournamentTeam.objects.filter(id=int(teams.split('.')[0]), tournament=self)
+            team2 = TournamentTeam.objects.filter(id=int(teams.split('.')[1]), tournament=self)
+            if team1 and team2:
+                # lookup the players on the team
+                data += "{} vs. {} | [Game Link]({})\n".format(get_team_data_no_clan(team1[0]),
+                                                               get_team_data_no_clan(team2[0]), game.game_link)
+        return data
+
     def get_current_games(self):
         # returns a list of all current games
         games = TournamentGame.objects.filter(tournament=self, is_finished=False)
         if games:
-            data = ""
-            for game in games:
-                teams = game.teams
-                team1 = TournamentTeam.objects.filter(id=int(teams.split('.')[0]), tournament=self)
-                team2 = TournamentTeam.objects.filter(id=int(teams.split('.')[1]), tournament=self)
-                if team1 and team2:
-                    # lookup the players on the team
-                    data += "{} vs. {} | [Game Link]({})\n".format(get_team_data_no_clan(team1[0]), get_team_data_no_clan(team2[0]), game.game_link)
-            return data
+            data = self.get_game_data(games)
+            data += "\n\n"
+            # now grab the last 10 that finished
+            games = TournamentGame.objects.filter(tournament=self, is_finished=True).order_by('-game_finished_time')[:10]
+            finished_data = self.get_game_data(games)
+            return (data, finished_data)
         else:
-            return "There are no games in progress on the ladder."
+            return (False, "There are no games in progress on the ladder.")
 
     def get_current_joined(self):
         data = "__**Players currently joined**__\n"
@@ -4254,6 +4263,22 @@ class RealTimeLadder(Tournament):
         for t in templates:
             data += "{} | [Template Link](https://warzone.com/MultiPlayer?TemplateID={})\n".format(t.name, t.template)
         return data
+
+    def get_player_data(self, discord_id):
+        # get's the current player data
+        data = ()
+        try:
+            player = Player.objects.get(discord_member__memberid=discord_id)
+            tp = TournamentPlayer.objects.get(player=player, tournament=self)
+        except ObjectDoesNotExist:
+            return (False, "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+
+        if tp:
+            data += "{} | {} {}-{} \n\n".format(team.rating, get_team_data_no_clan(team), team.wins, team.losses)
+
+            return (True, data)
+        else:
+            return (False, "You haven't joined the ladder yet")
 
 class RealTimeLadderTemplate(models.Model):
     template = models.IntegerField(default=0, blank=True, null=True, db_index=True)

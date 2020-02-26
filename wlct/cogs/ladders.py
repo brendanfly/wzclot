@@ -21,6 +21,7 @@ class Ladders(commands.Cog, name="ladders"):
                    109 -r : displays full ladder rankings
                    109 -g : displays all in progress games
                    109 -v templateid: vetoes a template or displays the current one if no template id is passed
+                   109 -me : displays information about yourself on the ladder
                    ''')
     async def rtl(self, ctx, arg_id="invalid_id", arg_cmd="invalid_cmd", arg_cmd2="invalid_cmd2"):
         print("Arguments for RTL id: {} command: {}".format(arg_id, arg_cmd))
@@ -60,8 +61,17 @@ class Ladders(commands.Cog, name="ladders"):
                     elif arg_cmd == "-g":
                         do_embed = True
                         retStr = ladder.get_current_games()
-                        emb.title = "Current Games - Ladder {}".format(ladder.name)
-                        emb.add_field(name="In Progress", value=retStr)
+                        if not retStr[0]:
+                            do_embed = False
+                            retStr = retStr[1]
+                        else:
+                            game_data = retStr[0]
+                            finished_game_data = retStr[1]
+                            emb.title = "Games - Ladder {}".format(ladder.name)
+                            if len(game_data) > 0:
+                                emb.add_field(name="In Progress", value=game_data)
+                            if len(finished_game_data) > 0:
+                                emb.add_field(name="Last 10 games", value=finished_game_data)
                     elif arg_cmd == "-v":
                         if arg_cmd2 != "invalid_cmd2":
                             retStr = ladder.veto_template(discord_id, arg_cmd2)
@@ -82,6 +92,17 @@ class Ladders(commands.Cog, name="ladders"):
                                 retStr = ladder.remove_template(arg_cmd2)
                         else:
                             retStr = invalid_cmd_text
+                    elif arg_cmd == "-me":
+                        # me data returns a tuple of information
+                        # first is what rank/position you are
+                        # second is your last 10 games
+                        me_data =  ladder.get_player_data(discord_id)
+                        if me_data[0]: # success
+                            retStr = me_data[1]
+                            do_embed = True
+                        else:
+                            # error
+                            retStr = me_data[1]
                     else:
                         retStr = invalid_cmd_text
                 else:

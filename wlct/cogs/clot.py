@@ -71,13 +71,13 @@ class Clot(commands.Cog, name="clot"):
             child_tournament = find_tournament_by_id(tournament.id, True)
             if child_tournament:
                 if arg == "-f":  # only finished tournaments
-                    if child_tournament[0].is_finished:
-                        tournament_data += "{}, Winner: {}\n".format(child_tournament[0].name,
-                                                                     get_team_data(child_tournament[0].winning_team))
+                    if child_tournament.is_finished:
+                        tournament_data += "{}, Winner: {}\n".format(child_tournament.name,
+                                                                     get_team_data(child_tournament.winning_team))
                 elif arg == "-o":  # only open tournaments
-                    if not child_tournament[0].has_started and not child_tournament[0].private:
-                        tournament_data += "{} has {} spots left\n".format(child_tournament[0].name,
-                                                                           child_tournament[0].spots_left)
+                    if not child_tournament.has_started and not child_tournament[0].private:
+                        tournament_data += "{} has {} spots left\n".format(child_tournament.name,
+                                                                           child_tournament.spots_left)
         await ctx.send(tournament_data)
 
     @commands.command(brief="Displays the MTC top ten on the CLOT")
