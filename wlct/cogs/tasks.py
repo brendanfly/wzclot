@@ -136,7 +136,6 @@ class Tasks(commands.Cog, name="tasks"):
                 discord_user.link_mention = True
                 discord_user.save()
 
-
     @tasks.loop(seconds=10.0)
     async def bg_task(self):
         # runs every 10 seconds to check various things

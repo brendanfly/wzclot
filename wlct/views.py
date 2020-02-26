@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect
 from wlct.form_message_handling import FormError
 from wlct.api import API, get_account_token
@@ -866,7 +866,7 @@ def login_view(request):
 
                     request.session['player_name'] = player.name
 
-                return HttpResponseRedirect('/index/')
+                return redirect('mytourneys_view')
         else:
             # found the token, lookup the player
             try:
