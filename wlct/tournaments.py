@@ -4221,13 +4221,18 @@ class RealTimeLadder(Tournament):
 
     def get_current_games(self):
         # returns a list of all current games
+        data = ""
         games = TournamentGame.objects.filter(tournament=self, is_finished=False)
         if games:
             data = self.get_game_data(games)
             data += "\n\n"
-            # now grab the last 10 that finished
-            games = TournamentGame.objects.filter(tournament=self, is_finished=True).order_by('-game_finished_time')[:10]
+        # now grab the last 10 that finished
+        finished_data = ""
+        games = TournamentGame.objects.filter(tournament=self, is_finished=True).order_by('-game_finished_time')[:10]
+        if games:
             finished_data = self.get_game_data(games)
+
+        if len(data) > 0 or len(finished_data) > 0:
             return (data, finished_data)
         else:
             return (False, "There are no games in progress on the ladder.")
