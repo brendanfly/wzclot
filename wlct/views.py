@@ -18,7 +18,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.base import ConflictingIdError
 from django_apscheduler.jobstores import DjangoJobStore
-from wlct.management.commands.engine import tournament_engine
+from wlct.management.commands.engine import tournament_engine, tournament_caching
 import string
 import random
 
@@ -32,6 +32,8 @@ def schedule_jobs():
             scheduler.add_jobstore(DjangoJobStore(), 'default')
             if not scheduler.running:
                 scheduler.add_job(tournament_engine, 'interval', seconds=10, id='tournament_engine',
+                                  max_instances=1, coalesce=False)
+                scheduler.add_job(tournament_caching, 'interval', seconds=30, id='tournament_caching',
                                   max_instances=1, coalesce=False)
                 scheduler.start()
         except ConflictingIdError:
