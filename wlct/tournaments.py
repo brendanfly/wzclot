@@ -4271,7 +4271,7 @@ class RealTimeLadder(Tournament):
 
     def get_player_data(self, discord_id):
         # get's the current player data
-        data = ()
+        data = ""
         try:
             player = Player.objects.get(discord_member__memberid=discord_id)
             tp = TournamentPlayer.objects.get(player=player, tournament=self)
