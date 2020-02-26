@@ -4274,7 +4274,8 @@ class RealTimeLadder(Tournament):
             return (False, "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
 
         if tp:
-            data += "{} | {} {}-{} \n\n".format(team.rating, get_team_data_no_clan(team), team.wins, team.losses)
+            tp = tp[0]
+            data += "{} | {} {}-{} \n\n".format(tp.team.rating, get_team_data_no_clan(tp.team), tp.team.wins, tp.team.losses)
 
             return (True, data)
         else:
