@@ -132,7 +132,7 @@ class Tasks(commands.Cog, name="tasks"):
 
             if not discord_user.link_mention:
                 print("Sending welcome message to {}".format(member.name))
-                #await member.send(embed=emb)
+                await member.send(embed=emb)
                 discord_user.link_mention = True
                 discord_user.save()
 
