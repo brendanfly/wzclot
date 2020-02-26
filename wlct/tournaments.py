@@ -4280,7 +4280,6 @@ class RealTimeLadder(Tournament):
 
         if tp:
             data += "{} | {} {}-{} \n\n".format(tp.team.rating, get_team_data_no_clan(tp.team), tp.team.wins, tp.team.losses)
-
             return (True, data)
         else:
             return (False, "You haven't joined the ladder yet")
