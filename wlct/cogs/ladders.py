@@ -103,7 +103,7 @@ class Ladders(commands.Cog, name="ladders"):
                             retStr = me_data[1]
                             print("Me Data".format(retStr))
                             emb.title = "Ladder Stats".format(ladder.name)
-                            emb.add_field(name="Ranking", value=retStr)
+                            emb.add_field(name="Performance", value=retStr)
                             do_embed = True
                         else:
                             # error
