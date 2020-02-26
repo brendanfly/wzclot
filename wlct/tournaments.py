@@ -4233,7 +4233,7 @@ class RealTimeLadder(Tournament):
             finished_data = self.get_game_data(games)
 
         if len(data) > 0 or len(finished_data) > 0:
-            return (data, finished_data)
+            return (True, (data, finished_data))
         else:
             return (False, "There are no games in progress on the ladder.")
 

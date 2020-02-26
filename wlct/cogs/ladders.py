@@ -65,8 +65,10 @@ class Ladders(commands.Cog, name="ladders"):
                             do_embed = False
                             retStr = retStr[1]
                         else:
-                            game_data = retStr[0]
-                            finished_game_data = retStr[1]
+
+                            game_data = retStr[1][0]
+                            finished_game_data = retStr[1][1]
+                            print("GameData: {}, Finished Data: {}".format(game_data, finished_game_data))
                             emb.title = "Games - Ladder {}".format(ladder.name)
                             if len(game_data) > 0:
                                 emb.add_field(name="In Progress", value=game_data)
@@ -99,6 +101,9 @@ class Ladders(commands.Cog, name="ladders"):
                         me_data =  ladder.get_player_data(discord_id)
                         if me_data[0]: # success
                             retStr = me_data[1]
+                            print("Me Data".format(retStr))
+                            emb.title = "Ladder Stats".format(ladder.name)
+                            emb.add_field(name="Ranking", value=retStr)
                             do_embed = True
                         else:
                             # error
@@ -121,8 +126,10 @@ class Ladders(commands.Cog, name="ladders"):
             retStr = "You have entered an invalid command. Please correct it and try again."
 
         if do_embed:
+            print("Sending embed")
             await ctx.send(embed=emb)
         else:
+            print("Sending real message")
             await ctx.send(retStr)
 
     '''
