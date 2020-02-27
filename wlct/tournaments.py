@@ -4146,6 +4146,7 @@ class RealTimeLadder(Tournament):
                     return "You've joined the ladder!"
                 elif tplayer.team.active and not join:
                     tplayer.team.active = False
+                    tplayer.team.leave_after_game = False
                     tplayer.team.save()
                     return "You've left the ladder. Come back again soon."
                 elif not tplayer.team.active and not join:
