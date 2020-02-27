@@ -2355,6 +2355,7 @@ class TournamentTeam(models.Model):
     max_games_at_once = models.IntegerField(default=2, blank=True, null=True)
     has_had_bye = models.BooleanField(default=False)
     joined_time = models.DateTimeField(default=datetime.datetime.now)
+    leave_after_game = models.BooleanField(default=False, blank=True, null=True)
 
     def update_max_games_at_once(self, games):
         print("Updating max games to {}".format(games))
@@ -4074,6 +4075,13 @@ class RealTimeLadder(Tournament):
                                 teams_find_games.pop(team1_idx)
                                 teams_find_games_against.pop(team2_idx)
 
+                                team1.active = not team1.leave_after_game
+                                team2.active = not team2.leave_after_game
+                                team1.leave_after_game = False
+                                team2.leave_after_game = False
+                                team1.save()
+                                team2.save()
+
                                 for i in range(len(teams_find_games)):
                                     if teams_find_games[i].id == team2.id:
                                         teams_find_games.pop(i)
@@ -4121,7 +4129,7 @@ class RealTimeLadder(Tournament):
                             player[0].team.active = False
                             player[0].team.save()
 
-    def join_leave_impl(self, discord_id, join):
+    def join_leave_impl(self, discord_id, join, leave_after_game):
         try:
             player = Player.objects.get(discord_member__memberid=discord_id)
             tplayer = TournamentPlayer.objects.filter(player=player, tournament=self)
@@ -4133,6 +4141,7 @@ class RealTimeLadder(Tournament):
                 elif not tplayer.team.active and join:
                     tplayer.team.active = True
                     tplayer.team.joined_time = timezone.now()
+                    tplayer.team.leave_after_game = leave_after_game
                     tplayer.team.save()
                     return "You've joined the ladder!"
                 elif tplayer.team.active and not join:
@@ -4201,11 +4210,11 @@ class RealTimeLadder(Tournament):
         else:
             return "Please enter a valid template id."
 
-    def join_ladder(self, discord_id):
-        return self.join_leave_impl(discord_id, True)
+    def join_ladder(self, discord_id, leave_after_game):
+        return self.join_leave_impl(discord_id, True, leave_after_game)
 
     def leave_ladder(self, discord_id):
-        return self.join_leave_impl(discord_id, False)
+        return self.join_leave_impl(discord_id, False, False)
 
     def get_game_data(self, game_list):
         data = ""

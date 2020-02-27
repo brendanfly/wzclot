@@ -42,7 +42,12 @@ class Ladders(commands.Cog, name="ladders"):
                         # display current players in the ladder
                         retStr = ladder.get_current_joined()
                     elif arg_cmd == "-j":
-                        retStr = ladder.join_ladder(discord_id)
+                        retStr = ladder.join_ladder(discord_id, False)
+                        current_joined = ladder.get_current_joined()
+                        retStr += "\n\n" + current_joined + "\n"
+                        await self.send_ladder_message(current_joined, False, ctx.message)
+                    elif arg_cmd == "-jl":
+                        retStr = ladder.join_ladder(discord_id, True) + " (You will be removed once a game is created)"
                         current_joined = ladder.get_current_joined()
                         retStr += "\n\n" + current_joined + "\n"
                         await self.send_ladder_message(current_joined, False, ctx.message)
