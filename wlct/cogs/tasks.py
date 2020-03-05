@@ -56,8 +56,8 @@ class Tasks(commands.Cog, name="tasks"):
 
             # always take the next (first) one
             if len(start_times[0]) >= 8:  # every start time is a day/month/year, and we need at least 8 characters
-                next_start = datetime.strptime(start_times[0], "%m.%d.%y")
-                diff = datetime.utcnow() - next_start
+                next_start = datetime.datetime.strptime(start_times[0], "%m.%d.%y")
+                diff = datetime.datetime.utcnow() - next_start
                 # diff is our delta, compute how many days, hours, minutes remaining
 
     async def handle_hours6_tasks(self):
