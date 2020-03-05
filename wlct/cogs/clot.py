@@ -58,7 +58,7 @@ class Clot(commands.Cog, name="clot"):
                             await ctx.send("The creator of the tournament is the only one who can link private tournaments.")
                             return
                     else:
-                        await ctx.sedn("Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+                        await ctx.send("Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
                         return
                 if arg == "-a":
                     # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
