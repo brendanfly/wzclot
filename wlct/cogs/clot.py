@@ -3,7 +3,7 @@ from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink
 from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data
 from discord.ext import commands
 from django.conf import settings
-
+from wlct.cogs.common import is_admin
 
 class Clot(commands.Cog, name="clot"):
     def __init__(self, bot):
@@ -45,7 +45,7 @@ class Clot(commands.Cog, name="clot"):
 
         # we must find the tournament id, and the player associated with the discord user must be the creator
         # validate that here
-        if ctx.message.author.guild_permissions.administrator:
+        if ctx.message.author.guild_permissions.administrator or is_admin(ctx.message.author.id):
             # user is a server admin, process to create the channel -> tournament link
             tournament = find_tournament_by_id(int(arg2), True)
             if tournament:
