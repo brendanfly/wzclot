@@ -20,19 +20,14 @@ from django.utils import timezone
 import pytz
 from django.core.exceptions import ObjectDoesNotExist
 
-def is_player_allowed_join(request_player, templateid):
-    # get the api to check to see if we can display join buttons
+def is_player_allowed_join_by_token(token, templateid):
     allowed_join = False
-
-    if not request_player:
-        return allowed_join
-
     api = API()
-    apirequest = api.api_validate_token_for_template(request_player.token, templateid)
+    apirequest = api.api_validate_token_for_template(token, templateid)
     apirequestJson = apirequest.json()
 
     if "tokenIsValid" not in apirequestJson:
-        log("Invalid token in is_player_allowed_join token: {}".format(request_player.token), LogLevel.informational)
+        log("Invalid token in is_player_allowed_join token: {}".format(token), LogLevel.informational)
         return False
 
     # now we need to look at the template status here, the key is templateXXXXXX
@@ -45,6 +40,13 @@ def is_player_allowed_join(request_player, templateid):
             allowed_join = result == "CanUseTemplate"
 
     return allowed_join
+
+def is_player_allowed_join(request_player, templateid):
+    # get the api to check to see if we can display join buttons
+    if not request_player:
+        return False
+
+    return is_player_allowed_join_by_token(request_player.token, templateid)
 
 def get_current_month_year():
     tuple_return = (datetime.datetime.now().month, datetime.datetime.now().year)
@@ -467,6 +469,7 @@ class Tournament(models.Model):
             # not good, error, TODO: Log???
             print("Error in creating game: {}".format(gameInfo))
             log("Error in creating tournament game response {}:, data: {}".format(gameInfo, data), LogLevel.critical)
+            return None
 
     def create_game(self, tournament_round, game):
         self.create_game_with_template_and_data(tournament_round, game, self.template, None)
@@ -4068,34 +4071,35 @@ class RealTimeLadder(Tournament):
                                         tid = templates_list[random.randint(0, len(templates_list) - 1)]
 
                                 extra_settings = self.get_game_extra_settings()
-                                self.create_game_with_template_and_data(round, game_data, tid.template, extra_settings)
-                                # the two lists are being handled as we're iterating...
-                                # this means if team1 gets a game against team2 we need to remove
-                                # team1 and team2 from both lists
-                                # that's hard to do since the indexes could be different so
-                                # after we create a game we explicitly remove them from each
-                                # list
-                                print("Teams haven't had a game in 1 hour")
-                                teams_find_games.pop(team1_idx)
-                                teams_find_games_against.pop(team2_idx)
+                                game = self.create_game_with_template_and_data(round, game_data, tid.template, extra_settings)
+                                if game:
+                                    # the two lists are being handled as we're iterating...
+                                    # this means if team1 gets a game against team2 we need to remove
+                                    # team1 and team2 from both lists
+                                    # that's hard to do since the indexes could be different so
+                                    # after we create a game we explicitly remove them from each
+                                    # list
+                                    print("Teams haven't had a game in 1 hour")
+                                    teams_find_games.pop(team1_idx)
+                                    teams_find_games_against.pop(team2_idx)
 
-                                team1.active = not team1.leave_after_game
-                                team2.active = not team2.leave_after_game
-                                team1.leave_after_game = False
-                                team2.leave_after_game = False
-                                team1.save()
-                                team2.save()
+                                    team1.active = not team1.leave_after_game
+                                    team2.active = not team2.leave_after_game
+                                    team1.leave_after_game = False
+                                    team2.leave_after_game = False
+                                    team1.save()
+                                    team2.save()
 
-                                for i in range(len(teams_find_games)):
-                                    if teams_find_games[i].id == team2.id:
-                                        teams_find_games.pop(i)
-                                for i in range(len(teams_find_games_against)):
-                                    if teams_find_games_against[i].id == team1.id:
-                                        teams_find_games_against.pop(i)
+                                    for i in range(len(teams_find_games)):
+                                        if teams_find_games[i].id == team2.id:
+                                            teams_find_games.pop(i)
+                                    for i in range(len(teams_find_games_against)):
+                                        if teams_find_games_against[i].id == team1.id:
+                                            teams_find_games_against.pop(i)
 
-                                # we must bail here so we can try again
-                                # this resets our indexes
-                                raise ContinueOnError
+                                    # we must bail here so we can try again
+                                    # this resets our indexes
+                                    raise ContinueOnError
                             else:
                                 print("Teams have had a game in 1 hour, continue looking")
                     # if we get here, we must pop the item from the list and keep going
@@ -4143,6 +4147,7 @@ class RealTimeLadder(Tournament):
                 if tplayer.team.active and join:
                     return "You're already on the ladder!"
                 elif not tplayer.team.active and join:
+                    # TODO check template validity first....
                     tplayer.team.active = True
                     tplayer.team.joined_time = timezone.now()
                     tplayer.team.leave_after_game = leave_after_game
@@ -4188,7 +4193,12 @@ class RealTimeLadder(Tournament):
         if veto:
             return False
         else:
-            return True
+            # check to see if the player can even play this template....
+            tplayer = TournamentPlayer.objects.filter(team=team)
+            if tplayer:
+                tplayer = tplayer[0]
+                return is_player_allowed_join_by_token(tplayer.player.token, templateid)
+            return False
 
     def veto_template(self, discord_id, templateid):
         # attempt to veto a template, and if they have already vetoed one tell them
