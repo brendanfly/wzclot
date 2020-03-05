@@ -36,6 +36,8 @@ class WZBot(commands.AutoShardedBot):
         self.rtl_channels = []
         self.clan_league_channels = []
         self.mtc_channels = []
+        self.critical_error_channels = []
+        self.game_log_channels = []
         self.last_task_run = timezone.now()
 
         self.executions = 0
@@ -76,9 +78,14 @@ class WZBot(commands.AutoShardedBot):
                     print("Caching RTL channel in guild: {}".format(guild.name))
                     self.rtl_channels.append(channel)
                 elif channel.name == "monthly-template-circuit" or channel.name == "monthly_template_circuit":
+                    print("Caching MTC channel in guild: {}".format(guild.name))
                     self.mtc_channels.append(channel)
-                elif channel.name == "clan-league-bot-chat" or channel.name == "clan-league-bot-chat":
+                elif channel.name == "clan-league-bot-chat" or channel.name == "clan_league_bot_chat":
+                    print("Caching CL channel in guild: {}".format(guild.name))
                     self.clan_league_channels.append(channel)
+                elif channel.name == "critical-errors":
+                    print("Caching Critical Error Channel in guild: {}".format(guild.name))
+                    self.critical_error_channels.append(channel)
 
         if not hasattr(self, 'uptime'):
             self.uptime = timezone.now()

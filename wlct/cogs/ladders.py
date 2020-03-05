@@ -46,16 +46,19 @@ class Ladders(commands.Cog, name="ladders"):
                         current_joined = ladder.get_current_joined()
                         retStr += "\n\n" + current_joined + "\n"
                         await self.send_ladder_message(current_joined, False, ctx.message)
+                        return
                     elif arg_cmd == "-jl":
                         retStr = ladder.join_ladder(discord_id, True) + " (You will be removed once a game is created)"
                         current_joined = ladder.get_current_joined()
                         retStr += "\n\n" + current_joined + "\n"
                         await self.send_ladder_message(current_joined, False, ctx.message)
+                        return
                     elif arg_cmd == "-l":
                         retStr = ladder.leave_ladder(discord_id)
                         current_joined = ladder.get_current_joined()
                         retStr += "\n\n" + current_joined + "\n"
                         await self.send_ladder_message(current_joined, False, ctx.message)
+                        return
                     elif arg_cmd == "-t":
                         retStr = ladder.get_current_templates()
                         do_embed = True
@@ -70,7 +73,6 @@ class Ladders(commands.Cog, name="ladders"):
                             do_embed = False
                             retStr = retStr[1]
                         else:
-
                             game_data = retStr[1][0]
                             finished_game_data = retStr[1][1]
                             print("GameData: {}, Finished Data: {}".format(game_data, finished_game_data))
@@ -143,7 +145,6 @@ class Ladders(commands.Cog, name="ladders"):
     '''
     async def send_ladder_message(self, msg, is_embed, guild_original_msg):
         # loop through all rtl channels sending the appropriate message
-        msg = "**New Ladder Activity**\n\n" + msg
         for rtl_channel in self.bot.rtl_channels:
             print("Server id to send message to: {}, server original message came from: {}".format(rtl_channel.guild.id, guild_original_msg.guild.id))
             if rtl_channel.guild.id == guild_original_msg.guild.id:

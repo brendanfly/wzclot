@@ -4003,7 +4003,6 @@ class RealTimeLadder(Tournament):
         self.save()
 
     def process_new_games(self):
-        print("REAL TIME LADDER PROCESS GAMES")
         # handles creating new ladder games between players
         templates_list = []
         templates = RealTimeLadderTemplate.objects.filter(ladder=self)

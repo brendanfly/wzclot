@@ -10,6 +10,34 @@ class Clot(commands.Cog, name="clot"):
         self.bot = bot
 
     @commands.command(
+        brief="Links a channel on your server to a tournament on the CLOT. You must be the tournament creator to use succesfully link the tournament.",
+        usage="bb!link tournament_id",
+        category="clot")
+    async def linkt(self, ctx, arg="invalid_id"):
+        discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
+        if discord_user:
+            if arg == "invalid_id" or not arg.isnumeric():
+                await ctx.send("Please enter a valid tournament or league id to link to this channel")
+            else:
+                # we must find the tournament id, and the player associated with the discord user must be the creator
+                # validate that here
+                player = Player.objects.filter(discord_member=discord_user)
+                if player:
+                    tournament = Tournament.objects.filter(id=int(arg))
+                    if tournament:
+                        player = player[0]
+                        tournament = tournament[0]
+                        # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
+                        # already a tournament hooked up to this channel. We don't even check, just add this tournament
+                        # as a link to this channel
+                        pass
+                else:
+                    await ctx.send(
+                        "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+        else:
+            await ctx.send("Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+
+    @commands.command(
         brief="Links your discord account with your CLOT/Warzone account for use with creating games and bot ladders.",
         usage="bot_token_from_clot_site",
         category="clot")

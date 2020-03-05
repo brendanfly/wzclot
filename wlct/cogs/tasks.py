@@ -1,12 +1,13 @@
 import discord
 from wlct.models import Clan, Player, DiscordUser
-from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame
+from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame, ClanLeagueTournament
 from discord.ext import commands, tasks
 from wlct.cogs.common import is_admin
 from django.utils import timezone
 from traceback import print_exc
-from wlct.logging import log_exception, log, LogLevel
+from wlct.logging import log_exception, log, LogLevel, Logger
 import gc
+import datetime
 
 class Tasks(commands.Cog, name="tasks"):
     def __init__(self, bot):
@@ -47,13 +48,26 @@ class Tasks(commands.Cog, name="tasks"):
                         game.mentioned = True
                         game.save()
 
+    async def handle_clan_league_next_game(self):
+        clt = ClanLeagueTournament.objects.filter(is_finished=False)
+        for t in clt:
+            # get the time until next game allocation
+            start_times = t.games_start_times.split(';')
+
+            # always take the next (first) one
+            if len(start_times[0]) >= 8:  # every start time is a day/month/year, and we need at least 8 characters
+                next_start = datetime.strptime(start_times[0], "%m.%d.%y")
+                diff = datetime.utcnow() - next_start
+                # diff is our delta, compute how many days, hours, minutes remaining
+
+    async def handle_hours6_tasks(self):
+        await self.handle_clan_league_next_game()
+
     async def handle_hours4_tasks(self):
-        # every 4 hours if you haven't linked your WZ account to the CLOT, you should do so
-        # get all the members in all servers
-        print("Running 4 hours tasks")
+        # every 4 hours we currently only send clan league updates
+        pass
 
     async def handle_hours_tasks(self):
-        print("Running hourly task")
         pass
 
     async def handle_rtl_ladder(self):
@@ -86,6 +100,17 @@ class Tasks(commands.Cog, name="tasks"):
                     child_tournament.save()
             gc.collect()
 
+    async def handle_critical_errors(self):
+        logs = Logger.objects.filter(level=LogLevel.critical, bot_seen=False)
+        if logs:
+            for log in logs:
+                for cc in self.bot.critical_error_channels:
+                    msg = "**Critical Log Found**\n"
+                    msg += log.msg
+                    await cc.send(msg)
+                    log.bot_seen = True
+                    log.save()
+
     async def handle_all_tasks(self):
         # calculate the time different here
         # determine if we need hours run or 4 hours run
@@ -93,12 +118,15 @@ class Tasks(commands.Cog, name="tasks"):
         hours_executions = 360
         hours = (self.executions % 360 == 0)
         hours4 = (self.executions % (360*4) == 0)
+        hours6 = (self.executions % (360*6) == 0)
         two_minute = (self.executions % 12 == 0)
 
         if hours:
             await self.handle_hours_tasks()
         if hours4:
             await self.handle_hours4_tasks()
+        if hours6:
+            await self.handle_hours6_tasks()
         if two_minute:
             await self.handle_rtl_ladder()
 
@@ -107,6 +135,7 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_always_tasks(self):
         await self.handle_rtl_tasks()
+        await self.handle_critical_errors()
 
     async def process_member_join(self, memid):
         member = self.bot.get_user(memid)
