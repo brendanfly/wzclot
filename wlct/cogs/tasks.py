@@ -1,6 +1,6 @@
 import discord
-from wlct.models import Clan, Player, DiscordUser
-from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame, ClanLeagueTournament
+from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink
+from wlct.tournaments import Tournament, TournamentTeam, TournamentGame, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame, ClanLeagueTournament
 from discord.ext import commands, tasks
 from wlct.cogs.common import is_admin
 from django.utils import timezone
@@ -8,6 +8,7 @@ from traceback import print_exc
 from wlct.logging import log_exception, log, LogLevel, Logger
 import gc
 import datetime
+import pytz
 
 class Tasks(commands.Cog, name="tasks"):
     def __init__(self, bot):
@@ -60,6 +61,52 @@ class Tasks(commands.Cog, name="tasks"):
                 diff = datetime.datetime.utcnow() - next_start
                 # diff is our delta, compute how many days, hours, minutes remaining
 
+    async def handle_game_logs(self):
+        channel_links = DiscordChannelTournamentLink.objects.all()
+        for cl in channel_links:
+            print("Handling game logs for channel: {}".format(cl.channelid))
+            # for each channel, see if there are any new games that have finished in the tournament that's linked
+            # only look at games that have finished times greater than when the bot started
+            game_log_text = ""
+            if hasattr(self.bot, 'uptime'):
+                games = TournamentGame.objects.filter(is_finished=True, tournament=cl.tournament, game_finished_time__gt=self.bot.uptime, game_log_sent=False)
+                for game in games:
+                    print("Looking at game: {}".format(game.id))
+                    if game.game_finished_time is None and game.winning_team:
+                        continue  # ignore games with no finished time (which might be 0 and returned in this query)
+                    # we have the game, construct the log text and send it to the channel
+
+                    # bold the clans if any, and italicize
+                    teams = game.teams.split('.')
+                    team_list = []
+                    team_list.append(game.winning_team.id)
+                    for team in teams:
+                        if int(team) not in team_list:
+                            team_list.append(int(team))
+
+                    wrote_defeats = False
+                    for team in team_list:
+                        tt = TournamentTeam.objects.filter(pk=team)
+                        if tt:
+                            tt = tt[0]
+                            tplayers = TournamentPlayer.objects.filter(team=tt)
+                            for tplayer in tplayers:
+                                game_log_text += "*{}* ,".format(tplayer.player.name)
+
+                            game_log_text = game_log_text[:-1]
+                            if not wrote_defeats:
+                                game_log_text += " defeats "
+                                wrote_defeats = True
+
+                    game_log_text += " \n<{}>".format(game.game_link)
+
+                    channel = self.bot.get_channel(cl.channelid)
+                    if channel and len(game_log_text) > 0:
+                        await channel.send(game_log_text)
+                        game.game_log_sent = True
+                        game.save()
+                        game_log_text = ""
+
     async def handle_hours6_tasks(self):
         #await self.handle_clan_league_next_game()
         pass
@@ -108,6 +155,7 @@ class Tasks(commands.Cog, name="tasks"):
                 for cc in self.bot.critical_error_channels:
                     msg = "**Critical Log Found**\n"
                     msg += log.msg
+                    msg = msg[:1999]
                     await cc.send(msg)
                     log.bot_seen = True
                     log.save()
@@ -137,6 +185,7 @@ class Tasks(commands.Cog, name="tasks"):
     async def handle_always_tasks(self):
         await self.handle_rtl_tasks()
         await self.handle_critical_errors()
+        await self.handle_game_logs()
 
     async def process_member_join(self, memid):
         member = self.bot.get_user(memid)
