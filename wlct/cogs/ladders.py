@@ -46,7 +46,6 @@ class Ladders(commands.Cog, name="ladders"):
                         current_joined = ladder.get_current_joined()
                         retStr += "\n\n" + current_joined + "\n"
                         await self.send_ladder_message(current_joined, False, ctx.message)
-                        return
                     elif arg_cmd == "-jl":
                         retStr = ladder.join_ladder(discord_id, True) + " (You will be removed once a game is created)"
                         current_joined = ladder.get_current_joined()
