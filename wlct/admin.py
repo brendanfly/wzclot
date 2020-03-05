@@ -74,7 +74,7 @@ admin.site.register(TournamentGameStatusLog, TournamentGameStatusLogAdmin)
 
 # Register admin models here
 class TournamentAdmin(admin.ModelAdmin):
-    raw_id_fields = ['created_by', 'parent_tournament']
+    raw_id_fields = ['created_by']
     pass
 
 
@@ -111,7 +111,7 @@ class GroupStageTournamentGroupAdmin(admin.ModelAdmin):
 admin.site.register(GroupStageTournamentGroup, GroupStageTournamentGroupAdmin)
 
 class RoundRobinTournamentAdmin(admin.ModelAdmin):
-    pass
+    raw_id_fields = ['parent_tournament']
 
 admin.site.register(RoundRobinTournament, RoundRobinTournamentAdmin)
 
