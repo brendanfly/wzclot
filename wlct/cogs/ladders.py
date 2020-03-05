@@ -52,13 +52,11 @@ class Ladders(commands.Cog, name="ladders"):
                         current_joined = ladder.get_current_joined()
                         retStr += "\n\n" + current_joined + "\n"
                         await self.send_ladder_message(current_joined, False, ctx.message)
-                        return
                     elif arg_cmd == "-l":
                         retStr = ladder.leave_ladder(discord_id)
                         current_joined = ladder.get_current_joined()
                         retStr += "\n\n" + current_joined + "\n"
                         await self.send_ladder_message(current_joined, False, ctx.message)
-                        return
                     elif arg_cmd == "-t":
                         retStr = ladder.get_current_templates()
                         do_embed = True
