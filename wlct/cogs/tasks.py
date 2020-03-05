@@ -63,6 +63,7 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_game_logs(self):
         channel_links = DiscordChannelTournamentLink.objects.all()
+        games_sent = []
         for cl in channel_links:
             print("Handling game logs for channel: {}".format(cl.channelid))
             # for each channel, see if there are any new games that have finished in the tournament that's linked
@@ -103,9 +104,12 @@ class Tasks(commands.Cog, name="tasks"):
                     channel = self.bot.get_channel(cl.channelid)
                     if channel and len(game_log_text) > 0:
                         await channel.send(game_log_text)
-                        game.game_log_sent = True
-                        game.save()
+                        games_sent.append(game)
                         game_log_text = ""
+
+        for g in games_sent:
+            g.game_log_sent = True
+            g.save()
 
     async def handle_hours6_tasks(self):
         #await self.handle_clan_league_next_game()
