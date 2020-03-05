@@ -433,9 +433,13 @@ class Tournament(models.Model):
                         # append the player names to the game name
             team_id += 1
 
-        print("Player namws for game: {}".format(player_names))
         if len(player_names) == 2:
-            game_name += " {} vs. {}".format(player_names[0], player_names[1])
+            try:
+                game_name += " {} vs. {}".format(player_names[0], player_names[1])
+                game_name = game_name[:50]
+                data['gameName'] = game_name
+            except:
+                log_exception()
         gameInfo = api.api_create_tournament_game(data)
         gameInfo = gameInfo.json()
 
