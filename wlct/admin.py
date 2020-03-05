@@ -74,6 +74,7 @@ admin.site.register(TournamentGameStatusLog, TournamentGameStatusLogAdmin)
 
 # Register admin models here
 class TournamentAdmin(admin.ModelAdmin):
+    raw_id_fields = ['created_by', 'parent_tournament']
     pass
 
 

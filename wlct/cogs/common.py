@@ -107,7 +107,7 @@ class Common(commands.Cog, name="general"):
         for index, player in enumerate(data['players']):
             # once we have the players, start printing out each of the top 10
             mdl_data += (str(current_player) + ") " + player['player_name'] + " Rating:" + str(
-                player['displayed_rating']))
+                player['displayed_rating']) + "\n")
             current_player += 1
 
         await ctx.send(mdl_data)

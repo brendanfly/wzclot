@@ -49,6 +49,17 @@ class Clot(commands.Cog, name="clot"):
             # user is a server admin, process to create the channel -> tournament link
             tournament = find_tournament_by_id(int(arg2), True)
             if tournament:
+                # if a private tournament, the person sending this command must be linked and be the creator
+                if tournament.private:
+                    player = Player.objects.filter(discord_member=discord_user)
+                    if player:
+                        player = player[0]
+                        if player.id != tournament.created_by.id:
+                            await ctx.send("The creator of the tournament is the only one who can link private tournaments.")
+                            return
+                    else:
+                        await ctx.sedn("Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+                        return
                 if arg == "-a":
                     # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
                     # already a tournament hooked up to this channel. We don't even check, just add this tournament
@@ -127,6 +138,8 @@ class Clot(commands.Cog, name="clot"):
             tournament_data += "Finished Tournaments\n"
         elif arg == "-o":
             tournament_data += "Open Tournaments\n"
+        elif arg == "-p":
+            tournament_data += "Tournaments In Progress\n"
         else:
             await ctx.send("You must specify an option.")
 
