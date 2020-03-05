@@ -61,7 +61,8 @@ class Tasks(commands.Cog, name="tasks"):
                 # diff is our delta, compute how many days, hours, minutes remaining
 
     async def handle_hours6_tasks(self):
-        await self.handle_clan_league_next_game()
+        #await self.handle_clan_league_next_game()
+        pass
 
     async def handle_hours4_tasks(self):
         # every 4 hours we currently only send clan league updates
