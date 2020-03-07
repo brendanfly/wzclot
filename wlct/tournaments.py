@@ -3082,6 +3082,10 @@ class PromotionalRelegationLeague(Tournament):
     current_season = models.ForeignKey('PromotionalRelegationLeagueSeason', blank=True, null=True, on_delete=models.DO_NOTHING)
     min_teams = 2
 
+    @property
+    def season_in_progress(self):
+        return False
+
     def update_game_log(self):
         self.game_log = ""
         self.save()
@@ -3094,8 +3098,7 @@ class PromotionalRelegationLeague(Tournament):
 
     def get_league_editor(self):
         league_editor_text = ""
-
-        # for P/R leagues we need to let the user create a season, which will showcase all players
+  
         # a input box for the template/settings
         # button to add new divisions/groups
         # for each group a delete button
@@ -3264,7 +3267,7 @@ class PromotionalRelegationLeague(Tournament):
         self.save()
 
 class PromotionalRelegationLeagueSeason(Tournament):
-    parent_tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, related_name='pr_parent_tournament')
+    pr_tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, related_name='pr_parent_tournament')
     season_number = models.IntegerField(default=0)
     groups = models.IntegerField(default=0)
 

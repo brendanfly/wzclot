@@ -19,3 +19,4 @@ wltourney/settings_local.py
 .project
 .pydevproject
 128teamseeded.pdf
+*.code-workspace
