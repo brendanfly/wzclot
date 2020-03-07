@@ -70,7 +70,7 @@ class Tasks(commands.Cog, name="tasks"):
             # only look at games that have finished times greater than when the bot started
             game_log_text = ""
             if hasattr(self.bot, 'uptime'):
-                games = TournamentGame.objects.filter(is_finished=True, tournament=cl.tournament, game_finished_time__gt=self.bot.uptime, game_log_sent=False)
+                games = TournamentGame.objects.filter(is_finished=True, tournament=cl.tournament, game_finished_time__gt=(self.bot.uptime-datetime.timedelta(days=1)), game_log_sent=False)
                 for game in games:
                     print("Looking at game: {}".format(game.id))
                     if game.game_finished_time is None and game.winning_team:
