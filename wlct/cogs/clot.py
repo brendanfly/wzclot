@@ -160,7 +160,7 @@ class Clot(commands.Cog, name="clot"):
                         tournament_data += "{} | <{}> | {} spots left\n".format(child_tournament.name, link_text,
                                                                            child_tournament.spots_left)
                 elif arg == "-p":  # only in progress
-                    if not child_tournament.has_started and not child_tournament.private:
+                    if child_tournament.has_started and not child_tournament.private:
                         tournament_data += "{} | <{}>\n".format(child_tournament.name, link_text,
                                                                            child_tournament.spots_left)
         await ctx.send(tournament_data)
