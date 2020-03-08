@@ -19,6 +19,7 @@ from dateutil.relativedelta import relativedelta as rd
 from django.utils import timezone
 import pytz
 from django.core.exceptions import ObjectDoesNotExist
+import traceback
 
 def is_player_allowed_join_by_token(token, templateid):
     allowed_join = False
@@ -906,6 +907,7 @@ class Tournament(models.Model):
                         processGameLog += "Could not find a losing team when processing game...??"
         except Exception:
             log_exception()
+            processGameLog += "Tournament {}/{} found exception: {}".format(self.name, self.id, traceback.format_exc())
         finally:
             pgl = ProcessGameLog(game=game, msg=processGameLog)
             pgl.save()
