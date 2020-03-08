@@ -1,6 +1,6 @@
 import discord
 from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink
-from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data
+from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeagueTournament
 from discord.ext import commands
 from django.conf import settings
 from wlct.cogs.common import is_admin
@@ -166,7 +166,9 @@ class Clot(commands.Cog, name="clot"):
                         tournament_data += "{} | <{}>\n".format(child_tournament.name, link_text)
                 elif arg == "-cl":  # only in progress
                     if child_tournament.id == 51 and child_tournament.has_started:
-                        tournament_data += "{} | <{}>\n".format(child_tournament.name, link_text)
+                        cl_tourneys = ClanLeagueTournament.objects.filter(parent_tournament=child_tournament).order_by('id')
+                        for cl_tourney in cl_tourneys:
+                            tournament_data += "{} | Id: {}\n".format(cl_tourney.name, cl_tourney.id)
         await ctx.send(tournament_data)
 
     @commands.command(brief="Displays the MTC top ten on the CLOT")

@@ -52,7 +52,7 @@ admin.site.register(ProcessGameLog, ProcessGameLogAdmin)
 
 
 class ProcessNewGamesLogAdmin(admin.ModelAdmin):
-    search_fields = ['tournament__id', 'tournament__name', 'timestamp']
+    search_fields = ['tournament__id']
     raw_id_fields = ['tournament']
 
 admin.site.register(ProcessNewGamesLog, ProcessNewGamesLogAdmin)
