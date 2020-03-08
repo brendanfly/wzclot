@@ -111,7 +111,7 @@ class GroupStageTournamentGroupAdmin(admin.ModelAdmin):
 admin.site.register(GroupStageTournamentGroup, GroupStageTournamentGroupAdmin)
 
 class RoundRobinTournamentAdmin(admin.ModelAdmin):
-    raw_id_fields = ['parent_tournament']
+    raw_id_fields = ['parent_tournament', 'winning_team', 'first_place', 'second_place']
 
 admin.site.register(RoundRobinTournament, RoundRobinTournamentAdmin)
 
