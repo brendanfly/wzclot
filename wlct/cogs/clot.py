@@ -54,7 +54,7 @@ class Clot(commands.Cog, name="clot"):
                     player = Player.objects.filter(discord_member=discord_user)
                     if player:
                         player = player[0]
-                        if player.id != tournament.created_by.id and tournament.id != 51:  # hard code this for clan league
+                        if player.id != tournament.created_by.id or (tournament.parent_tournament and tournament.parent_tournament.id != 51):  # hard code this for clan league
                             await ctx.send("The creator of the tournament is the only one who can link private tournaments.")
                             return
                     else:
