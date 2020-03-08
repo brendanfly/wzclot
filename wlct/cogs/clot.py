@@ -146,13 +146,22 @@ class Clot(commands.Cog, name="clot"):
         for tournament in tournaments:
             child_tournament = find_tournament_by_id(tournament.id, True)
             if child_tournament:
+                link_text = "http://wztourney.herokuapp.com/"
+                if child_tournament.is_league:
+                    link_text += "leagues/{}".format(child_tournament.id)
+                else:
+                    link_text += "tournaments/{}".format(child_tournament.id)
                 if arg == "-f":  # only finished tournaments
                     if child_tournament.is_finished:
-                        tournament_data += "{}, Winner: {}\n".format(child_tournament.name,
+                        tournament_data += "{} | <{}> | Winner: {}\n".format(child_tournament.name, link_text,
                                                                      get_team_data(child_tournament.winning_team))
                 elif arg == "-o":  # only open tournaments
-                    if not child_tournament.has_started and not child_tournament[0].private:
-                        tournament_data += "{} has {} spots left\n".format(child_tournament.name,
+                    if not child_tournament.has_started and not child_tournament.private:
+                        tournament_data += "{} | <{}> | {} spots left\n".format(child_tournament.name, link_text,
+                                                                           child_tournament.spots_left)
+                elif arg == "-p":  # only in progress
+                    if not child_tournament.has_started and not child_tournament.private:
+                        tournament_data += "{} | <{}>\n".format(child_tournament.name, link_text,
                                                                            child_tournament.spots_left)
         await ctx.send(tournament_data)
 
