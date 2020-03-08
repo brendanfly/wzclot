@@ -3770,7 +3770,7 @@ class ClanLeague(Tournament):
                 # how many clans/team in this division?
                 division_count = divisions.count()
                 tournament_name = "{} - {}".format(division.title, template.name)
-                cl_tourney = ClanLeagueTournament(division=division, created_by=self.created_by, template=template.templateid, players_per_team=template.players_per_team, max_players=teams_in_division.count()*template.players_per_team, private=False, parent_tournament=self, name=tournament_name, teams_per_game=2, clan_league_template=template)
+                cl_tourney = ClanLeagueTournament(division=division, created_by=self.created_by, template=template.templateid, players_per_team=template.players_per_team, max_players=teams_in_division.count()*template.players_per_team, private=self.private, parent_tournament=self, name=tournament_name, teams_per_game=2, clan_league_template=template)
                 cl_tourney.save()
 
                 # each tournament should already have teams able to be set up here (for round robin)

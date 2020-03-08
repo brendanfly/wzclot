@@ -54,7 +54,7 @@ class Clot(commands.Cog, name="clot"):
                     player = Player.objects.filter(discord_member=discord_user)
                     if player:
                         player = player[0]
-                        if player.id != tournament.created_by.id:
+                        if player.id != tournament.created_by.id and tournament.id != 51:  # hard code this for clan league
                             await ctx.send("The creator of the tournament is the only one who can link private tournaments.")
                             return
                     else:
@@ -140,6 +140,8 @@ class Clot(commands.Cog, name="clot"):
             tournament_data += "Open Tournaments\n"
         elif arg == "-p":
             tournament_data += "Tournaments In Progress\n"
+        elif arg == "-cl":
+            tournament_data += "Clan League Tournaments\n"
         else:
             await ctx.send("You must specify an option.")
 
@@ -161,8 +163,10 @@ class Clot(commands.Cog, name="clot"):
                                                                            child_tournament.spots_left)
                 elif arg == "-p":  # only in progress
                     if child_tournament.has_started and not child_tournament.private:
-                        tournament_data += "{} | <{}>\n".format(child_tournament.name, link_text,
-                                                                           child_tournament.spots_left)
+                        tournament_data += "{} | <{}>\n".format(child_tournament.name, link_text)
+                elif arg == "-cl":  # only in progress
+                    if child_tournament.id == 51 and child_tournament.has_started:
+                        tournament_data += "{} | <{}>\n".format(child_tournament.name, link_text)
         await ctx.send(tournament_data)
 
     @commands.command(brief="Displays the MTC top ten on the CLOT")
