@@ -92,7 +92,7 @@ class Tasks(commands.Cog, name="tasks"):
                             tt = tt[0]
                             # look up the clan for this team, and bold/write the clan name in there.
                             if tt.clan_league_clan and tt.clan_league_clan.clan:
-                                game_log_text += "**{}** ".format(tt.clan_league_division_clan.clan.name)
+                                game_log_text += "**{}** ".format(tt.clan_league_clan.clan.name)
                             tplayers = TournamentPlayer.objects.filter(team=tt)
                             for tplayer in tplayers:
                                 game_log_text += "*{}* ,".format(tplayer.player.name)
