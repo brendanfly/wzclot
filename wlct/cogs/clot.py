@@ -57,7 +57,7 @@ class Clot(commands.Cog, name="clot"):
                         print("Player ID: {}, Tournament Created By: {}, Tournament Parent? {}".format(player.id, tournament.created_by.id, tournament.parent_tournament))
                         if tournament.parent_tournament:
                             print("Tournament Parent ID {}".format(tournament.parent_tournament.id))
-                        if player.id != tournament.created_by.id or (tournament.parent_tournament and tournament.parent_tournament.id != 51):  # hard code this for clan league
+                        if player.id != tournament.created_by.id and (tournament.parent_tournament and tournament.parent_tournament.id != 51):  # hard code this for clan league
                             await ctx.send("The creator of the tournament is the only one who can link private tournaments.")
                             return
                     else:
