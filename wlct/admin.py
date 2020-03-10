@@ -82,7 +82,7 @@ admin.site.register(Tournament, TournamentAdmin)
 
 
 class TournamentGameLogAdmin(admin.ModelAdmin):
-    raw_id_fields = ['tournament', 'game__id']
+    raw_id_fields = ['tournament', 'game']
 
 admin.site.register(TournamentGameLog, TournamentGameLogAdmin)
 
