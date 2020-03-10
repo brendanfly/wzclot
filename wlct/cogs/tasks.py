@@ -102,7 +102,10 @@ class Tasks(commands.Cog, name="tasks"):
                                 game_log_text += " defeats "
                                 wrote_defeats = True
 
-                    game_log_text += " \n<{}>".format(game.game_link)
+                    game_log_text += "\n<{}>".format(game.game_link)
+
+                    if game.clan_league_template:
+                        game_log_text += "\n{}".format(game.clan_league_template.name)
 
                     channel = self.bot.get_channel(cl.channelid)
                     if channel and len(game_log_text) > 0:
