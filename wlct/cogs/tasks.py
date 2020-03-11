@@ -65,7 +65,6 @@ class Tasks(commands.Cog, name="tasks"):
         channel_links = DiscordChannelTournamentLink.objects.all()
         games_sent = []
         for cl in channel_links:
-            print("Handling game logs for channel: {}".format(cl.channelid))
             # for each channel, see if there are any new games that have finished in the tournament that's linked
             # only look at games that have finished times greater than when the bot started
             game_log_text = ""
