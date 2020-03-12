@@ -82,7 +82,7 @@ admin.site.register(Tournament, TournamentAdmin)
 
 
 class TournamentGameLogAdmin(admin.ModelAdmin):
-    search_fields = ['gameid']
+    search_fields = ['game_id']
     raw_id_fields = ['tournament', 'game']
 
 admin.site.register(TournamentGameLog, TournamentGameLogAdmin)
@@ -135,6 +135,7 @@ admin.site.register(TournamentGameEntry, TournamentGameEntryAdmin)
 
 
 class TournamentGameAdmin(admin.ModelAdmin):
+    search_fields = ['gameid']
     raw_id_fields = ['winning_team', 'tournament']
 
 admin.site.register(TournamentGame, TournamentGameAdmin)
