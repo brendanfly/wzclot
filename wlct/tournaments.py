@@ -731,7 +731,7 @@ class Tournament(models.Model):
                             if hasattr(self, 'parent_tournament'):
                                 tournament_player = TournamentPlayer.objects.filter(player=player[0], tournament=self.parent_tournament)
                         if tournament_player:
-                            if tournament_player.count() > 1 or tournament_player[0].team.round_robin_tournament.id is not self.id:
+                            if tournament_player.count() > 1 or (tournament_player[0].team.round_robin_tournament is not None and tournament_player[0].team.round_robin_tournament.id is not self.id):
                                 # in some cases, the tournament doing the games is parented, and for clan league there can be more than
                                 # one time the same player comes up, in different tournaments. Work around that by looping through all players here
                                 for tplayer in tournament_player:
