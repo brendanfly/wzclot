@@ -201,7 +201,7 @@ class Clot(commands.Cog, name="clot"):
                       bb!clan clanid
                       bb!clan clanid -d - List of players in the clan who have linked their discord accounts
                       ''')
-    async def clan(self, ctx, clanid, discord=""):
+    async def clan(self, ctx, clanid, discord_arg=""):
         await ctx.send("Gathering player data for clan {}....".format(clanid))
         clan_obj = Clan.objects.filter(pk=int(clanid))
         emb = discord.Embed(color=self.bot.embed_color)
@@ -209,7 +209,7 @@ class Clot(commands.Cog, name="clot"):
             emb.title = "{}".format(clan_obj[0].name)
             emb.set_thumbnail(url=clan_obj[0].image_path)
             player_data = ""
-            if discord != "-d":
+            if discord_arg != "-d":
                 players = Player.objects.filter(clan=clan_obj[0].id).order_by('name')
             else:
                 players = Player.objects.filter(clan=clan_obj[0].id, discord_member__isnull=False).order_by('name')
