@@ -199,8 +199,9 @@ class Clot(commands.Cog, name="clot"):
                       usage='''
                       Hint: to see a list of clan ids, use bb!clans
                       bb!clan clanid
+                      bb!clan clanid -d - List of players in the clan who have linked their discord accounts
                       ''')
-    async def clan(self, ctx, clanid):
+    async def clan(self, ctx, clanid, discord=""):
         await ctx.send("Gathering player data for clan {}....".format(clanid))
         clan_obj = Clan.objects.filter(pk=int(clanid))
         emb = discord.Embed(color=self.bot.embed_color)
@@ -208,7 +209,10 @@ class Clot(commands.Cog, name="clot"):
             emb.title = "{}".format(clan_obj[0].name)
             emb.set_thumbnail(url=clan_obj[0].image_path)
             player_data = ""
-            players = Player.objects.filter(clan=clan_obj[0].id).order_by('name')
+            if discord != "-d":
+                players = Player.objects.filter(clan=clan_obj[0].id).order_by('name')
+            else:
+                players = Player.objects.filter(clan=clan_obj[0].id, discord_member__isnull=False).order_by('name')
             current_player = 0
             if players:
                 for player in players:
@@ -217,7 +221,7 @@ class Clot(commands.Cog, name="clot"):
                     if current_player % 10 == 0:
                         emb.add_field(name="Registered on CLOT", value=player_data)
                         player_data = ""  # reset this for the next embed
-                emb.add_field(name="Registered members on CLOT", value=player_data)
+                emb.add_field(name="Registered on CLOT", value=player_data)
                 await ctx.send(embed=emb)
             else:
                 await ctx.send("No players are registered on the CLOt for {}".format(clan_obj[0].name))
