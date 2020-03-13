@@ -209,9 +209,12 @@ class Clot(commands.Cog, name="clot"):
             emb.title = "{}".format(clan_obj[0].name)
             emb.set_thumbnail(url=clan_obj[0].image_path)
             player_data = ""
+            field_name = ""
             if discord_arg != "-d":
+                field_name = "Registered on CLOT"
                 players = Player.objects.filter(clan=clan_obj[0].id).order_by('name')
             else:
+                field_name = "Discord Linked on CLOT"
                 players = Player.objects.filter(clan=clan_obj[0].id, discord_member__isnull=False).order_by('name')
             current_player = 0
             if players:
@@ -219,9 +222,9 @@ class Clot(commands.Cog, name="clot"):
                     current_player += 1
                     player_data += "{} [Profile](https://www.warzone.com/Profile?p={})\n".format(player.name, player.token)
                     if current_player % 10 == 0:
-                        emb.add_field(name="Registered on CLOT", value=player_data)
+                        emb.add_field(name=field_name, value=player_data)
                         player_data = ""  # reset this for the next embed
-                emb.add_field(name="Registered on CLOT", value=player_data)
+                emb.add_field(name=field_name, value=player_data)
                 await ctx.send(embed=emb)
             else:
                 await ctx.send("No players are registered on the CLOt for {}".format(clan_obj[0].name))
