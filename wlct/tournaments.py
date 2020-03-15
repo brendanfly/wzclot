@@ -946,7 +946,10 @@ class Tournament(models.Model):
     def current_rounds(self):
         # based off of number of rounds calculate from max_rounds which will change when we actually
         # start the tournament, let's try to calculate it on the fly based on the max_players here
-        rounds = math.ceil(math.log(self.current_filled_teams, 2))
+        print("Tournament current rounds: {}".format(self.current_filled_teams))
+        rounds = 0
+        if self.current_filled_teams != 0:
+            rounds = math.ceil(math.log(self.current_filled_teams, 2))
         return rounds
 
     @property
@@ -2006,7 +2009,9 @@ class RoundRobinTournament(Tournament):
     def games_created_at_once(self):
         return 2
 
+    @property
     def current_rounds(self):
+        print("Round robin current rounds: {}".format(self.total_games))
         return self.total_games
 
     @property
