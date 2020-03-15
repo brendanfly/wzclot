@@ -66,7 +66,7 @@ class WZBot(commands.AutoShardedBot):
     async def on_member_join(self, member):
         cog = self.get_cog("tasks")
         if cog:
-            cog.process_member_join(member.id)
+            await cog.process_member_join(member.id)
 
     async def on_ready(self):
         print(f'[CONNECT] Logged in as:\n{self.user} (ID: {self.user.id})\n')
