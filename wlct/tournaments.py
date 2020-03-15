@@ -2013,8 +2013,7 @@ class RoundRobinTournament(Tournament):
 
     @property
     def current_rounds(self):
-        print("Round robin current rounds: {}".format(self.total_games))
-        return self.total_games
+        return self.number_teams - 1
 
     @property
     def number_teams(self):
