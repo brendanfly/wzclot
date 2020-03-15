@@ -2334,7 +2334,7 @@ class RoundRobinTournament(Tournament):
             self.save()
         game_log = '<table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table"><thead><tr><th>Tournament</th><th>Division</th><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
         game_log += '<tbody>'
-        games = TournamentGame.objects.filter(tournament=t)
+        games = TournamentGame.objects.filter(tournament=self)
         for game in games:
             game_log += '<tr>'
             game_log += '<td>{}</td>'.format(t.clan_league_template.name)
