@@ -2006,6 +2006,9 @@ class RoundRobinTournament(Tournament):
     def games_created_at_once(self):
         return 2
 
+    def current_rounds(self):
+        return self.total_games
+
     @property
     def number_teams(self):
         return int(self.max_players / self.players_per_team)
