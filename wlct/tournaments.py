@@ -3473,12 +3473,6 @@ class ClanLeagueTournament(RoundRobinTournament):
             return "{}/{}/{}".format(next_start[0], next_start[1], next_start[2])
         return ""
 
-    def get_bracket_game_data(self):
-        return self.bracket_game_data
-
-    def update_bracket_game_data(self):
-        self.bracket_game_data = ""
-
     def process_new_games(self):
         # just call into the parent to create games
         if self.should_create_game():  # remove the date as well, so if we fail in create game we are screwed and manually need to re-add the date
