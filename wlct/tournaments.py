@@ -562,7 +562,7 @@ class Tournament(models.Model):
                 settings_dict = json.loads('''{}'''.format(self.template_settings))
                 return settings_dict
             except Exception:
-                log_exception()
+                log_tournament("Template error: {}".format(traceback.format_exc()), self)
         return None
 
 
