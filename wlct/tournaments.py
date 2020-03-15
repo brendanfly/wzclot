@@ -946,7 +946,6 @@ class Tournament(models.Model):
     def current_rounds(self):
         # based off of number of rounds calculate from max_rounds which will change when we actually
         # start the tournament, let's try to calculate it on the fly based on the max_players here
-        print("Tournament current rounds: {}".format(self.current_filled_teams))
         rounds = 0
         if self.current_filled_teams != 0:
             rounds = math.ceil(math.log(self.current_filled_teams, 2))
@@ -3404,10 +3403,9 @@ class ClanLeagueDivision(models.Model):
                     division_data += '<br/><br/><b>Tournaments</b><hr>'
                     tournaments = ClanLeagueTournament.objects.filter(division=self)
                     for tournament in tournaments:
-                        division_log_data = tournament.get_game_log()
                         if tournament.has_started:
                             division_data += '<div class="row" style="padding-bottom:25px;">'
-                            division_data += division_log_data
+                            division_data += '<a href="http://wztourney.herokuapp.com/tournaments/{}/" class="btn btn-primary btn-lg disabled" role="button">{}</a>'.format(tournament.id, tournament.name)
                             division_data += '</div>'
 
                     # loop through the tournaments again asking for the current game results
