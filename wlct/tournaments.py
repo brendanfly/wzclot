@@ -2003,6 +2003,8 @@ class RoundRobinTournament(Tournament):
     games_left = models.TextField(default="", blank=True, null=True)
     random_teams = models.BooleanField(default=False)
 
+    min_teams = 4
+
     def uses_byes(self):
         return False
 
