@@ -2332,14 +2332,11 @@ class RoundRobinTournament(Tournament):
             players = TournamentPlayer.objects.filter(tournament=self)
             self.number_players = players.count()
             self.save()
-        game_log = '<table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table"><thead><tr><th>Tournament</th><th>Division</th><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
+        game_log = '<table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table"><thead><tr><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
         game_log += '<tbody>'
         games = TournamentGame.objects.filter(tournament=self)
         for game in games:
             game_log += '<tr>'
-            game_log += '<td>{}</td>'.format(t.clan_league_template.name)
-            game_log += '<td>{}</td>'.format(t.division.title)
-
             # create the match-up text for the game
             game_data = game.teams.split('.')
             team1 = game_data[0]
