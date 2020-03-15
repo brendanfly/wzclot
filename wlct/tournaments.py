@@ -1789,7 +1789,8 @@ class SeededTournament(Tournament):
                 current_round_results.append(current_game_result)
             bracket_data['bracket_data']['results'].append(current_round_results)
 
-        return json.dumps(bracket_data)
+        self.bracket_game_data = json.dumps(bracket_data)
+        self.save()
 
     def get_game_log(self):
         return self.game_log
