@@ -2028,17 +2028,46 @@ class RoundRobinTournament(Tournament):
         return self.bracket_game_data
 
     def update_bracket_game_data(self):
-        bracket_data = '<div class="container"><div class="row">'
-        bracket_data += '<table class="table table-hover">'
+        # table should be all teams on the top and all teams on the bottom
+        # the games are from the teams on the left matched up with the teams on the right
+        teams = TournamentTeam.objects.filter(round_robin_tournament=self)
+        log = '<div style="display:none;padding-top:25px;">'.format(self.id)
+        log += '<table class="table table-bordered table-condensed clot_table"><tr><td>{}</td>'.format(self.name)
+        for team in teams:
+            log += '<td>{}</td>'.format(get_team_data(team))
+        log += '</tr>'
+        teams2 = TournamentTeam.objects.filter(round_robin_tournament=self).order_by('-wins')
+        teams_left_log = ""
+        for team_left in teams2:
+            teams_left_log += "TeamLeft: {}".format(get_team_data(team_left))
+            log += '<tr>'
+            log += '<td>{}</td>'.format(get_team_data(team_left))
+            for team_top in teams:
+                teams_left_log += "TeamTop: {}".format(get_team_data(team_top))
+                bg_color = ""
+                # now we create the rows, where each row loops through team and compares
+                # and looks up all games between then and team2
+                game = TournamentGameEntry.objects.filter(team=team_top, team_opp=team_left, tournament=self)
+                if game:
+                    game = game[0]
+                    if game.game.is_finished:
+                        if game.game.winning_team is not None and game.game.winning_team.id == team_left.id:
+                            bg_color = "#cde5b6;"  # light green - win
+                        else:
+                            bg_color = "#FBDFDF;"  # light red - lose
+                    else:
+                        bg_color = "#ffe7a3;"  # light yellow - in progress
+                    log += '<td style="background-color:{}"><a href="{}" target="_blank">Game Link</a></td>'.format(bg_color, game.game.game_link)
+                else:
+                    # empty cell
+                    log += '<td></td>'
+            log += '</tr>'
+        log += '</table></div><hr>'
 
-        # sort by the tournament teams with the highest buchholz rating, but ideally just a table
-        # of teams highlighting the teams they've won/lost against or in progress is fine
-
-        # get the games
-        bracket_data += '</table>'
-        bracket_data += '</div></div>'  # row/container
-
-        return bracket_data
+        if not self.has_started:
+            log_tournament(teams_left_log, self)
+        self.bracket_game_data = log
+        self.save()
 
     def process_new_games(self):
         # we need to create two lists of players
@@ -2300,46 +2329,59 @@ class RoundRobinTournament(Tournament):
         pass
 
     def update_game_log(self):
-        # table should be all teams on the top and all teams on the bottom
-        # the games are from the teams on the left matched up with the teams on the right
-        teams = TournamentTeam.objects.filter(round_robin_tournament=self)
-        log = '<button class="btn btn-info" onclick="toggle_div(\'toggle-data-{}\');">Toggle {} Games</button>'.format(self.id, self.name)
-        log += '<div id="toggle-data-{}" style="display:none;padding-top:25px;">'.format(self.id)
-        log += '<table class="table table-bordered table-condensed clot_table"><tr><td>{}</td>'.format(self.name)
-        for team in teams:
-            log += '<td>{}</td>'.format(get_team_data(team))
-        log += '</tr>'
-        teams2 = TournamentTeam.objects.filter(round_robin_tournament=self).order_by('-wins')
-        teams_left_log = ""
-        for team_left in teams2:
-            teams_left_log += "TeamLeft: {}".format(get_team_data(team_left))
-            log += '<tr>'
-            log += '<td>{}</td>'.format(get_team_data(team_left))
-            for team_top in teams:
-                teams_left_log += "TeamTop: {}".format(get_team_data(team_top))
-                bg_color = ""
-                # now we create the rows, where each row loops through team and compares
-                # and looks up all games between then and team2
-                game = TournamentGameEntry.objects.filter(team=team_top, team_opp=team_left, tournament=self)
-                if game:
-                    game = game[0]
-                    if game.game.is_finished:
-                        if game.game.winning_team is not None and game.game.winning_team.id == team_left.id:
-                            bg_color = "#cde5b6;"  # light green - win
-                        else:
-                            bg_color = "#FBDFDF;"  # light red - lose
-                    else:
-                        bg_color = "#ffe7a3;"  # light yellow - in progress
-                    log += '<td style="background-color:{}"><a href="{}" target="_blank">Game Link</a></td>'.format(bg_color, game.game.game_link)
-                else:
-                    # empty cell
-                    log += '<td></td>'
-            log += '</tr>'
-        log += '</table></div><hr>'
+        if self.number_players == 0:
+            players = TournamentPlayer.objects.filter(tournament=self)
+            self.number_players = players.count()
+            self.save()
+        game_log = '<table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table"><thead><tr><th>Tournament</th><th>Division</th><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
+        game_log += '<tbody>'
+        games = TournamentGame.objects.filter(tournament=t)
+        for game in games:
+            game_log += '<tr>'
+            game_log += '<td>{}</td>'.format(t.clan_league_template.name)
+            game_log += '<td>{}</td>'.format(t.division.title)
 
-        if not self.has_started:
-            log_tournament(teams_left_log, self)
-        self.game_log = log
+            # create the match-up text for the game
+            game_data = game.teams.split('.')
+            team1 = game_data[0]
+            team2 = game_data[1]
+            team_1 = TournamentTeam.objects.filter(id=int(team1))
+            if team_1:
+                team_2 = TournamentTeam.objects.filter(id=int(team2))
+                if team_2:
+                    game_log += '<td data-search="{} {} {} {}">{}</td>'.format(team_1[0].clan_league_clan.clan.name,
+                                                                               team_2[0].clan_league_clan.clan.name,
+                                                                               get_team_data_no_clan(team_1[0]),
+                                                                               get_team_data_no_clan(team_2[0]),
+                                                                               get_matchup_data(team_1[0],
+                                                                                                team_2[0]))
+            game_log += '<td><a href="{}" target="_blank">Game Link</a></td>'.format(game.game_link)
+
+            if game.is_finished:
+                finished_text = '<span class="text-success"><b>Finished</b></span>'
+            else:
+                finished_text = '<span class="text-info">{}</span>'.format(game.current_state)
+            game_log += '<td>{}</td>'.format(finished_text)
+
+            if game.is_finished:
+                winning_team = '{}'.format(get_team_data(game.winning_team))
+            else:
+                winning_team = ''
+            game_log += '<td>{}</td>'.format(winning_team)
+            time_to_boot_calculate = 0
+
+            start_time = game.game_start_time.strftime("%b %d, %Y %H:%M:%S %p")
+
+            # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
+            end_time = game.game_finished_time.strftime(
+                "%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
+
+            game_log += '<td>{}</td>'.format(start_time)
+            game_log += '<td>{}</td>'.format(end_time)
+            game_log += '</tr>'
+
+        game_log += '</tbody></table>'
+        self.game_log = game_log
         self.save()
 
 # Tournament round

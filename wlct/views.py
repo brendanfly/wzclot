@@ -505,6 +505,7 @@ def tournament_display_view(request, id):
             context.update({'invited_players': tournament.get_invited_players_table()})
             context.update({'bracket_game_data': tournament.get_bracket_game_data()})
             context.update({'template_settings': tournament.get_template_settings_table()})
+            context.update({'game_log' : tournament.get_game_log()})
             return render(request, 'tournament.html', context)
         else:
             log("Tournament could not be found!", LogLevel.informational)
