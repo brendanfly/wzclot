@@ -2030,7 +2030,6 @@ class RoundRobinTournament(Tournament):
         # table should be all teams on the top and all teams on the bottom
         # the games are from the teams on the left matched up with the teams on the right
         teams = TournamentTeam.objects.filter(round_robin_tournament=self)
-        print("Updating: {} teams in round robin bracket game data".format())
         log = '<div style="padding-top:25px;">'.format(self.id)
         log += '<table class="table table-bordered table-condensed clot_table"><tr><td>{}</td>'.format(self.name)
         for team in teams:
