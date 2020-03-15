@@ -3405,7 +3405,7 @@ class ClanLeagueDivision(models.Model):
                     for tournament in tournaments:
                         if tournament.has_started:
                             division_data += '<div class="row" style="padding-bottom:25px;">'
-                            division_data += '<a href="http://wztourney.herokuapp.com/tournaments/{}/" class="btn btn-primary btn-lg disabled" role="button">{}</a>'.format(tournament.id, tournament.name)
+                            division_data += '<a href="http://wztourney.herokuapp.com/tournaments/{}/" class="btn btn-primary btn-lg" role="button">{}</a>'.format(tournament.id, tournament.name)
                             division_data += '</div>'
 
                     # loop through the tournaments again asking for the current game results
