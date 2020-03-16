@@ -101,10 +101,11 @@ class Tasks(commands.Cog, name="tasks"):
                                 game_log_text += " defeats "
                                 wrote_defeats = True
 
-                    game_log_text += "\n<{}>".format(game.game_link)
+                    tournament = find_tournament_by_id(game.tournament.id, True)
+                    if tournament and hasattr(tournament, 'clan_league_template') and tournament.clan_league_template:
+                        game_log_text += "\n{}".format(tournament.clan_league_template.name)
 
-                    if hasattr(game.tournament, 'clan_league_template') and game.tournament.clan_league_template:
-                        game_log_text += "\n{}".format(game.clan_league_template.name)
+                    game_log_text += "\n<{}>".format(game.game_link)
 
                     channel = self.bot.get_channel(cl.channelid)
                     if channel and len(game_log_text) > 0:

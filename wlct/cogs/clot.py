@@ -12,8 +12,8 @@ class Clot(commands.Cog, name="clot"):
     @commands.command(
         brief="Links a channel on your server to a tournament on the CLOT. You must be the tournament creator to use succesfully link the tournament.",
         usage='''
-            bb!link -a tournament_id - adds a link from this discord channel to stream game logs for tournament_id
-            bb!link -r tournament_id - removes an existing link from this discord channel to tournament_id
+            bb!linkt -a tournament_id - adds a link from this discord channel to stream game logs for tournament_id
+            bb!linkt -r tournament_id - removes an existing link from this discord channel to tournament_id
             ''',
         category="clot")
     async def linkt(self, ctx, arg="invalid_cmd", arg2="invalid_id"):
