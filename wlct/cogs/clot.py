@@ -54,12 +54,18 @@ class Clot(commands.Cog, name="clot"):
                     player = Player.objects.filter(discord_member__memberid=ctx.message.author.id)
                     if player:
                         player = player[0]
-                        print("Player ID: {}, Tournament Created By: {}, Tournament Parent? {}".format(player.id, tournament.created_by.id, tournament.parent_tournament))
-                        if tournament.parent_tournament:
-                            print("Tournament Parent ID {}".format(tournament.parent_tournament.id))
-                        if player.id != tournament.created_by.id and (tournament.parent_tournament and tournament.parent_tournament.id != 51):  # hard code this for clan league
-                            await ctx.send("The creator of the tournament is the only one who can link private tournaments.")
-                            return
+                        if hasattr(tournament, 'parent_tournament'):
+                            if tournament.parent_tournament:
+                                print("Tournament Parent ID {}".format(tournament.parent_tournament.id))
+                            if player.id != tournament.created_by.id and (tournament.parent_tournament and tournament.parent_tournament.id != 51):  # hard code this for clan league
+                                await ctx.send("The creator of the tournament is the only one who can link private tournaments.")
+                                return
+                        else:
+                            # no parent tournament, must be creator
+                            if player.id != tournament.created_by.id:
+                                await ctx.send(
+                                    "The creator of the tournament is the only one who can link private tournaments.")
+                                return
                     else:
                         await ctx.send("Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
                         return
