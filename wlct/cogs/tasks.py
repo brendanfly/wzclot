@@ -180,17 +180,20 @@ class Tasks(commands.Cog, name="tasks"):
         hours6 = (self.executions % (360*6) == 0)
         two_minute = (self.executions % 12 == 0)
 
-        if hours:
-            await self.handle_hours_tasks()
-        if hours4:
-            await self.handle_hours4_tasks()
-        if hours6:
-            await self.handle_hours6_tasks()
-        if two_minute:
-            await self.handle_rtl_ladder()
+        try:
+            if hours:
+                await self.handle_hours_tasks()
+            if hours4:
+                await self.handle_hours4_tasks()
+            if hours6:
+                await self.handle_hours6_tasks()
+            if two_minute:
+                await self.handle_rtl_ladder()
 
-        # always tasks
-        await self.handle_always_tasks()
+            # always tasks
+            await self.handle_always_tasks()
+        except Exception:
+            log_exception()
 
     async def handle_always_tasks(self):
         await self.handle_rtl_tasks()
