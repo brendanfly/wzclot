@@ -3441,7 +3441,6 @@ class PromotionalRelegationLeagueSeason(Tournament):
         table += '<table class="table table-hover">'
         table += '<thead><tr><th>Player Name</th><th> </th></tr></thead><tbody id="invite-filter-table">'
 
-        print("Request data to generate P/R player list: {}".format(request_data))
         is_player_available = False
         players = Player.objects.all()
         # list of player names associated with the rows so that we can do easy filtering on the client
@@ -3623,7 +3622,7 @@ class ClanLeagueDivision(models.Model):
 
         division_data += '<div class="card-body">'
         division_data += '<table class="table table-sm table-hover">'
-        teams = TournamentTeam.objects.filter(clan_league_division=self)
+        teams = TournamentTeam.objects.filter(clan_league_division=self).order_by('id')
         template = self.pr_season.season_template
         if template:
             current_team = 1
