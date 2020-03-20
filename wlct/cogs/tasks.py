@@ -84,6 +84,7 @@ class Tasks(commands.Cog, name="tasks"):
                         for team in teams:
                             if int(team) not in team_list:
                                 team_list.append(int(team))
+                        player_team_id_list = game.players.split("-")
 
                         wrote_defeats = False
                         for team in team_list:
@@ -93,9 +94,12 @@ class Tasks(commands.Cog, name="tasks"):
                                 # look up the clan for this team, and bold/write the clan name in there.
                                 if tt.clan_league_clan and tt.clan_league_clan.clan:
                                     game_log_text += "**{}** ".format(tt.clan_league_clan.clan.name)
-                                tplayers = TournamentPlayer.objects.filter(team=tt)
+                                tplayers = player_team_id_list[team_list.index(team)].split(".")
                                 for tplayer in tplayers:
-                                    game_log_text += "*{}* ,".format(tplayer.player.name)
+                                    player_name = Player.objects.filter(token=tplayer)
+                                    if player_name:
+                                        player_name = player_name[0].name
+                                        game_log_text += "*{}* ,".format(player_name)
 
                                 game_log_text = game_log_text[:-1]
                                 if not wrote_defeats:

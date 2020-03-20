@@ -426,20 +426,25 @@ class Tournament(models.Model):
 
         teams = game.split('.')
         team_id = 1
+        tournament_team_ids = []
         player_names = []
         for team in teams:
             teamid = int(team)
             tournament_team = TournamentTeam.objects.filter(pk=teamid)
             if tournament_team:
+                team_player_ids = []
                 tournament_team = tournament_team[0]
                 tournament_players = TournamentPlayer.objects.filter(team=tournament_team)
                 for tournament_player in tournament_players:
                     data['players'].append({"token": tournament_player.player.token, 'team': '{}'.format(team_id)})
+                    team_player_ids.append(tournament_player.player.token)
                     if self.player_data_in_name():
                         player_names.append(tournament_player.player.name)
                         # append the player names to the game name
+                tournament_team_ids.append(".".join(team_player_ids))
             team_id += 1
 
+        player_ids = "-".join(tournament_team_ids)
         if len(player_names) == 2:
             try:
                 game_name += " {} vs. {}".format(player_names[0], player_names[1])
@@ -462,7 +467,7 @@ class Tournament(models.Model):
             tournament_game = TournamentGame(game_link=game_link, gameid=gameID,
                                              players_per_team=self.players_per_team,
                                              team_game=team_game, tournament=self, round=tournament_round,
-                                             teams=game)
+                                             teams=game, players=player_ids)
             tournament_game.save_with_entry()
             log_game(
                 "Game {} created in tournament {}. Teams: {}, gameID: {}, round: {}".format(gameID, self.id,
@@ -2474,6 +2479,7 @@ class TournamentGame(models.Model):
     gameid = models.CharField(max_length=255, default="Invalid game id")
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
     teams = models.CharField(max_length=255, null=True, db_index=True)
+    players = models.CharField(max_length=255, null=True, db_index=True)
     round = models.ForeignKey('TournamentRound', on_delete=models.DO_NOTHING)
     is_finished = models.BooleanField(default=False, db_index=True)
     outcome = models.CharField(max_length=255, null=True, blank=True)
