@@ -31,244 +31,67 @@
             </div>
 
             <div class="card-body">
-                {% if tournament.has_started %}
-                <span id="pause_resume_buttons">{{ pause_resume_buttons|safe }}</span>
-                {% endif %}
                 <input type="hidden" value="{{ tournament.id }}" id="tournamentid">
-
-                {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
-                {% if tournament.can_start_tourney %}
-                <button type="button" class="btn btn-md btn-success" id="start_tournament">Finalize Divisions/Templates</button>
-                {% else %}
-                <button type="button" class="btn btn-md btn-success" id="start_tournament" disabled>Finalize Divisions/Templates
-                </button>
-                {% endif %}
-                <button type="button" class="btn btn-md btn-danger" id="delete_tournament">Delete League (Creator
+                {% if tournament.created_by.token == request.session.token %}
+                <button type="button" class="btn btn-md btn-danger" id="delete_tournament">Delete P/R League (Creator
                     Only)
-                </button>
+                </button><hr>
                 {% endif %}
 
-                {% if not tournament.is_finished and tournament.has_started %}
-                    <button type="button" class="btn btn-md btn-primary" id="refresh_tournament">Refresh League</button>
-                {% endif %}
-            </div>
-        </div>
-        <br/>
-        <br/>
-        <div class="container">
-            <div class="row">
-              <div id="form_status">
-                <div class="alert alert-danger">
-                    <span type="button" class="close" aria-label="Close" id="form_status_close"><span aria-hidden="true">&times;</span></span>
-                    <span id="form_status_text"></span>
-                </div>
-              </div>
-              <div>
-                <div class="tab-pane" id="create-season">
-                {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
-                <table class="table table-hover">
-                   <tr>
-                    <td align="right">Create New Season:&nbsp;</td>
-                    <td>
-                        <input type="text" class="form-control mb-4" placeholder="Season Name" name="division-name" id="division-name" />
-                        &nbsp;
-                        <button type="button" class="btn btn-sm btn-success" id="create-division">Add</button>
-                   </tr>
-                </table>
-                <br/>
-                <div id="division_list">
-                {{ tournament.get_editable_divisions_data|safe }}
-                </div>
-                {% else %}
-                <div id="division_list">
-                {{ tournament.get_divisions_data|safe }}
-                </div>
-                {% endif %}
-            </div>
-              </div>
-            </div>
-        </div>
-
-        <div class="col-md-12">
-            <ul class="nav nav-tabs" id="myTab" role="tablist">
-                {% if tournament.has_started %}
-                <li class="nav-item">
-                   <a class="nav-link" id="cl-player-setup-tab" href="#cl-player-setup" data-toggle="tab">Lineups</a>
-                </li>
-                {% endif %}
-                <li class="nav-item">
-                    <a class="nav-link" id="lobby-tab" href="#divisions" data-toggle="tab">Divisions</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="template-tab" href="#templatetab" data-toggle="tab">Templates</a>
-                </li>
-                {% if tournament.has_started %}
-                <li class="nav-item">
-                    <a class="nav-link" id="game-log-tab" href="#gamelogtab" data-toggle="tab">Game Log</a>
-                </li>
-                {% endif %}
-            </ul>
-        </div>
-
-        <div class="tab-content">
-            {% if tournament.has_started %}
-            <div class="tab-pane" id="cl-player-setup">
-                {% if tournament.created_by.token == request.session.token %}
-                {{ tournament.get_editable_roster_data|safe }}
-                {% else %}
-                {{ tournament.get_roster_data|safe }}
-                {% endif %}
-            </div>
-            {% endif %}
-            <div class="tab-pane" id="divisions">
-                {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
-                <table class="table table-hover">
-                   <tr>
-                    <td align="right">Add New Division:&nbsp;</td>
-                    <td>
-                        <input type="text" class="form-control mb-4" placeholder="Enter a Division Name" name="division-name" id="division-name" />
-                        &nbsp;
-                        <button type="button" class="btn btn-sm btn-success" id="create-division">Add</button>
-                   </tr>
-                </table>
-                <br/>
-                <div id="division_list">
-                {{ tournament.get_editable_divisions_data|safe }}
-                </div>
-                {% else %}
-                <div id="division_list">
-                {{ tournament.get_divisions_data|safe }}
-                </div>
-                {% endif %}
-            </div>
-            <div class="tab-pane" id="templatetab">
-                {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
-                <div class="form-group row">
-                    <label class="col-form-label" for="templatename"><b>Template Name:</b></label>
-                    <div class="input-group">
-                           <input type="text" class="form-control mb-4" placeholder="Enter a Template Name" name="templatename" id="templatename" />
+    {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
+            <div class="card gedf-card span8">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6>Create New Season</h6>
+                        </div>
                     </div>
                 </div>
-                <div class="form-group row">
-                  <label class="col-form-label" for="templateid"><b>Template #:&nbsp;</b></label>
-                  <div class="input-group">
-                      <div class="input-group-prepend">
-                        <span class="input-group-text" id="inputGroupPrepend">https://warzone.com/MultiPlayer/?TemplateID=</span>
-                      </div>
-                      <input onblur="getTemplateSettings();" name="templateid" value="" class="form-control form-control-md rounded-0" id="templateid" type="number" placeholder="numeric template id">
+                <div class="card-body">
+                  <div id="form_status">
+                    <div class="alert alert-danger">
+                        <span type="button" class="close" aria-label="Close" id="form_status_close"><span aria-hidden="true">&times;</span></span>
+                        <span id="form_status_text"></span>
+                    </div>
                   </div>
-                </div>
-                <div class="form-group row">
-                  <label class="col-form-label"><b>Template Settings</b></label>
-                      <div class="input-group">
-                          <span id="templatestatus">Please enter a template above to load it's settings</span>
-                          <input type="hidden" value="" name="templatesettings" id="templatesettings" />
-                      </div>
-                </div>
-                <div class="form-group row">
-                      <div class="input-group">
-                          <b>Template Pace:</b>&nbsp;<span id="templatepace">N/A</span>
-                      </div>
-                </div>
-                <br/>
-                <div class="form-group row">
-                    <div class="input-group">
-                        <label class="col-form-label" for="players_per_team"><b>Players Per Team:&nbsp;</b></label>
-                        <select name="players_per_team" id="players_per_team" style="padding:10px;">
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                        </select>
-                    </div>
-                    <div class="input-group" style="padding-top:25px;">
-                        <button type="button" class="btn btn-sm btn-success" id="create-cl-template">+ Add New Template</button>
+                    <div class="container">
+                        <div class="row">
+                            <div id="create-season">
+                                <div class="form-group row">
+                                    <div class="input-group">
+                                        <label class="col-form-label" for="season-name"><b>Season Name: &nbsp;</b></label>
+                                        <input type="text" class="form-control mb-4" placeholder="Season Name" name="season-name" id="season-name" />
+                                    </div>
+                                    <div class="input-group" style="padding-top:25px;">
+                                        <button type="button" class="btn btn-sm btn-success" id="create-pr-season">Create Season</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
-                <br/>
-                {% endif %}
-                {% if tournament.created_by.token == request.session.token %}
-                <div id="templates">
-                {{ tournament.get_editable_template_data|safe }}
-                </div>
-                {% else %}
-                <div id="templates">
-                {{ tournament.get_template_data|safe }}
-                </div>
-                {% endif %}
             </div>
-            {% if tournament.has_started %}
-            <div class="tab-pane" style="padding-top:20px;" id="gamelogtab">
-                {{ tournament.get_game_log|safe }}
-            </div>
-            {% endif %}
-        </div>
-
-
     {% endif %}
+            <br/>
+            <div class="col-md-12">
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item">
+                       <a class="nav-link" id="season-tab" href="#pr-season-tab" data-toggle="tab">Seasons</a>
+                    </li>
+                </ul>
+            </div>
 
-    <!-- Modal to display the start_locked_data for the tournament -->
-    <div class="modal" tabindex="-1" role="dialog" id="tournament_start_request_modal">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="tournament_start_request_title"></h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body" id="tournament_start_request_text" style="overflow-y:auto;">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" id="tournament_start_request">Finalize Divisions/Templates
-                    </button>
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <div class="tab-content">
+                <div class="tab-pane show active col-md-12" id="pr-season-tab">
+                    {{ tournament.get_seasons_editable|safe }}
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Modal to display the list of players to add to a slot for the tournament -->
-    <div class="modal" tabindex="-1" role="dialog" id="clan_league_player_add_list">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="clan_league_player_add_list_title"></h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body" id="clan_league_player_add_list_text" style="overflow-y:auto;">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Modal to display the list of players on the site to invited -->
-    <div class="modal" tabindex="-1" role="dialog" id="tournament_invites">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="tournament_invites_title">Invite Players</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-danger" id="tournament_invites_error_text"></p>
-                    <div id="tournament_invites_text">
-
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
+        {% endif %}
     </div>
 </div>
 {% endblock %}
