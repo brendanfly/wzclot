@@ -707,6 +707,11 @@ def mytourneys_view(request):
                         if child_tourney:
                             result_list.append(child_tourney)
                             tournaments_found.append(tourney.tournament.id)
+                        elif tourney.tournament.id not in leagues_found and hasattr(tourney.tournament, 'pr_parent_tournament'):
+                            child_league = find_league_by_id(tourney.tournament.id)
+                            if child_league:
+                                league_list.append(child_league.pr_tournament)
+                                leagues_found.append(child_league.pr_tournament.id)
                     elif tourney.tournament.id not in leagues_found and tourney.tournament.is_league:
                         child_league = find_league_by_id(tourney.tournament.id)
                         if child_league:
