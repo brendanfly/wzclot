@@ -277,6 +277,10 @@ def find_tournament_by_id(id, query_all=False):
         if child_tourney:
             return child_tourney[0]
 
+        child_tourney = PromotionalRelegationLeagueTournament.objects.filter(pk=id)
+        if child_tourney:
+            return child_tourney[0]
+
         child_tourney = RoundRobinTournament.objects.filter(pk=id)
         if child_tourney:
             return child_tourney[0]
