@@ -3225,6 +3225,9 @@ class PromotionalRelegationLeagueSeason(Tournament):
         self.has_started = True
         self.save()
 
+    def update_game_log(self):
+        pass
+
     def update_bracket_game_data(self):
         pass
 
