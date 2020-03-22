@@ -271,10 +271,6 @@ def find_tournament_by_id(id, query_all=False):
         if child_tourney:
             return child_tourney[0]
 
-        child_tourney = ClanLeagueTournament.objects.filter(pk=id)
-        if child_tourney:
-            return child_tourney[0]
-
         if query_all:
             child_tourney = find_league_by_id(id)
             if child_tourney:

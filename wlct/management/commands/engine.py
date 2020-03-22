@@ -5,7 +5,7 @@ from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
 from wlct.models import Clan, Engine
-from wlct.tournaments import TournamentGame, Tournament, TournamentRound, find_tournament_by_id, TournamentGameEntry, MonthlyTemplateRotation, MonthlyTemplateRotationMonth
+from wlct.tournaments import TournamentGame, Tournament, TournamentRound, find_tournament_by_id, TournamentGameEntry, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TestContent
 from django.conf import settings
 from wlct.api import API
 from django import db
@@ -39,6 +39,8 @@ class Command(BaseCommand):
                                   max_instances=1, coalesce=False)
                 scheduler.add_job(tournament_caching, 'interval', seconds=get_run_time()*2, id='tournament_caching',
                                   max_instances=1, coalesce=False)
+                scheduler.add_job(cl_tournament_games_validation(), 'interval', seconds=get_run_time(), id='cl_tournament_games_validation',
+                                  max_instances=1, coalesce=False)
                 scheduler.start()
         except ConflictingIdError:
             pass
@@ -71,6 +73,54 @@ def parse_and_update_clan_logo():
                 continue
     except Exception:
         log_exception()
+
+def validate_cl_tournament_games():
+    try:
+        print("Running validate_cl_tournament_games on thread {}".format(threading.get_ident()))
+        tournament_games = TournamentGame.objects.filter(is_finished=False)
+        api = API()
+        found_missing_games = 0
+        corrected_missing_games = 0
+
+        test_content = TestContent()
+
+        # Iterate through unfinished games and check of missing player values
+        for game in tournament_games:
+            if not game.players:
+                log("Found TournamentGame missing 'players' value with id: {}".format(game.id), LogLevel.engine)
+                found_missing_games += 1
+                teams = game.teams.split('.')
+                test_msg = test_content.team_game(teams[0], teams[1])
+                api_response = api.api_query_game_feed(game.gameid, test_msg).json()
+
+                # Add player tokens by team
+                team_dict = {}
+                for player in api_response.get("players"):
+                    if "team" in player:
+                        if not player["team"] in team_dict:
+                            team_dict[player["team"]] = []
+                        team_dict[player["team"]].append(player["id"])
+                    else:
+                        if not len(team_dict) in team_dict:
+                            team_dict[len(team_dict)] = []
+                        team_dict[len(team_dict) - 1].append(player["id"])
+
+                # Combine player tokens in each team
+                team_player_token_list = []
+                for key, players in team_dict.items():
+                    team_player_token_list.append(".".join(players))
+
+                # Set players value in TournamentGame with player tokens
+                game.players = "-".join(team_player_token_list)
+                game.save()
+                if game.players:
+                    corrected_missing_games += 1
+        log("TournamentGames count with missing 'players' value: {}".format(found_missing_games), LogLevel.engine)
+        if found_missing_games > 0:
+            log("TournamentGames corrected count with missing 'players' value: {}".format(corrected_missing_games), LogLevel.engine)
+    except Exception as ex:
+        log_exception()
+
 
 def check_games(**kwargs):
     print("Running check_games, type={} on thread {}".format(kwargs['type'], threading.get_ident()))
@@ -176,6 +226,9 @@ def validate_game_entries():
 # globals to get executed on every load of the web server
 slow_update_threshold = 25
 current_clan_update = 1
+
+def cl_tournament_games_validation():
+    validate_cl_tournament_games()
 
 def tournament_caching():
     check_games(type='cache')
