@@ -51,5 +51,8 @@ urlpatterns = [
     path('cl/templates/update/', wlct.views.cl_update_templates, name='cl_update_templates'),
     path('cl/templates/start/', wlct.views.cl_start_template, name='cl_start_template'),
 
+    path('pr/seasons/update/', wlct.views.pr_update_season, name="pr_update_season"),
+    path('pr/season/<int:id>/', wlct.views.pr_view_season, name="pr_view_season"),
+
     path('max_games_at_once/', wlct.views.update_max_games_at_once, name='update_max_games_at_once')
 ]

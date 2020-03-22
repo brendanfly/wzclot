@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import ModelAdmin, SimpleListFilter
 from wlct.logging import LogLevel, Logger, TournamentGameLog, TournamentGameStatusLog, TournamentLog, ProcessGameLog, ProcessNewGamesLog
-from wlct.tournaments import Tournament, SwissTournament, GroupStageTournament, GroupStageTournamentGroup, RoundRobinTournament, SeededTournament, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TournamentGame, TournamentTeam, TournamentGameEntry, TournamentRound, TournamentInvite, TournamentPlayer, PromotionalRelegationLeague, PromotionalRelegationLeagueSeason, ClanLeague, ClanLeagueDivision, ClanLeagueTournament, ClanLeagueDivisionClan, ClanLeagueTemplate, RealTimeLadderTemplate, RealTimeLadder
+from wlct.tournaments import Tournament, SwissTournament, GroupStageTournament, GroupStageTournamentGroup, RoundRobinTournament, SeededTournament, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TournamentGame, TournamentTeam, TournamentGameEntry, TournamentRound, TournamentInvite, TournamentPlayer, PromotionalRelegationLeague, PromotionalRelegationLeagueSeason, ClanLeague, ClanLeagueDivision, ClanLeagueTournament, ClanLeagueDivisionClan, ClanLeagueTemplate, RealTimeLadderTemplate, RealTimeLadder, PromotionalRelegationLeagueTournament
 
 class LogFilter(SimpleListFilter):
     title = 'Log Level' # a label for our filter
@@ -163,14 +163,23 @@ class MonthlyTemplateRotationAdmin(admin.ModelAdmin):
 admin.site.register(MonthlyTemplateRotation, MonthlyTemplateRotationAdmin)
 
 class PromotionalRelegationLeagueAdmin(admin.ModelAdmin):
-    pass
+    raw_id_fields = ['created_by', 'winning_team']
+    search_fields = ['name', 'id']
 
 admin.site.register(PromotionalRelegationLeague, PromotionalRelegationLeagueAdmin)
 
 class PromotionalRelegationLeagueSeasonAdmin(admin.ModelAdmin):
-    pass
+    search_fields = ['name', 'id']
+    raw_id_fields = ['created_by', 'winning_team']
 
 admin.site.register(PromotionalRelegationLeagueSeason, PromotionalRelegationLeagueSeasonAdmin)
+
+class PromotionalRelegationLeagueTournamentAdmin(admin.ModelAdmin):
+    search_fields = ['name', 'id']
+    raw_id_fields = ['created_by', 'winning_team']
+
+admin.site.register(PromotionalRelegationLeagueTournament, PromotionalRelegationLeagueTournamentAdmin)
+
 
 class ClanLeagueAdmin(admin.ModelAdmin):
     pass

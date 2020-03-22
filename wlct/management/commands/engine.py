@@ -246,7 +246,7 @@ def tournament_engine():
             current_clan_update += 1
 
         engine = Engine.objects.all()
-        if engine.count() == 0:
+        if engine and engine.count() == 0:
             # create the engine object!
             engine = Engine()
             engine.save()

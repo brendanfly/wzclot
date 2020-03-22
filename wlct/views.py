@@ -3,18 +3,14 @@ from django.http import HttpResponseRedirect
 from wlct.form_message_handling import FormError
 from wlct.api import API, get_account_token
 from wlct.models import Player, Clan
-from wlct.tournaments import SwissTournament, GroupStageTournament, SeededTournament, TournamentInvite, TournamentPlayer, find_tournament_by_id, Tournament, find_league_by_id, is_player_allowed_join, TournamentGameEntry, get_player_data, get_team_data, ClanLeagueDivision, ClanLeagueDivisionClan, ClanLeague, ClanLeagueTournament, get_matchup_data
+from wlct.tournaments import SwissTournament, GroupStageTournament, SeededTournament, TournamentInvite, TournamentPlayer, find_tournament_by_id, Tournament, find_league_by_id, is_player_allowed_join, TournamentGameEntry, get_matchup_data
 from wlct.forms import SwissTournamentForm, SeededTournamentForm, GroupTournamentForm, MonthlyTemplateCircuitForm, PromotionRelegationLeagueForm, ClanLeagueForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
 from wlct.logging import log, LogLevel, log_exception
 import traceback
-from itertools import chain
 from django.conf import settings
-from collections import defaultdict
-import threading
-from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.base import ConflictingIdError
 from django_apscheduler.jobstores import DjangoJobStore
@@ -134,6 +130,8 @@ def tournament_start(request):
                 context.update({"success": "true"})
                 if tournament.is_league:
                     context.update({'redirect_url': '/leagues/{}/'.format(tournamentid)})
+                elif hasattr(tournament, 'pr_tournament'):
+                    context.update({'redirect_url': '/pr/season/{}/'.format(tournamentid)})
                 else:
                     context.update({'redirect_url': '/tournaments/{}/'.format(tournamentid)})
 
@@ -459,6 +457,11 @@ def cl_update_divisions(request):
                     tournament.update_clans(request)
                 elif optype == "remove-clan":
                     tournament.update_clans(request)
+                #  PR LEAGUE ONLY FOR NOW
+                elif optype == "add-team":
+                    tournament.add_team_to_division(request)
+                elif optype == "remove-team":
+                    tournament.remove_team_from_division(request)
 
                 divisions = tournament.get_editable_divisions_data()
                 context.update({'success': "true"})
@@ -473,6 +476,52 @@ def cl_update_divisions(request):
         context.update({'error': str(e)})
         return JsonResponse(context)
 
+
+@ensure_csrf_cookie
+def pr_view_season(request, id):
+    try:
+        tournament = find_tournament_by_id(id, True)
+        if tournament:
+            print("Found p/r league season {}".format(id))
+            context = {'tournament': tournament}
+            return render(request, "pr_season.html", context)
+        else:
+            return HttpResponseRedirect('/index/')
+    except Exception:
+        log_exception()
+        return HttpResponseRedirect('/index/')
+
+@ensure_csrf_cookie
+def pr_update_season(request):
+    try:
+        context = {'success': 'false'}
+        player = None
+        if request.method == "POST" and 'tournamentid' in request.POST and is_player_token_valid(request):
+            tournament = find_tournament_by_id(request.POST['tournamentid'], True)
+            if tournament:
+                player = Player.objects.filter(token=request.session['token'])
+                player = player[0]
+                if player and player.id == tournament.created_by.id:
+                    # create the season
+                    try:
+                        if request.POST['type'] == "add":
+                            tournament.create_season(request.POST['season-name'])
+                        elif request.POST['type'] == "remove":
+                            tournament.remove_season(request.POST['season_id'])
+
+                        context.update({'success': 'true'})
+                        context.update({'season_data': tournament.get_seasons_editable()})
+                    except ValueError as e:
+                        context.update({'error': str(e)})
+                else:
+                    context.update({'error': "Only creators can create seasons."})
+        return JsonResponse(context)
+
+    except Exception as outer_e:
+        log_exception()
+        # return the default tournament page regardless
+        context.update({'error': str(outer_e)})
+        return JsonResponse(context)
 
 @ensure_csrf_cookie
 def tournament_display_view(request, id):
@@ -660,6 +709,11 @@ def mytourneys_view(request):
                         if child_tourney:
                             result_list.append(child_tourney)
                             tournaments_found.append(tourney.tournament.id)
+                        elif tourney.tournament.id not in leagues_found and hasattr(tourney.tournament, 'pr_parent_tournament'):
+                            child_league = find_league_by_id(tourney.tournament.id)
+                            if child_league:
+                                league_list.append(child_league.pr_tournament)
+                                leagues_found.append(child_league.pr_tournament.id)
                     elif tourney.tournament.id not in leagues_found and tourney.tournament.is_league:
                         child_league = find_league_by_id(tourney.tournament.id)
                         if child_league:

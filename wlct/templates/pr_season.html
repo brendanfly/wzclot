@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Custom Warzone Tournaments & Leagues{% endblock %}
+
+{% block content %}
+
+<!-- Tournaments section bg -->
+<div class="row">
+    <div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+        {% if tournament %}
+        <div class="card gedf-card span8">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4>{{ tournament.name }} &nbsp;
+                            <span class="text-muted h7 mb-2">
+                                            <i class="fa fa-clock-o">
+                                            </i> created {{ tournament.time_since_created }} by
+                                            &nbsp;
+                                            {% if tournament.created_by.clan %}
+                                            <a href="https://warzone.com{{ tournament.created_by.clan.icon_link }}"
+                                               target="_blank"><img src="{{ tournament.created_by.clan.image_path }}"/></a>
+                                            {% endif %}
+                                            <a href="https://warzone.com/Profile?p={{ tournament.created_by.token }}"
+                                               target="_blank">{{ tournament.created_by.name }}</a>
+                                        </span>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <input type="hidden" id="template-warning">
+                <input type="hidden" value="{{ tournament.id }}" id="tournamentid">
+                {% if tournament.created_by.token == request.session.token %}
+                {% if not tournament.has_started %}
+                {% if tournament.can_start_tourney %}
+                <button type="button" class="btn btn-md btn-success" id="start_tournament">Start {{ tournament.name }}</button>
+                {% else %}
+                <button type="button" class="btn btn-md btn-success" id="start_tournament" disabled>Start {{ tournament.name }}
+                </button>
+                {% endif %}
+                {% endif %}
+                &nbsp;&nbsp;<button type="button" class="btn btn-md btn-danger" id="delete_tournament">Delete Season (Creator
+                    Only)
+                </button>
+                {% if tournament.created_by.token == request.session.token %}
+                <div id="templates">
+                    {{ tournament.get_editable_template_data|safe }}
+                </div>
+                {% else %}
+                <div id="templates">
+                    {{ tournament.get_template_data|safe }}
+                </div>
+                {% endif %}
+                <hr>
+                {% endif %}
+
+                {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
+                <div class="card gedf-card span8">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5>Update Season Information</h5>
+                                <br/>
+                                A season can only have a single template, with unlimited divisions (4 teams to start).
+                                Please enter/update those settings here.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="form_status">
+                            <div class="alert alert-danger">
+                                <span type="button" class="close" aria-label="Close" id="form_status_close"><span
+                                        aria-hidden="true">&times;</span></span>
+                                <span id="form_status_text"></span>
+                            </div>
+                        </div>
+                        <table class="table">
+                            <tr>
+                                <td>
+                                    <div class="container">
+                                        <div class="row">
+                                            <div id="update-season-template">
+                                                <div class="form-group row">
+                                                    <label class="col-form-label" for="templatename"><b>Template
+                                                        Name:</b></label>
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control mb-4"
+                                                               placeholder="Enter a Template Name" name="templatename"
+                                                               id="templatename"/>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row">
+                                                    <label class="col-form-label" for="templateid"><b>Template
+                                                        #:&nbsp;</b></label>
+                                                    <div class="input-group">
+                                                        <div class="input-group-prepend">
+                                                            <span class="input-group-text" id="inputGroupPrepend">https://warzone.com/MultiPlayer/?TemplateID=</span>
+                                                        </div>
+                                                        <input onblur="getTemplateSettings();" name="templateid"
+                                                               value="" class="form-control form-control-md rounded-0"
+                                                               id="templateid" type="number"
+                                                               placeholder="numeric template id">
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row">
+                                                    <label class="col-form-label"><b>Template Settings</b></label>
+                                                    <div class="input-group">
+                                                        <span id="templatestatus">Please enter a template above to load it's settings</span>
+                                                        <input type="hidden" value="" name="templatesettings"
+                                                               id="templatesettings"/>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row">
+                                                    <div class="input-group">
+                                                        <b>Template Pace:</b>&nbsp;<span id="templatepace">N/A</span>
+                                                    </div>
+                                                </div>
+                                                <br/>
+                                                <div class="form-group row">
+                                                    <div class="input-group">
+                                                        <label class="col-form-label" for="players_per_team"><b>Players
+                                                            Per Team:&nbsp;</b></label>
+                                                        <select name="players_per_team" id="players_per_team"
+                                                                style="padding:10px;">
+                                                            <option value="1">1</option>
+                                                            <option value="2">2</option>
+                                                            <option value="3">3</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="input-group" style="padding-top:25px;">
+                                                        <button type="button" class="btn btn-sm btn-success"
+                                                                id="create-cl-template">Update Template Information
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="container">
+                                        <div class="row">
+                                            <div id="create-division-form">
+                                                <div class="form-group row">
+                                                    <label class="col-form-label" for="division-name"><b>Division
+                                                        Name:</b></label>
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control mb-4"
+                                                               placeholder="Division Name" name="division-name"
+                                                               id="division-name"/>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row">
+                                                    <div class="input-group" style="padding-top:25px;">
+                                                        <button type="button" class="btn btn-sm btn-success"
+                                                                id="create-division">+ Add New Division
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                {% endif %} <!-- Update template settings -->
+                <br/>
+                <div class="col-md-12">
+                    <ul class="nav nav-tabs" id="myTab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link" id="divisions-tab" href="#pr-divisions-tab"
+                               data-toggle="tab">Divisions</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="gameslog-tab" href="#pr-gameslog-tab" data-toggle="tab"></a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="tab-content">
+                    <div class="tab-pane active show" id="pr-divisions-tab">
+                        <div id="division_list">
+                            {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
+                            {{ tournament.get_editable_divisions_data|safe }}
+                            {% else %}
+                            {{ tournament.get_divisions_data|safe }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Modal to display the start_locked_data for the tournament -->
+        <div class="modal" tabindex="-1" role="dialog" id="tournament_start_request_modal">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="tournament_start_request_title"></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="tournament_start_request_text" style="overflow-y:auto;">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="tournament_start_request">
+                            Start Season
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal to display the list of players on the site to invited -->
+        <div class="modal" tabindex="-1" role="dialog" id="tournament_invites">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="tournament_invites_title">Invite Players</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-danger" id="tournament_invites_error_text"></p>
+                        <div id="tournament_invites_text">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+{% endblock %}
+
+{% block post_js %}
+
+{% endblock %}

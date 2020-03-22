@@ -149,7 +149,7 @@ def get_team_data_impl(team, sameline):
     team_data = ""
     tournament_players = TournamentPlayer.objects.filter(team=team)
     for tournament_player in tournament_players:
-        team_data += get_player_data(tournament_player)
+        team_data += get_tournament_player_data(tournament_player)
         if not sameline:
             team_data += "<br/>"
     return team_data
@@ -160,7 +160,7 @@ def get_team_data_sameline(team):
 def get_team_data(team):
     return get_team_data_impl(team, False)
 
-def get_player_data(player):
+def get_tournament_player_data(player):
     table = ''
     if player.player.clan is not None:
         table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
@@ -168,6 +168,17 @@ def get_player_data(player):
 
     table += '&nbsp;<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
         player.player.token, player.player.name)
+
+    return table
+
+def get_player_data(player):
+    table = ''
+    if player.clan is not None:
+        table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
+            player.clan.icon_link, player.clan.image_path, player.clan.name)
+
+    table += '&nbsp;<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+        player.token, player.name)
 
     return table
 
@@ -227,7 +238,6 @@ def get_games_finished_for_team_since(teamid, tournament, days):
 
 def find_league_by_id(id):
     try:
-        print("Trying to find league {}".format(id))
         child_league = PromotionalRelegationLeague.objects.filter(pk=id)
         if child_league:
             return child_league[0]
@@ -239,6 +249,10 @@ def find_league_by_id(id):
         child_league = ClanLeague.objects.filter(pk=id)
         if child_league:
             return child_league[0]
+
+        child_tourney = PromotionalRelegationLeagueSeason.objects.filter(pk=id)
+        if child_tourney:
+            return child_tourney[0]
     except:
         # league wasn't found
         log_exception()
@@ -260,6 +274,10 @@ def find_tournament_by_id(id, query_all=False):
             return child_tourney[0]
 
         child_tourney = ClanLeagueTournament.objects.filter(pk=id)
+        if child_tourney:
+            return child_tourney[0]
+
+        child_tourney = PromotionalRelegationLeagueTournament.objects.filter(pk=id)
         if child_tourney:
             return child_tourney[0]
 
@@ -332,6 +350,11 @@ class Tournament(models.Model):
     tournament_logs = models.TextField(blank=True, null=True, default="")
     is_official = models.BooleanField(default=False)
     vacation_force_interval = 20
+
+    def get_full_public_link(self):
+        if self.is_league:
+            return "http://wztourney.herokuapp.com/leagues/{}/".format(self.id)
+        return "http://wztourney.herokuapp.com/tournaments/{}/".format(self.id)
 
     def should_process_in_engine(self):
         return True
@@ -886,6 +909,7 @@ class Tournament(models.Model):
                     else:
                         processGameLog += "Couldn't find player {} ".format(player_data['id'])
             game.save()
+
 
             # now loop through the winners and losers and update their ratings accordingly
             for team in teams_won:
@@ -2256,6 +2280,8 @@ class RoundRobinTournament(Tournament):
                     if round:
                         team1 = game_data.split('.')[0]
                         team2 = game_data.split('.')[1]
+                    else:
+                        log("No round found for round robin tournament {}!".format(self.id), LogLevel.critical)
 
                     # see if both opponents have an available slot to play
                     if len(team_game_data[team1]) < self.games_at_once and len(team_game_data[team2]) < self.games_at_once:
@@ -2272,8 +2298,6 @@ class RoundRobinTournament(Tournament):
                             game_data1.append(team1)
                             game_data2.append(team2)
                             log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
-                    else:
-                        log("No round found for round robin tournament {}!".format(self.id), LogLevel.critical)
 
             current_iteration += 1
             print("Games created so far: {}, teams in division: {}".format(len(games_created), self.number_teams-1))
@@ -2346,12 +2370,19 @@ class RoundRobinTournament(Tournament):
             if team_1:
                 team_2 = TournamentTeam.objects.filter(id=int(team2))
                 if team_2:
-                    game_log += '<td data-search="{} {} {} {}">{}</td>'.format(team_1[0].clan_league_clan.clan.name,
-                                                                               team_2[0].clan_league_clan.clan.name,
-                                                                               get_team_data_no_clan(team_1[0]),
-                                                                               get_team_data_no_clan(team_2[0]),
-                                                                               get_matchup_data(team_1[0],
-                                                                                                team_2[0]))
+                    if team_1[0].clan_league_clan is not None:
+                        game_log += '<td data-search="{} {} {} {}">{}</td>'.format(team_1[0].clan_league_clan.clan.name,
+                                                                                   team_2[0].clan_league_clan.clan.name,
+                                                                                   get_team_data_no_clan(team_1[0]),
+                                                                                   get_team_data_no_clan(team_2[0]),
+                                                                                   get_matchup_data(team_1[0],
+                                                                                                    team_2[0]))
+                    else:
+                        game_log += '<td data-search="{} {}">{}</td>'.format(get_team_data_no_clan(team_1[0]),
+                                                                                   get_team_data_no_clan(team_2[0]),
+                                                                                   get_matchup_data(team_1[0],
+                                                                                                    team_2[0]))
+
             game_log += '<td><a href="{}" target="_blank">Game Link</a></td>'.format(game.game_link)
 
             if game.is_finished:
@@ -2412,7 +2443,7 @@ class TournamentTeam(models.Model):
     group = models.ForeignKey('GroupStageTournamentGroup', on_delete=models.DO_NOTHING, blank=True, null=True)
     round_robin_tournament = models.ForeignKey('RoundRobinTournament', on_delete=models.DO_NOTHING, blank=True, null=True, related_name='rr_tournament')
     clan_league_clan = models.ForeignKey('ClanLeagueDivisionClan', on_delete=models.DO_NOTHING, blank=True, null=True, related_name='clan_league_clan')
-    clan_league_division = models.ForeignKey('ClanLeagueDivision', on_delete=models.DO_NOTHING, blank=True, null=True, related_name='clan_league_division')
+    clan_league_division = models.ForeignKey('ClanLeagueDivision', on_delete=models.CASCADE, blank=True, null=True, related_name='clan_league_division')
     place = models.IntegerField(default=0)
     active = models.BooleanField(default=True)
     max_games_at_once = models.IntegerField(default=2, blank=True, null=True)
@@ -2589,6 +2620,8 @@ class TournamentInvite(models.Model):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
     player = models.ForeignKey('Player', on_delete=models.DO_NOTHING)
     joined = models.BooleanField(default=False)
+    notified = models.BooleanField(default=False)
+    created_date = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     def __str__(self):
         return "Tournament {}, player {}, joined? {}".format(self.tournament.name, self.player.name, self.joined)
@@ -2941,7 +2974,7 @@ class MonthlyTemplateRotation(Tournament):
                     else:
                         team_data_internal = '<tr><td>Unranked</td><td>'
 
-                    team_data_internal += get_player_data(team_players[0])
+                    team_data_internal += get_tournament_player_data(team_players[0])
                     team_data_internal += '</td>'
                     team_data_internal += '<td>{}</td>'.format(rating)
                     team_data_internal += '</tr>'
@@ -3117,7 +3150,7 @@ class MonthlyTemplateRotation(Tournament):
 
             tournament_player = TournamentPlayer.objects.filter(team=team)
             if tournament_player:
-                bracket_data += get_player_data(tournament_player[0])
+                bracket_data += get_tournament_player_data(tournament_player[0])
 
             bracket_data += '</td>'
             bracket_data += '<td>'
@@ -3132,7 +3165,6 @@ class MonthlyTemplateRotation(Tournament):
     def get_start_delete_buttons(self):
         return ""
 
-
 class PromotionalRelegationLeague(Tournament):
     type = models.CharField(max_length=255, blank=True, null=True, default="Promotion/Relegation League")
     seasons = models.IntegerField(default=0)
@@ -3143,199 +3175,341 @@ class PromotionalRelegationLeague(Tournament):
     def season_in_progress(self):
         return False
 
-    def update_game_log(self):
-        self.game_log = ""
-        self.save()
+    def create_season(self, season_name):
+        if len(season_name) < 3 or len(season_name) > 251:
+            raise ValueError("Season name must be between 3-250 characters.")
+        season = PromotionalRelegationLeagueSeason(pr_tournament=self, name=season_name, created_by=self.created_by, private=True)
+        season.save()
 
-    def get_start_delete_buttons(self):
+    def get_seasons_editable(self):
+        return self.get_seasons_impl(True)
 
-        button = '<button type="button" class="btn btn-md btn-success" id="start_tournament">Start Season</button>'
-        button += '&nbsp;<button type="button" class="btn btn-md btn-danger" id="delete_tournament">Delete Tournament (Creator Only)</button>'
-        return button
+    def get_seasons_impl(self, editable):
+        seasons = PromotionalRelegationLeagueSeason.objects.filter(pr_tournament=self)
+        if seasons.count() == 0:
+            return ""
+        season_data = '<div class="container"><div class="row">'
+        season_data += '<table class="table table-hover table-condensed">'
+        season_data += '<tr><th>Season Name</th><th>Management</th></tr>'
+        for season in seasons:
+            if not editable:
+                mgmt_text = "View Season"
+            else:
+                mgmt_text = "Manage/View Season"
+            mgmt_data = '<a role="button" class="btn btn-md btn-primary" href="/pr/season/{}">{}</a>'.format(season.id, mgmt_text)
+            if editable:
+                disabled = ""
+                if not season.is_finished and season.has_started:
+                    disabled = "disabled"
+                mgmt_data += '&nbsp;<button type="button" class="btn btn-md btn-danger" id="remove-pr-season" data-id="{}" {}>Delete Season</button>'.format(season.id, disabled)
+            season_data += '<tr><td>{}</td><td>{}</td></tr>'.format(season.name, mgmt_data)
+        season_data += '</table></div></div>'
 
-    def get_league_editor(self):
-        league_editor_text = ""
-  
-        # a input box for the template/settings
-        # button to add new divisions/groups
-        # for each group a delete button
+        return season_data
 
+    def get_seasons(self):
+        return self.get_seasons_impl(False)
 
-        return league_editor_text
-
-
-    def get_template_data_text(self):
-        return ""
-
-    @property
-    def can_invite_player_buttons(self):
-        if not self.private:
-            return True
-
-        return False
-
-    def start(self):
-        # start the promotional relegation league
-        # this only starts when the creator says so, at which point we will start to process games in the child tournaments
-        # create the current season, with the specific number of groups
-        pass
-
-    def league_editor_button_text(self):
-        return "{} season editor".format(self.type)
-
-    def get_current_template_id(self):
-        # for now simply return the current one
-        if self.current_season is not None:
-            return self.current_season.template
-        return 0
-
-    def get_join_leave(self, allow_buttons, logged_in, request_player):
-        # get's the join/leave buttons based on the player wanting to join
-        join = ''
-        if allow_buttons and logged_in:
-            # is the player currently active in the tournament?
-            tournament_player = TournamentPlayer.objects.filter(player=request_player, tournament=self)
-            if tournament_player and not tournament_player[0].team.active:
-                join += '<button type="button" class="btn btn-info" name="slot" id="join">Join P/R League</button>&nbsp;<button type="button" class="btn btn-info" name="slot" id="decline" disabled="disabled">Leave P/R League</button>'
-            elif tournament_player and tournament_player[0].team.active:
-                join += '<button type="button" class="btn btn-info" name="slot" id="join" disabled="disabled">Join P/R League</button>&nbsp;<button type="button" class="btn btn-info" name="slot" id="decline">Leave P/R League</button>'
-            elif not tournament_player:
-                join += '<button type="button" class="btn btn-info" name="slot" id="join">Join P/R League</button>&nbsp;<button type="button" class="btn btn-info" name="slot" id="decline" disabled="disabled">Leave P/R League</button>'
-
-        return join
-
-    @property
-    def show_invite_button(self):
-        if not self.private:
-            return True
-
-        return False
-
-    def get_bracket_game_data(self):
-        return self.bracket_game_data
-
-    def get_team_table(self, allow_buttons, logged_in, request_player):
-        # override the parent method to return the buttons to join the MTC or leave if already
-        # joined
-        table = ''
-
-        # a few overrides on the pass in values
-        in_tournament = False
-        tournament_player = TournamentPlayer.objects.filter(player=request_player, tournament=self.id)
-        if tournament_player:
-            in_tournament = True
-
-        tournamentteams = TournamentTeam.objects.filter(tournament=self.id).order_by('-rating', '-wins')
-        if tournamentteams:
-            table += '<table class="table table-hover">'
-            table += '<tr><th>Player</th><th>Active?</th></tr>'
-            team_index = 1
-            ordered_team_data = []
-
-            # for good measure
-            self.number_players = tournamentteams.count()
-            self.save()
-            unranked_data = []
-            ranked_data = []
-            for team in tournamentteams:
-                table += "<tr>"
-                table += "<td>{}</td>".format(get_team_data(team))
-                if team.active:
-                    table += "<td>Yes</td>"
-                else:
-                    table += "<td>No</td>"
-                table += "</tr>"
-
-            table += "</table>"
-
-        return table
-
-    def join_tournament(self, token, buttonid):
-        # if we get called we're definitely already logged in
-        # parse the join button, and join the slot
-        log("Player {} joining MTC {}".format(token, self.name), LogLevel.informational)
-        player = Player.objects.filter(token=token)
-        if not player:
-            raise Exception("Player with token {} not found".format(token))
-
-        # if we're start locked we must bail, but you can join the
-        if self.start_locked:
-            raise Exception("The host is trying to start the tournament or it has already started.")
-
-        # make sure this player isn't already in the tournament
-        tournament_player = TournamentPlayer.objects.filter(player=player[0], tournament=self.id)
-        if tournament_player:
-            if not tournament_player[0].team.active:
-                # set active to true and move on
-                log_tournament("Team {} has become active".format(tournament_player[0].team.id), self)
-                tournament_player[0].team.active = True
-                tournament_player[0].team.save()
-                self.number_players += 1
-                self.save()
-                return
-            return
-
-        # create a new team object for them
-        teams = TournamentTeam.objects.filter(tournament=self).order_by('-team_index')
-        if teams:
-            for team in teams:
-                team_index = team.team_index + 1
-        else:
-            team_index = 1
-
-        new_team = TournamentTeam(tournament=self, team_index=team_index, rating=1000, players=self.players_per_team)
-        new_team.save()
-        self.number_players += 1
-        self.save()
-
-        # if we get here, we're a new player entirely
-        # there is no limit to the total MTR players, so just add a new one
-        # create the player and move on
-        tournament_player = TournamentPlayer(tournament=self, team=new_team, player=player[0])
-        tournament_player.save()
-
-        # now, if there is an invite for this player, go ahead and delete it as well (since they've now joined)
-        tournament_invite = TournamentInvite.objects.filter(player=player[0], tournament=self,
-                                                            joined=False)
-        if tournament_invite:
-            tournament_invite[0].joined = True
-            tournament_invite[0].save()
-
-    def decline_tournament(self, token):
-        # is the player in the tournament?
-        player = Player.objects.filter(token=token)
-        if not player:
-            raise Exception("Player with token {} not found".format(token))
-
-        # if we're start locked we must bail, but the player should still be able to join
-        # after it starts
-        if self.start_locked:
-            raise Exception("The host is trying to start the tournament or it has already started.")
-
-        # make sure this player is already in the tournament
-        tournament_player = TournamentPlayer.objects.filter(player=player[0], tournament=self.id)
-        if not tournament_player:
-            raise Exception("Player {} is not in the tournament!".format(token))
-
-        # de-activate the tournament player
-        tournament_player[0].team.active = False
-        tournament_player[0].team.save()
-        self.number_players -= 1
-        self.save()
+    def remove_season(self, season_id):
+        # cannot remove season when in progress
+        season = PromotionalRelegationLeagueSeason.objects.filter(id=int(season_id))
+        if not season:
+            raise ValueError("Season could not be found.")
+        season.delete()
 
 class PromotionalRelegationLeagueSeason(Tournament):
     pr_tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, related_name='pr_parent_tournament')
-    season_number = models.IntegerField(default=0)
-    groups = models.IntegerField(default=0)
+    season_template = models.ForeignKey('ClanLeagueTemplate', on_delete=models.CASCADE, related_name='pr_season_template', blank=True, null=True, default=None)
 
     def start(self, tournament_data):
+        divisions = ClanLeagueDivision.objects.filter(pr_season=self)
+        for div in divisions:
+            teams = TournamentTeam.objects.filter(clan_league_division=div, tournament=self)
+            tournament = PromotionalRelegationLeagueTournament(parent_tournament=self, template=self.season_template.templateid, name=div.title, division=div, created_by=self.created_by, number_players=teams.count()*self.season_template.players_per_team, max_players=teams.count()*self.season_template.players_per_team, number_rounds=teams.count()-1, players_per_team=self.season_template.players_per_team, teams_per_game=2, private=True)
+            tournament.save()
+            for team in teams:
+                team.round_robin_tournament = tournament
+                team.save()
+            tournament.start()
+
+        self.has_started = True
+        self.save()
+
+    def update_game_log(self):
+        pass
+
+    def update_bracket_game_data(self):
         pass
 
     def process_new_games(self):
+        # loop through all divisions, creating games for those divisions
         pass
+
+    def get_start_locked_data(self):
+        # returns the html for the tournament
+        return "<p>Are you sure you want to start Season {}? Once you've started the season you can pause/resume it you cannot alter divisions, players, or templates.</p>".format(self.name)
 
     def get_bracket_game_data(self):
         return self.bracket_game_data
+
+    @property
+    def can_start_tourney(self):
+        # we must have exactly 1 template and atleast 1 division, all divisions must have at least 4 teams
+        if self.season_template is None:
+            return False
+        divisions = ClanLeagueDivision.objects.filter(pr_season=self)
+        if divisions.count() == 0:
+            return False
+        for div in divisions:
+            teams = TournamentTeam.objects.filter(tournament=self, clan_league_division=div)
+            if teams.count() < 4:
+                return False
+        players = TournamentPlayer.objects.filter(player__token=1, tournament=self)
+        if players.count() != 0:
+            return False
+
+        # set the proper fields on this tournament which is looked at before creating the underlying round robin ones
+        self.players_per_team = self.season_template.players_per_team
+        self.save()
+
+        return True
+
+
+    def add_team_to_division(self, request):
+        if 'tournamentid' in request.POST and 'divisionid' in request.POST:
+            # create the team in the division
+            division = ClanLeagueDivision.objects.filter(id=int(request.POST['divisionid']))
+            if division:
+                self.create_empty_team(division[0])
+                players = TournamentPlayer.objects.filter(tournament=self)
+                if players:
+                    self.numbers_players = players.count()
+                    self.save()
+
+    def remove_team_from_division(self, request):
+        if 'teamid' in request.POST:
+            team = TournamentTeam.objects.filter(pk=int(request.POST['teamid']))
+            team.delete()
+
+    def invite_player(self, request_data):
+        # update the slot based on the request data. We override the parent
+        if 'data_attrib[player]' in request_data:
+            playerid = request_data['data_attrib[player]']
+
+        # look up the associated clan/division/template/team and add this player to the team in the correct slot
+        # if the playerid == 0 then this means it was an empty slot
+        try:
+            if 'data_attrib[swapid]' in request_data:
+                # add the player to the team
+                tplayer = TournamentPlayer.objects.get(id=int(playerid))
+                templateid = self.season_template.templateid
+                player = Player.objects.get(id=int(request_data['data_attrib[swapid]']))
+                if is_player_allowed_join(player, templateid):
+                    log_tournament(
+                        "Swapped {} [{}] with {} [{}]".format(tplayer.player.name, tplayer.player.token, player.name,
+                                                              player.token), self)
+                    tplayer.player = player
+                    tplayer.save()
+                else:
+                    raise Exception("{} is not allowed to play this template.".format(player.name))
+
+        except ObjectDoesNotExist:
+            log_exception()
+
+    def add_template(self, request):
+        # check the parameters
+        if 'templateid' in request.POST and 'templatesettings' in request.POST and 'players_per_team' in request.POST and 'templatename' in request.POST:
+            templateid = request.POST['templateid']
+            templatesettings = request.POST['templatesettings']
+            players_per_team = int(request.POST['players_per_team'])
+            templatename = request.POST['templatename']
+            if players_per_team < 1 or players_per_team > 3:
+                raise Exception("You many only have 1, 2, or 3 players per team for Clan Leagues")
+            elif len(templateid) < 4:
+                raise Exception("You must enter in a valid template id.")
+            elif len(templatename) < 3 or len(templatename) > 250:
+                raise Exception("Template name must be between 3-250 characters")
+            # if the template gets modified with # of players different then blow away divisions
+            if self.season_template is not None and self.season_template.players_per_team != players_per_team:
+                # remove all divisions, and teams in those divisions
+                divisions = ClanLeagueDivision.objects.filter(pr_season=self)
+                for div in divisions:
+                    teams = TournamentTeam.objects.filter(clan_league_division=div)
+                    for t in teams:
+                        t.delete()
+                    div.delete()
+            template = self.season_template
+            if template:
+                template.delete()
+            template = ClanLeagueTemplate(templateid=int(templateid), template_settings=templatesettings, players_per_team=players_per_team, name=templatename)
+            template.save()
+            self.season_template = template
+            self.save()
+        else:
+            raise Exception("Invalid arguments provided!")
+
+    def get_editable_template_data(self):
+        return self.get_template_data_impl(True)
+
+    def get_template_data(self):
+        return self.get_template_data_impl(False)
+
+    def get_template_data_impl(self, editable):
+        print("GetTemplate Data Editable: {}".format(editable))
+        data = ""
+        template = self.season_template
+        if template is not None:
+            if editable:
+                data += '<p class="text-danger" id="template_start_error"></p>'
+            data += '<table class="table table-hover table-condensed clot_table compact stripe cell-border" id="template_table">'
+            data += '<tr>'
+            data += '<th>Template ID</th>'
+            data += '<th>Template Name</th>'
+            data += '<th>Template Link</th>'
+            data += '<th>Players Per Team</th>'
+            data += '</tr>'
+
+            data += '<tr>'
+            data += '<td>{}</td>'.format(template.templateid)
+            data += '<td>{}</td>'.format(template.name)
+            data += '<td><a href="https://warzone.com/MultiPlayer?TemplateID={}" target="_blank" class="badge badge-primary">Template</a></td>'.format(template.templateid)
+            data += '<td>{}</td>'.format(template.players_per_team)
+            data += '</table>'
+        return data
+
+    def get_editable_roster_data(self, id):
+        division_data = ""
+        division = ClanLeagueDivision.objects.filter(pr_season=self.id, pk=int(id))
+        if division:
+            division = division[0]
+            division_data += division.get_pr_division_card(True)
+        return division_data
+
+
+    def create_empty_team(self, division):
+        team = TournamentTeam(clan_league_division=division,
+                              players=self.season_template.players_per_team, tournament=self)
+        team.save()
+
+        for j in range(0, self.season_template.players_per_team):
+            empty_slot = Player.objects.filter(token=1)
+            if not empty_slot:
+                empty_slot = Player(token=1, name="Empty Slot")
+                empty_slot.save()
+            else:
+                empty_slot = empty_slot[0]
+            player = TournamentPlayer(player=empty_slot, tournament=self, team=team)
+            player.save()
+
+    def get_editable_divisions_data(self):
+        return self.get_divisions_data_impl(True)
+
+    def get_divisions_data(self):
+        return self.get_divisions_data_impl(False)
+
+    def get_divisions_data_impl(self, editable):
+        division_data = ""
+        divisions = ClanLeagueDivision.objects.filter(pr_season=self.id)
+        current_division = 1
+        for division in divisions:
+            # use cards, and outline the divisions here only allowing editable teams for 4 or more teams
+            division_data += division.get_pr_division_card(editable)
+            current_division += 1
+        return division_data
+
+    def add_new_division(self, request):
+        if self.season_template is None:
+            raise Exception("Please add a template first!")
+        if 'division-name' in request.POST:
+            division_name = request.POST['division-name']
+            if len(division_name) > 3 and len(division_name) <= 100:
+                division = ClanLeagueDivision(title=division_name, pr_season=self)
+                division.save()
+
+                # always default to create 4 slots per team in the division
+                for i in range(0, 4):
+                    self.create_empty_team(division)
+
+                players = TournamentPlayer.objects.filter(tournament=self)
+                if players:
+                    self.numbers_players = players.count()
+                # the creator will get to assign players to these team slots now
+                # so we can go ahead and mark us as "ClanLeague.started=True" and let the site handle this properly.
+                self.game_creation_allowed = False
+                self.save()
+                return division
+        raise Exception("Division name must be between 3-100 characters.")
+
+    def remove_division(self, request):
+        if 'divisionid' in request.POST:
+            divisionid = request.POST['divisionid']
+            division = ClanLeagueDivision.objects.filter(pr_season=self, pk=int(divisionid))
+            division[0].delete()
+        else:
+            raise Exception("Division not found to remove!")
+
+    def get_invited_players_inverse_table(self, creator_token, request_data, viewer_token):
+        # get all the players, and only add the players we care about (excluding invited players) to the html
+        table = '<div class="row"><input type="text" id="invite-filter" placeholder="Filter Players" /><input type="hidden" id="cl-player-id" value="{}" /></div>'
+        table += '<table class="table table-hover">'
+        table += '<thead><tr><th>Player Name</th><th> </th></tr></thead><tbody id="invite-filter-table">'
+
+        is_player_available = False
+        players = Player.objects.all()
+        # list of player names associated with the rows so that we can do easy filtering on the client
+        # side
+        for player in players:
+            is_player_available = True
+            # player wasn't invited to this tournament
+            # check if it's us, if it is, skip
+            table += '<tr><td>'
+            table += get_player_data(player)
+
+            table += '</td>'
+            table += '<td><button class="btn btn-info btn-sm" id="cl-update-player-{}" name="slot" data-swapid="{}" data-player="{}">Swap</button></td>'.format(
+                player.id, player.id, request_data['data_attrib[player]'])
+            table += '</tr>'
+
+        if not is_player_available:
+            table += 'There are no players to invite.'
+
+        table += '</tbody></table>'
+
+        return table
+
+class PromotionalRelegationLeagueTournament(RoundRobinTournament):
+    division = models.ForeignKey('ClanLeagueDivision', on_delete=models.CASCADE, null=True, blank=True)
+
+    def are_vacations_supported(self):
+        return True
+
+    def get_game_name(self):
+        # get the current number of games
+        log_tournament("PR Game Name: {} | {}".format(self.division.pr_season.name, self.division.title), self)
+        return "{} | {}".format(self.division.pr_season.name, self.division.title)
+
+    def has_force_vacation_interval(self):
+        return False
+
+    def uses_byes(self):
+        return False
+
+    def update_bracket_game_data(self):
+        pass
+
+    def process_new_games(self):
+        # just call into the parent to create games
+        try:
+            super(PromotionalRelegationLeagueTournament, self).process_new_games()
+        except Exception:
+            log_exception()
+
+    def start(self):
+        print("Starting Promotional Relegation League Tournament")
+
+        super(PromotionalRelegationLeagueTournament, self).start()
+        # just call into the parent and start it
+
 
 class ClanLeagueTemplate(models.Model):
     templateid = models.IntegerField(default=0, blank=True, null=True, db_index=True)
@@ -3362,6 +3536,7 @@ class ClanLeagueDivisionClan(models.Model):
 class ClanLeagueDivision(models.Model):
     title = models.CharField(default="", blank=True, null=True, max_length=255)
     league = models.ForeignKey('ClanLeague', on_delete=models.CASCADE, null=True, blank=True)
+    pr_season = models.ForeignKey('PromotionalRelegationLeagueSeason', on_delete=models.CASCADE, null=True, blank=True)
 
     def get_division_card(self, type, editable):
         division_data = '<br/><div class ="card gedf-card span6">'
@@ -3407,7 +3582,12 @@ class ClanLeagueDivision(models.Model):
                     for tournament in tournaments:
                         if tournament.has_started:
                             division_data += '<div class="row" style="padding-bottom:25px;">'
-                            division_data += '<a href="http://wztourney.herokuapp.com/tournaments/{}/" class="btn btn-primary btn-lg" role="button">{}</a>'.format(tournament.id, tournament.name)
+                            division_data += '<button class="btn btn-info" onclick="toggle_div(\'toggle-data-{}\');">{} Games</button>'.format(
+                                tournament.id, tournament.name)
+                            division_data += '<div id="toggle-data-{}" style="display:none;padding-top:25px;">'.format(tournament.id)
+                            division_data += '<a href="/tournaments/{}/" class="btn btn-primary btn-sm" role="button">View {} Details</a>'.format(tournament.id, tournament.name)
+                            division_data += '<br/>{}'.format(tournament.get_bracket_game_data())
+                            division_data += '</div>'
                             division_data += '</div>'
 
                     # loop through the tournaments again asking for the current game results
@@ -3428,7 +3608,7 @@ class ClanLeagueDivision(models.Model):
                         player_data += '<td>'
                         players = TournamentPlayer.objects.filter(team=team[0])
                         for player in players:
-                            player_data += '{}'.format(get_player_data(player))
+                            player_data += '{}'.format(get_tournament_player_data(player))
                             if editable:
                                 player_data += '<a href="javascript:void(0);" class="badge badge-info invite_players" data-player="{}">Change Player</a>&nbsp;'.format(player.id)
                         player_data += '</td>'
@@ -3436,6 +3616,51 @@ class ClanLeagueDivision(models.Model):
             player_data += '</table>'
             division_data += player_data
         division_data += '</div></div>'
+        return division_data
+
+    def get_pr_division_card(self, editable):
+        division_data = '<br/><div class="editable-division" id="division-data-{}">'.format(self.id)
+        division_data += '<div class ="card gedf-card span6">'
+        division_data += '<div class ="card-header">'
+        division_data += '<div class ="d-flex justify-content-between align-items-center">'
+        division_data += '<div>'
+        division_data += '<h6>{}</h6>'.format(self.title)
+        if not self.pr_season.has_started and editable:
+            division_data += '<button class="btn btn-sm btn-danger" type="button" id="division-remove-{}" data-division="{}">Remove Division</button>'.format(self.id, self.id)
+            division_data += '&nbsp;<button class="btn btn-sm btn-info" type="button" id="division-add-team" data-division="{}">+ Add Team</button>'.format(self.id)
+        elif self.pr_season.has_started:
+            tournament = PromotionalRelegationLeagueTournament.objects.filter(division=self)
+            if tournament:
+                tournament = tournament[0]
+                division_data += '<a href="/tournaments/{}/" class="btn btn-primary" role="button">View Division Results</a>'.format(
+                        tournament.id)
+
+        division_data += '</div>'
+        division_data += '</div>'
+        division_data += '</div>'
+
+        division_data += '<div class="card-body">'
+        division_data += '<table class="table table-sm table-hover">'
+        teams = TournamentTeam.objects.filter(clan_league_division=self).order_by('id')
+        template = self.pr_season.season_template
+        if template:
+            current_team = 1
+            for t in teams:
+                division_data += '<tr><td>'
+                players = TournamentPlayer.objects.filter(team=t)
+                for player in players:
+                    division_data += '{}'.format(get_tournament_player_data(player))
+                    if editable:
+                        division_data += '<a href="javascript:void(0);" class="badge badge-info invite_players" data-player="{}">Change Player</a>&nbsp;'.format(player.id)
+                if current_team > 4:
+                    division_data += '<a href="javascript:void(0);" class="badge badge-danger" id="division-remove-team-{}" data-division="{}" data-team="{}">Remove Team</button>'.format(
+                        self.id, self.id, t.id)
+                current_team += 1
+
+                division_data += '</td></tr>'
+
+        division_data += '</table>'
+        division_data += '</div></div></div>'
         return division_data
 
 
@@ -3684,7 +3909,6 @@ class ClanLeague(Tournament):
 
     def add_template(self, request):
         # check the parameters
-        print("Adding new template to CL: {}".format(request.POST))
         if 'templateid' in request.POST and 'templatesettings' in request.POST and 'players_per_team' in request.POST and 'templatename' in request.POST:
             templateid = request.POST['templateid']
             templatesettings = request.POST['templatesettings']
@@ -3823,7 +4047,7 @@ class ClanLeague(Tournament):
                 # how many clans/team in this division?
                 division_count = divisions.count()
                 tournament_name = "{} - {}".format(division.title, template.name)
-                cl_tourney = ClanLeagueTournament(division=division, created_by=self.created_by, template=template.templateid, players_per_team=template.players_per_team, max_players=teams_in_division.count()*template.players_per_team, private=self.private, parent_tournament=self, name=tournament_name, teams_per_game=2, clan_league_template=template)
+                cl_tourney = ClanLeagueTournament(division=division, created_by=self.created_by, template=template.templateid, players_per_team=template.players_per_team, max_players=teams_in_division.count()*template.players_per_team, private=True, parent_tournament=self, name=tournament_name, teams_per_game=2, clan_league_template=template)
                 cl_tourney.save()
 
                 # each tournament should already have teams able to be set up here (for round robin)
