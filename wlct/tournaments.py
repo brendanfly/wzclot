@@ -3576,7 +3576,7 @@ class ClanLeagueDivision(models.Model):
                                 tournament.id, tournament.name)
                             division_data += '<div id="toggle-data-{}" style="display:none;padding-top:25px;">'.format(tournament.id)
                             division_data += '<a href="/tournaments/{}/" class="btn btn-primary btn-sm" role="button">View {} Details</a>'.format(tournament.id, tournament.name)
-                            division_data += '{}'.format(tournament.get_bracket_game_data())
+                            division_data += '<br/>{}'.format(tournament.get_bracket_game_data())
                             division_data += '</div>'
                             division_data += '</div>'
 
