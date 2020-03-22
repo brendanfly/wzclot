@@ -3572,7 +3572,11 @@ class ClanLeagueDivision(models.Model):
                     for tournament in tournaments:
                         if tournament.has_started:
                             division_data += '<div class="row" style="padding-bottom:25px;">'
-                            division_data += '<a href="/tournaments/{}/" class="btn btn-primary btn-lg" role="button">{}</a>'.format(tournament.id, tournament.name)
+                            division_data += '<button class="btn btn-info" onclick="toggle_div(\'toggle-data-{}\');">{} Games</button>'.format(
+                                tournament.id, tournament.name)
+                            division_data += '<div id="toggle-data-{}" style="display:none;padding-top:25px;">'.format(tournament.id)
+                            division_data += '<a href="/tournaments/{}/" class="btn btn-primary btn-sm" role="button">View {} Details</a>'.format(tournament.id, tournament.name)
+                            division_data += '{}'.format(tournament.get_game_log())
                             division_data += '</div>'
 
                     # loop through the tournaments again asking for the current game results
