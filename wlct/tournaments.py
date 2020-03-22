@@ -3475,6 +3475,7 @@ class PromotionalRelegationLeagueTournament(RoundRobinTournament):
 
     def get_game_name(self):
         # get the current number of games
+        log_tournament("PR Game Name: {} | {}".format(self.division.pr_season.name, self.division.title), self)
         return "{} | {}".format(self.division.pr_season.name, self.division.title)
 
     def has_force_vacation_interval(self):
