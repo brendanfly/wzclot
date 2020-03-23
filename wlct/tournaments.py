@@ -1080,7 +1080,7 @@ class Tournament(models.Model):
         days = int(hours // 24)
         if hours > 0:
             if remaining_hours > 0:
-                if days > 1 and remaining_hours > 1:
+                if days > 1 and ((remaining_hours > 1) or (hours > 24)):
                     return "{} days, {} hours ago".format(days, remaining_hours)
                 elif days > 1:
                     return "{} days, {} hour ago".format(days, remaining_hours)
