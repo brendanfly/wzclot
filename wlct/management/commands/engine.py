@@ -109,10 +109,13 @@ def validate_cl_tournament_games():
 
         # Iterate through unfinished games and check of missing player values
         for game in tournament_games:
+            teams = game.teams.split('.')
+            tt = TournamentTeam.objects.filter(pk=teams[0])
+            if not tt or tt[0].clan_league_clan:
+                continue
             if not game.players:
                 log("Found TournamentGame missing 'players' value with id: {}".format(game.id), LogLevel.engine)
                 found_missing_games += 1
-                teams = game.teams.split('.')
                 test_msg = test_content.team_game(teams[0], teams[1])
                 api_response = api.api_query_game_feed(game.gameid, test_msg).json()
 
