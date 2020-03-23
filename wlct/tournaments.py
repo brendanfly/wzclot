@@ -897,7 +897,6 @@ class Tournament(models.Model):
                                         for team_id in teams_in_game:
                                             if teams_lost[0] != team_id:
                                                 teams_won.append(team_id)
-                                                game.winning_team = player_to_use.team
                                                 processGameLog += "Team {} won due to team {} already losing ".format(player_to_use.team.id, teams_lost[0])
                         else:
                             processGameLog += "Can't find player {} in tournament {} ".format(player_data['id'], self.id)
