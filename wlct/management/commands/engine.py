@@ -4,8 +4,8 @@ import datetime
 from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
-from wlct.models import Clan, Engine
-from wlct.tournaments import TournamentGame, Tournament, TournamentRound, find_tournament_by_id, TournamentGameEntry, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TestContent
+from wlct.models import Clan, Engine, Player
+from wlct.tournaments import find_tournament_by_id, TournamentGame, Tournament, TournamentPlayer, TournamentRound, TournamentTeam, TournamentGameEntry, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TestContent
 from django.conf import settings
 from wlct.api import API
 from django import db
@@ -74,6 +74,30 @@ def parse_and_update_clan_logo():
     except Exception:
         log_exception()
 
+def is_correct_player(player_token, player_team):
+    try:
+        player = Player.objects.filter(token=player_token)[0]
+        tt = TournamentTeam.objects.filter(pk=player_team)[0]
+        if player.clan and player.clan.name == tt.clan_league_clan.clan.name:
+            return True
+
+        tplayers = TournamentPlayer.objects.filter(team=tt)
+        for tplayer in tplayers:
+            if tplayer.player.token == player_token:
+                return True
+        return False
+    except:
+        log_exception()
+        return False
+
+
+def is_valid_team_order(team_order, team_dict, teams):
+    for i in range(len(team_order)):
+        for player in team_dict[team_order[i]]:
+            if is_correct_player(player, teams[i]):
+                return True
+    return False
+
 def validate_cl_tournament_games():
     try:
         print("Running validate_cl_tournament_games on thread {}".format(threading.get_ident()))
@@ -81,7 +105,6 @@ def validate_cl_tournament_games():
         api = API()
         found_missing_games = 0
         corrected_missing_games = 0
-
         test_content = TestContent()
 
         # Iterate through unfinished games and check of missing player values
@@ -95,20 +118,34 @@ def validate_cl_tournament_games():
 
                 # Add player tokens by team
                 team_dict = {}
+                team_order = []
                 for player in api_response.get("players"):
                     if "team" in player:
                         if not player["team"] in team_dict:
                             team_dict[player["team"]] = []
+                            team_order.append(player["team"])
                         team_dict[player["team"]].append(player["id"])
                     else:
                         if not len(team_dict) in team_dict:
                             team_dict[len(team_dict)] = []
+                            team_order.append(len(team_dict))
                         team_dict[len(team_dict) - 1].append(player["id"])
+                # Check if team order matches with player and clan object on clot
+                if not is_valid_team_order(team_order, team_dict, teams):
+                    log("Possibly incorrect team order... Attempting reversing teams - TGame ID: {}".format(game.id), LogLevel.warning)
+                    team_order.reverse()
+                    if not is_valid_team_order(team_order, team_dict, teams):
+                        log("Possibly incorrect team order... Using original order - TGame ID: {}".format(game.id), LogLevel.warning)
+                        team_order.reverse()
+                    else:
+                        log("Correct team order found - TGame ID: {}".format(game.id), LogLevel.engine)
+                else:
+                    log("Correct team order found - TGame ID: {}".format(game.id), LogLevel.engine)
 
                 # Combine player tokens in each team
                 team_player_token_list = []
-                for key, players in team_dict.items():
-                    team_player_token_list.append(".".join(players))
+                for team in team_order:
+                    team_player_token_list.append(".".join(team_dict[team]))
 
                 # Set players value in TournamentGame with player tokens
                 game.players = "-".join(team_player_token_list)
