@@ -902,7 +902,6 @@ class Tournament(models.Model):
                                         for team_id in teams_in_game:
                                             if teams_lost[0] != team_id:
                                                 teams_won.append(team_id)
-                                                game.winning_team = player_to_use.team
                                                 processGameLog += "Team {} won due to team {} already losing ".format(player_to_use.team.id, teams_lost[0])
                         else:
                             processGameLog += "Can't find player {} in tournament {} ".format(player_data['id'], self.id)
@@ -1086,7 +1085,7 @@ class Tournament(models.Model):
         days = int(hours // 24)
         if hours > 0:
             if remaining_hours > 0:
-                if days > 1 and remaining_hours > 1:
+                if days > 1 and ((remaining_hours > 1) or (hours > 24)):
                     return "{} days, {} hours ago".format(days, remaining_hours)
                 elif days > 1:
                     return "{} days, {} hour ago".format(days, remaining_hours)
