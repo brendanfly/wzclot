@@ -5,7 +5,7 @@ from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
 from wlct.models import Clan, Engine, Player
-from wlct.tournaments import find_tournament_by_id, TournamentGame, Tournament, TournamentPlayer, TournamentRound, TournamentTeam, TournamentGameEntry, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TestContent
+from wlct.tournaments import ClanLeague, ClanLeagueTournament, find_tournament_by_id, Tournament, TournamentGame, TournamentPlayer, TournamentTeam, TournamentGameEntry, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TestContent
 from django.conf import settings
 from wlct.api import API
 from django import db
@@ -98,10 +98,22 @@ def is_valid_team_order(team_order, team_dict, teams):
                 return True
     return False
 
+def get_clan_league_games():
+    cl_games = []
+    clan_leagues = ClanLeague.objects.filter(has_started=True, is_official=True)
+    for cl in clan_leagues:
+        cl_tournaments = ClanLeagueTournament.objects.filter(parent_tournament=cl)
+        for cl_tournament in cl_tournaments:
+            games = TournamentGame.objects.filter(tournament=cl_tournament, is_finished=False)
+            for game in games:
+                cl_games.append(game)
+    return cl_games
+
+
 def validate_cl_tournament_games():
     try:
         print("Running validate_cl_tournament_games on thread {}".format(threading.get_ident()))
-        tournament_games = TournamentGame.objects.filter(is_finished=False)
+        tournament_games = get_clan_league_games()
         api = API()
         found_missing_games = 0
         corrected_missing_games = 0
@@ -109,13 +121,10 @@ def validate_cl_tournament_games():
 
         # Iterate through unfinished games and check of missing player values
         for game in tournament_games:
-            teams = game.teams.split('.')
-            tt = TournamentTeam.objects.filter(pk=teams[0])
-            if not tt or tt[0].clan_league_clan:
-                continue
             if not game.players:
                 log("Found TournamentGame missing 'players' value with id: {}".format(game.id), LogLevel.engine)
                 found_missing_games += 1
+                teams = game.teams.split('.')
                 test_msg = test_content.team_game(teams[0], teams[1])
                 api_response = api.api_query_game_feed(game.gameid, test_msg).json()
 
