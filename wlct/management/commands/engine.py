@@ -100,12 +100,9 @@ def is_valid_team_order(team_order, team_dict, teams):
 
 def get_clan_league_games():
     cl_games = []
-    clan_leagues = ClanLeague.objects.filter(has_started=True, is_official=True)
-    for cl in clan_leagues:
-        cl_tournaments = ClanLeagueTournament.objects.filter(parent_tournament=cl)
-        for cl_tournament in cl_tournaments:
-            games = TournamentGame.objects.filter(tournament=cl_tournament, is_finished=False)
-            for game in games:
+    for cl in ClanLeague.objects.filter(has_started=True, is_official=True):
+        for cl_tournament in ClanLeagueTournament.objects.filter(parent_tournament=cl):
+            for game in TournamentGame.objects.filter(tournament=cl_tournament, is_finished=False):
                 cl_games.append(game)
     return cl_games
 
