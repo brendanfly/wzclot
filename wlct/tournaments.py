@@ -3541,6 +3541,15 @@ class ClanLeagueDivision(models.Model):
     league = models.ForeignKey('ClanLeague', on_delete=models.CASCADE, null=True, blank=True)
     pr_season = models.ForeignKey('PromotionalRelegationLeagueSeason', on_delete=models.CASCADE, null=True, blank=True)
 
+    @staticmethod
+    def has_duplicate_clans(clans):
+        set_of_clans = set()
+        for clan in clans:
+            if clan.clan.id in set_of_clans:
+                return True
+            set_of_clans.add(clan.clan.id)
+        return False
+
     def get_division_card(self, type, editable):
         division_data = '<br/><div class ="card gedf-card span6">'
         division_data += '<div class ="card-header">'
@@ -3560,6 +3569,12 @@ class ClanLeagueDivision(models.Model):
             if not self.league.has_started:
                 # load the clan information, including all clans at the top to add to this division
                 if editable:
+                    # check for duplicate clans and return warning
+                    if ClanLeagueDivision.has_duplicate_clans(clans):
+                        division_data += '<div class="alert alert-warning">'
+                        division_data += '<span type="button" class="close" aria-label="Close" data-dismiss="alert"><span aria-hidden="true">&times;</span></span>'
+                        division_data += '<span>Warning: duplicate clans in the division</span>'
+                        division_data += '</div>'
                     all_clans = Clan.objects.all().order_by("name")
                     division_data += '<select name="div-clans-{}" multiple>'
                     for clan in all_clans:
@@ -3885,9 +3900,29 @@ class ClanLeague(Tournament):
     def get_editable_divisions_data(self):
         return self.get_divisions_data_impl(True)
 
+    @staticmethod
+    def has_duplicate_clans_across_divisions(divisions):
+        all_clans = set()
+        for division in divisions:
+            clans = ClanLeagueDivisionClan.objects.filter(division=division)
+            clans_set = set()
+            for clan in clans:
+                clans_set.add(clan.clan.id)
+            total_clans = len(all_clans) + len(clans_set)
+            all_clans = all_clans.union(clans_set)
+            if len(all_clans) < total_clans:
+                return True
+        return False
+
     def get_divisions_data_impl(self, editable):
         division_data = ""
         divisions = ClanLeagueDivision.objects.filter(league=self.id)
+        # check if duplicate clans across division and return warning
+        if editable and ClanLeague.has_duplicate_clans_across_divisions(divisions):
+            division_data += '<div class="alert alert-warning">'
+            division_data += '<span type="button" class="close" aria-label="Close" data-dismiss="alert"><span aria-hidden="true">&times;</span></span>'
+            division_data += '<span>Warning: duplicate clans across divisions</span>'
+            division_data += '</div>'
         for division in divisions:
             # use cards, and outline the divisions here
             division_data += division.get_division_card("add-clans", editable)
