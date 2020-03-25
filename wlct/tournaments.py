@@ -789,7 +789,7 @@ class Tournament(models.Model):
                                 else:
                                     if player_to_use.team.id not in teams_lost and len(teams_lost) == 0:
                                         teams_lost.append(player_to_use.team.id)
-                                        processGameLog += "Game Finished, team {} lost ".format(player_to_use.team.id)
+                                        processGameLog += "\nGame Finished, team {} lost ".format(player_to_use.team.id)
 
                                 game.finish_game_with_info(game_status)
                                 game.save()
@@ -802,22 +802,22 @@ class Tournament(models.Model):
                                     if len(teams_lost) == 0:
                                         if player_to_use.team.id not in teams_lost:
                                             teams_lost.append(player_to_use.team.id)
-                                            processGameLog += "{} declined game".format(player_to_use.player.name)
+                                            processGameLog += "\n{} declined game".format(player_to_use.player.name)
                                     else:
                                         if player_to_use.team.id not in teams_won and len(teams_won) == 0:
                                             teams_won.append(player_to_use.team.id)
-                                            processGameLog += "Game never started, but team {} won ".format(player_to_use.team.id)
+                                            processGameLog += "\nGame never started, but team {} won ".format(player_to_use.team.id)
 
                                     # regardless of who won/lost, delete the game, we still have the data in memory
                                     # so this is ok
-                                    processGameLog += "{} failed to join (DECLINED), forcing loss and deleting game ".format(
+                                    processGameLog += "\n{} failed to join (DECLINED), forcing loss and deleting game ".format(
                                         player_to_use.player.name)
 
                                     # delete the game
                                     if 'id' in game_status:
                                         delete_status = api.api_delete_game(game_status['id'])
                                     else:
-                                        processGameLog += "Game Status did not contain the game id: {} ".format(game_status)
+                                        processGameLog += "\nGame Status did not contain the game id: {} ".format(game_status)
 
                                     game.finish_game_with_info(game_status)
                                     game.save()
@@ -848,26 +848,26 @@ class Tournament(models.Model):
 
                                     team_on_vacation = self.is_team_on_vacation(player_to_use.team)
 
-                                    processGameLog += "Seconds since created: {}, turn time in minutes: {} ".format(
+                                    processGameLog += "\nSeconds since created: {}, turn time in minutes: {} ".format(
                                         seconds_since_created, turn_time_in_minutes)
                                     seconds_in_turn = int(float(turn_time_in_minutes)) * 60
                                     if seconds_since_created > seconds_in_turn:
-                                        processGameLog += "Game has reached past the boot time...checking vacation status"
+                                        processGameLog += "\nGame has reached past the boot time...checking vacation status"
                                         # check for vacation status for any of the players on the team
                                         # and if they are on vacation, then do not give them the lost
                                         # mark this game as is_finished=False so it gets looked at again
                                         # and continue on
                                         team_on_vacation = self.is_team_on_vacation(player_to_use.team)
-                                        processGameLog += "Team {} is on vacation: {}.".format(player_to_use.team.id, team_on_vacation)
+                                        processGameLog += "\nTeam {} is on vacation: {}.".format(player_to_use.team.id, team_on_vacation)
                                         if team_on_vacation and self.are_vacations_supported():
                                             # continue on case, no result for the game yet
                                             # do we have an interval in which we force a loss (i.e. clan league is 10 days without joining)
                                             if self.has_force_vacation_interval():
-                                                processGameLog += "Force Vacation Hard Interval: Team {} is on vacation due to player {} so the game should not start".format(player_to_use.team.id, player_to_use.player.name)
+                                                processGameLog += "\nForce Vacation Hard Interval: Team {} is on vacation due to player {} so the game should not start".format(player_to_use.team.id, player_to_use.player.name)
                                                 seconds_since_created = int(td.total_seconds())
                                                 seconds_to_wait = 60*60*24*self.vacation_force_interval
                                                 if seconds_since_created < seconds_to_wait:  # # of days
-                                                    processGameLog += "Force vacation interval is at {} seconds and we have until {} seconds".format(seconds_since_created, seconds_to_wait)
+                                                    processGameLog += "\nForce vacation interval is at {} seconds and we have until {} seconds".format(seconds_since_created, seconds_to_wait)
                                                     game.is_finished = False
                                                     game.save()
                                                     return
@@ -885,7 +885,7 @@ class Tournament(models.Model):
                                             if player_to_use.team.id not in teams_won and len(teams_won) == 0:
                                                 teams_won.append(player_to_use.team.id)
 
-                                        processGameLog += "{} failed to join, forcing loss and deleting game ".format(player_to_use.player.name)
+                                        processGameLog += "\n{} failed to join, forcing loss and deleting game ".format(player_to_use.player.name)
                                         game.finish_game_with_info(game_status)
                                         game.save()
 
@@ -893,7 +893,7 @@ class Tournament(models.Model):
                                         if 'id' in game_status:
                                             api.api_delete_game(game_status['id'])
                                         else:
-                                            processGameLog += "Game Status did not contain the game id: {} ".format(game_status)
+                                            processGameLog += "\nGame Status did not contain the game id: {} ".format(game_status)
                                 else:
                                     # if any player in this team has joined, make sure no one else declined
                                     # there's an edge case where if you're the last player looked at but you've already lost
@@ -902,13 +902,17 @@ class Tournament(models.Model):
                                         for team_id in teams_in_game:
                                             if teams_lost[0] != team_id:
                                                 teams_won.append(team_id)
-                                                processGameLog += "Team {} won due to team {} already losing ".format(player_to_use.team.id, teams_lost[0])
+                                                processGameLog += "\nTeam {} won due to team {} already losing ".format(team_id, teams_lost[0])
                         else:
-                            processGameLog += "Can't find player {} in tournament {} ".format(player_data['id'], self.id)
+                            processGameLog += "\nCan't find player {} in tournament {} ".format(player_data['id'], self.id)
                     else:
-                        processGameLog += "Couldn't find player {} ".format(player_data['id'])
+                        processGameLog += "\nCouldn't find player {} ".format(player_data['id'])
             game.save()
 
+            if not len(teams_won) and len(teams_lost):
+                for team_id in teams_in_game:
+                    if team_id not in teams_lost:
+                        teams_won.append(team_id)
 
             # now loop through the winners and losers and update their ratings accordingly
             for team in teams_won:
