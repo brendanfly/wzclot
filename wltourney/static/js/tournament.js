@@ -178,6 +178,17 @@ function update_cl_templates(type, obj)
     show_spinning(obj, "Saving...");
     data = {};
     var url = "/cl/templates/update/";
+
+    if ($('#template-warning').length)
+    {
+        var r = confirm("WARNING: Altering template data for this season will erase all current divisions if # of players per team change.");
+        if (r != true)
+        {
+            remove_spinning(obj, old_text_value);
+            return;
+        }
+    }
+
     if (type == "add")
     {
         var players_per_team = $("#players_per_team").val();
@@ -204,6 +215,7 @@ function update_cl_templates(type, obj)
                 $("#templatesettings").val('');
                 $("#templatename").val('');
                 hook_clan_league_buttons();
+                hook_pr_buttons();
             }
             else
             {
@@ -264,6 +276,17 @@ function update_division(type, obj)
         var divisionid = obj.data('division');
         data = {"tournamentid" : tournamentid, "divisionid" : divisionid, "optype": "remove"};
     }
+    else if (type == "add-team")
+    {
+        var divisionid = obj.data('division');
+        data = {"tournamentid" : tournamentid, "divisionid" : divisionid, "optype": "add-team"};
+    }
+    else if (type == "remove-team")
+    {
+        var divisionid = obj.data('division');
+        var teamid = obj.data('team');
+        data = {"tournamentid" : tournamentid, "divisionid" : divisionid, "optype": "remove-team", "teamid" : teamid};
+    }
 
      handle_request(url, data,
         function(data) {
@@ -275,6 +298,8 @@ function update_division(type, obj)
                 $("#division_list").html(data.divisions);
                 $("#division-name").val('');
                 hook_clan_league_buttons();
+                hook_pr_buttons();
+                hook_invite_players();
             }
             else
             {
@@ -295,6 +320,76 @@ function update_division(type, obj)
         function () {
             remove_spinning(obj, old_text_value);
         });
+}
+
+function update_pr_season(obj, type)
+{
+    var tournamentid = $("#tournamentid").val();
+    var old_text_value = obj.text();
+    var data = {"tournamentid": tournamentid, "season-name": $("#season-name").val(), "type" : type};
+
+    if (type == "add")
+    {
+        show_spinning(obj, "Creating New Season...");
+    }
+    else if (type == "remove")
+    {
+        show_spinning(obj, "Deleting Season...");
+        data["season_id"] = obj.data('id');
+    }
+    var url = "/pr/seasons/update/";
+
+    handle_request(url, data,
+        function(data) {
+            // onSuccess
+            // On success we need to use the data passed back
+            if (data.success == "true")
+            {
+                // populate the new list of seasons
+                $("#pr-season-tab").html(data.season_data);
+                $("#season-name").val('');
+            }
+            else
+            {
+                // display the error
+                $("#form_status_text").html(data.error);
+                $("#form_status").show();
+            }
+        },
+        function (data) {
+            // onError
+            // display the error message
+        },
+        function () {
+            // always
+            remove_spinning(obj, old_text_value);
+        },
+        function () {
+            remove_spinning(obj, old_text_value);
+    });
+}
+
+function hook_pr_buttons()
+{
+    $("#create-pr-season").on('click', function()
+    {
+        update_pr_season(jQuery(this), "add");
+    });
+
+    $("#remove-pr-season").on('click', function()
+    {
+        update_pr_season(jQuery(this), "remove");
+    });
+
+    $("button[id^=division-add-team").on('click', function()
+    {
+        update_division("add-team", jQuery(this));
+    });
+
+    $("a[id^=division-remove-team").on('click', function()
+    {
+        update_division("remove-team", jQuery(this));
+    });
 }
 
 function refresh_tournament_async()
@@ -404,6 +499,7 @@ $(function () {
     });
 
     hook_clan_league_buttons();
+    hook_pr_buttons();
     hook_invite_players();
 
     $("#create-division").on('click', function ()
@@ -415,6 +511,8 @@ $(function () {
     {
         update_cl_templates("add", jQuery(this));
     });
+
+
 
     // hook up all the decline/join buttons to do the right things
     $(document).on('click', 'button[id^=join]', function() {

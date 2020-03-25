@@ -78,7 +78,7 @@
                       </div>
                     {% endif %}
 
-                    {% if type != 'cl' %}
+                    {% if type == 'mtc' %}
                     <div class="form-group row">
                         <label class="col-for-label" for="players_team"><b>Players Per Team: </b><span id="players_team_text">1</span></label>
                         <div class="input-group">
@@ -87,7 +87,7 @@
                     </div>
                     {% endif %}
 
-                    {% if type == 'cl' %}
+                    {% if type != 'mtc' %}
                     <input type="hidden" id="players_team" name="players_team" value="0" />
                     <input type="hidden" id="templateid" name="templateid" value="0" />
                     {% endif %}

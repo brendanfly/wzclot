@@ -4,8 +4,8 @@ import datetime
 from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
-from wlct.models import Clan, Engine
-from wlct.tournaments import TournamentGame, Tournament, TournamentRound, find_tournament_by_id, TournamentGameEntry, MonthlyTemplateRotation, MonthlyTemplateRotationMonth
+from wlct.models import Clan, Engine, Player
+from wlct.tournaments import ClanLeague, ClanLeagueTournament, find_tournament_by_id, Tournament, TournamentGame, TournamentPlayer, TournamentTeam, TournamentGameEntry, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TestContent
 from django.conf import settings
 from wlct.api import API
 from django import db
@@ -37,6 +37,8 @@ class Command(BaseCommand):
             if not scheduler.running:
                 scheduler.add_job(tournament_engine, 'interval', seconds=get_run_time(), id='tournament_engine',
                                   max_instances=1, coalesce=False)
+                scheduler.add_job(tournament_caching, 'interval', seconds=get_run_time()*2, id='tournament_caching',
+                                  max_instances=1, coalesce=False)
                 scheduler.start()
         except ConflictingIdError:
             pass
@@ -48,7 +50,7 @@ def parse_and_update_clan_logo():
 
         text_soup = BeautifulSoup(clan_page, features="html.parser")
 
-        log("Refreshing clans", LogLevel.informational)
+        log("Refreshing clans", LogLevel.engine)
         links = text_soup.findAll("a")
         for link in links:
             try:
@@ -61,7 +63,7 @@ def parse_and_update_clan_logo():
                     if not clan_exist:
                         clan = Clan(name=clan_name, icon_link=clan_href, image_path=image)
                         clan.save()
-                        log("Added new clan: {}".format(clan_name), LogLevel.informational)
+                        log("Added new clan: {}".format(clan_name), LogLevel.engine)
                     elif clan_exist and clan_exist[0].image_path != image:  # updated image code path
                         clan_exist[0].image_path = image
                         clan_exist[0].save()
@@ -70,54 +72,77 @@ def parse_and_update_clan_logo():
     except Exception:
         log_exception()
 
-def check_games():
-        tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
-        for tournament in tournaments:
-            child_tournament = find_tournament_by_id(tournament.id, True)
-            if child_tournament:
-                log("Checking games for tournament: {}".format(tournament.name), LogLevel.informational)
-                try:
-                    if child_tournament.update_in_progress:
-                        continue
-                    elif not child_tournament.game_creation_allowed:
-                        continue
-                    child_tournament.update_in_progress = True
-                    child_tournament.save()
-                    games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
-                    log("Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.informational)
-                    for game in games.iterator():
-                        # process the game
-                        # query the game status
+def is_correct_player(player_token, player_team):
+    try:
+        player = Player.objects.filter(token=player_token)[0]
+        tt = TournamentTeam.objects.filter(pk=player_team)[0]
+        if player.clan and player.clan.name == tt.clan_league_clan.clan.name:
+            return True
+
+        tplayers = TournamentPlayer.objects.filter(team=tt)
+        for tplayer in tplayers:
+            if tplayer.player.token == player_token:
+                return True
+        return False
+    except:
+        log_exception()
+        return False
+
+def check_games(**kwargs):
+    print("Running check_games, type={} on thread {}".format(kwargs['type'], threading.get_ident()))
+    caching = kwargs['type'] == 'cache'
+    tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
+    for tournament in tournaments:
+        child_tournament = find_tournament_by_id(tournament.id, True)
+        if child_tournament and child_tournament.should_process_in_engine():
+            log("Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
+            try:
+                if child_tournament.update_in_progress and not caching:
+                    continue
+                elif not child_tournament.game_creation_allowed and not caching:
+                    continue
+                child_tournament.update_in_progress = True
+                child_tournament.save()
+                games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
+                log("Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.engine)
+                for game in games.iterator():
+                    # process the game
+                    # query the game status
+                    if not caching:
                         child_tournament.process_game(game)
-                    # in case tournaments get stalled for some reason
-                    # for it to process new games based on current tournament data
+                # in case tournaments get stalled for some reason
+                # for it to process new games based on current tournament data
+                if not caching:
                     child_tournament.process_new_games()
 
-                    # after we process games we always cache the latest data for quick reads
+                # after we process games we always cache the latest data for quick reads
+                if caching:
+                    log("Caching data for {}".format(tournament.name), LogLevel.engine)
                     child_tournament.cache_data()
-                except Exception as e:
-                    log_exception()
-                finally:
-                    child_tournament.update_in_progress = False
-                    child_tournament.save()
-            gc.collect()
+            except Exception as e:
+                log_exception()
+            finally:
+                child_tournament.update_in_progress = False
+                child_tournament.save()
+        gc.collect()
 
 def cleanup_logs():
     # get all the logs older than 2 days
-    print("Cleaning up logs, thread {}".format(threading.currentThread().ident))
     nowdate = datetime.datetime.now(tz=pytz.UTC)
     enddate = nowdate - datetime.timedelta(days=2)
     logs = Logger.objects.filter(timestamp__lt=enddate)
-    for log in logs.iterator():
-        log.delete()
+    for log_obj in logs.iterator():
+        log_obj.delete()
         gc.collect()
 
         # only get 3 minutes to run, the engine must continue
-        if (datetime.datetime.now(tz=pytz.UTC) - nowdate).total_seconds() >= get_run_time():
+        time_spent = datetime.datetime.now(tz=pytz.UTC) - nowdate
+        if time_spent.total_seconds() >= get_run_time():
+            log("Returned early from cleaning up logs, spent {} seconds cleaning.".format(time_spent.total_seconds()), LogLevel.engine)
             return
 
     if logs:
-        print("Cleaned up {} logs.".format(logs.count()))
+        log("Cleaned up {} logs.".format(logs.count()), LogLevel.engine)
 
     tournament_logs = TournamentLog.objects.filter(timestamp__lt=enddate)
     for tournament_log in tournament_logs.iterator():
@@ -125,11 +150,14 @@ def cleanup_logs():
         gc.collect()
 
         # only get 3 minutes to run, the engine must continue
-        if (datetime.datetime.now(tz=pytz.UTC) - nowdate).total_seconds() >= get_run_time():
+        time_spent = datetime.datetime.now(tz=pytz.UTC) - nowdate
+        if time_spent.total_seconds() >= get_run_time():
+            log("Returned early from cleaning up logs, spent {} seconds cleaning.".format(time_spent.total_seconds()),
+                LogLevel.engine)
             return
 
     if tournament_logs:
-        print("Cleaned up {} tournament logs.".format(tournament_logs.count()))
+        log("Cleaned up {} tournament logs.".format(tournament_logs.count()), LogLevel.engine)
 
 
 def check_leagues():
@@ -165,6 +193,10 @@ def validate_game_entries():
 slow_update_threshold = 25
 current_clan_update = 1
 
+def tournament_caching():
+    check_games(type='cache')
+    cleanup_logs()
+
 def tournament_engine():
     try:
         global slow_update_threshold
@@ -177,7 +209,7 @@ def tournament_engine():
             current_clan_update += 1
 
         engine = Engine.objects.all()
-        if engine.count() == 0:
+        if engine and engine.count() == 0:
             # create the engine object!
             engine = Engine()
             engine.save()
@@ -191,14 +223,17 @@ def tournament_engine():
         # there must be logic for each tournament type, as the child class contains
         # the logic
         #validate_game_entries()
-        check_games()
-        cleanup_logs()
-        check_bot_data()
+        check_games(type='process')
     except Exception as e:
         log_exception()
     finally:
-        print("Engine done running....waiting until next run")
-        engine.last_run_time = timezone.now()
-        engine.next_run_time = timezone.now() + datetime.timedelta(seconds=get_run_time())
+        finished_time = timezone.now()
+        next_run = timezone.now() + datetime.timedelta(seconds=get_run_time())
+        total_run_time = (finished_time - engine.last_run_time).total_seconds()
+        log("Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time, total_run_time, next_run),
+            LogLevel.engine)
+        engine.last_run_time = finished_time
+        engine.next_run_time = next_run
         engine.save()
+
         pass

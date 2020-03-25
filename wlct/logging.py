@@ -13,7 +13,7 @@ class LogLevel():
     tournament = "Tournament"
     game = "TournamentGame"
     game_status = "TournamentGameStatus"
-
+    engine = "Engine"
 
 def log_exception():
     log(traceback.format_exc(), LogLevel.critical)
@@ -54,6 +54,7 @@ class Logger(models.Model):
 
     msg = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    bot_seen = models.BooleanField(default=False)
 
     # free-form logging is the best kind, do not tie this to
     # another object so we can use any level we so choose

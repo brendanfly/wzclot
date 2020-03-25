@@ -21,6 +21,7 @@ class Ladders(commands.Cog, name="ladders"):
                    109 -r : displays full ladder rankings
                    109 -g : displays all in progress games
                    109 -v templateid: vetoes a template or displays the current one if no template id is passed
+                   109 -me : displays information about yourself on the ladder
                    ''')
     async def rtl(self, ctx, arg_id="invalid_id", arg_cmd="invalid_cmd", arg_cmd2="invalid_cmd2"):
         print("Arguments for RTL id: {} command: {}".format(arg_id, arg_cmd))
@@ -41,13 +42,20 @@ class Ladders(commands.Cog, name="ladders"):
                         # display current players in the ladder
                         retStr = ladder.get_current_joined()
                     elif arg_cmd == "-j":
-                        retStr = ladder.join_ladder(discord_id)
-                        retStr += "\n\n" + ladder.get_current_joined()
-                        do_all_channels = True
+                        retStr = ladder.join_ladder(discord_id, False)
+                        current_joined = ladder.get_current_joined()
+                        retStr += "\n\n" + current_joined + "\n"
+                        await self.send_ladder_message(current_joined, False, ctx.message)
+                    elif arg_cmd == "-jl":
+                        retStr = ladder.join_ladder(discord_id, True) + " (You will be removed once a game is created)"
+                        current_joined = ladder.get_current_joined()
+                        retStr += "\n\n" + current_joined + "\n"
+                        await self.send_ladder_message(current_joined, False, ctx.message)
                     elif arg_cmd == "-l":
                         retStr = ladder.leave_ladder(discord_id)
-                        retStr += "\n\n" + ladder.get_current_joined()
-                        do_all_channels = True
+                        current_joined = ladder.get_current_joined()
+                        retStr += "\n\n" + current_joined + "\n"
+                        await self.send_ladder_message(current_joined, False, ctx.message)
                     elif arg_cmd == "-t":
                         retStr = ladder.get_current_templates()
                         do_embed = True
@@ -58,8 +66,18 @@ class Ladders(commands.Cog, name="ladders"):
                     elif arg_cmd == "-g":
                         do_embed = True
                         retStr = ladder.get_current_games()
-                        emb.title = "Current Games - Ladder {}".format(ladder.name)
-                        emb.add_field(name="In Progress", value=retStr)
+                        if not retStr[0]:
+                            do_embed = False
+                            retStr = retStr[1]
+                        else:
+                            game_data = retStr[1][0]
+                            finished_game_data = retStr[1][1]
+                            print("GameData: {}, Finished Data: {}".format(game_data, finished_game_data))
+                            emb.title = "Games - Ladder {}".format(ladder.name)
+                            if len(game_data) > 0:
+                                emb.add_field(name="In Progress", value=game_data)
+                            if len(finished_game_data) > 0:
+                                emb.add_field(name="Last 10 games", value=finished_game_data)
                     elif arg_cmd == "-v":
                         if arg_cmd2 != "invalid_cmd2":
                             retStr = ladder.veto_template(discord_id, arg_cmd2)
@@ -80,6 +98,20 @@ class Ladders(commands.Cog, name="ladders"):
                                 retStr = ladder.remove_template(arg_cmd2)
                         else:
                             retStr = invalid_cmd_text
+                    elif arg_cmd == "-me":
+                        # me data returns a tuple of information
+                        # first is what rank/position you are
+                        # second is your last 10 games
+                        me_data =  ladder.get_player_data(discord_id)
+                        if me_data[0]: # success
+                            retStr = me_data[1]
+                            print("Me Data".format(retStr))
+                            emb.title = "Ladder Stats".format(ladder.name)
+                            emb.add_field(name="Performance", value=retStr)
+                            do_embed = True
+                        else:
+                            # error
+                            retStr = me_data[1]
                     else:
                         retStr = invalid_cmd_text
                 else:
@@ -98,10 +130,27 @@ class Ladders(commands.Cog, name="ladders"):
             retStr = "You have entered an invalid command. Please correct it and try again."
 
         if do_embed:
+            print("Sending embed")
             await ctx.send(embed=emb)
         else:
+            print("Sending real message")
             await ctx.send(retStr)
 
+    '''
+    Sends updates to guilds that are not guild_original_msg.
+    This is mainly used to communicate people are doing things with the ladder across servers. 
+    '''
+    async def send_ladder_message(self, msg, is_embed, guild_original_msg):
+        # loop through all rtl channels sending the appropriate message
+        for rtl_channel in self.bot.rtl_channels:
+            print("Server id to send message to: {}, server original message came from: {}".format(rtl_channel.guild.id, guild_original_msg.guild.id))
+            if rtl_channel.guild.id == guild_original_msg.guild.id:
+                # skip this one, it came from here
+                continue
+            if is_embed:
+                await rtl_channel.send(embed=msg)
+            else:
+                await rtl_channel.send(msg)
 
 def setup(bot):
     bot.add_cog(Ladders(bot))

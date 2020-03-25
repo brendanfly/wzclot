@@ -132,11 +132,9 @@ class API2:
 
     def api_validate_invite_token(self, token):
         params = {"Email": self.client_email, "APIToken": self.client_token, "Token": token}
-        log("Validate token API call: {}".format(params), LogLevel.informational)
 
         endpoint = LIVE_WARZONE_ENDPOINT + self.validate_invite_token_url
         request = requests.post(endpoint, params=params)
-        log("Validate API token response: {}".format(request.json()), LogLevel.informational)
         return request
 
 

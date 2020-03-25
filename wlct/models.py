@@ -12,12 +12,20 @@ invalid_name_string = "missing no"
 class User(AbstractUser):
     pass
 
+'''
+Discord specific models. 
+'''
 class DiscordUser(models.Model):
     memberid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
     link_mention = models.BooleanField(default=False, blank=True, null=True)
 
     def __str__(self):
         return "Member: {}, LinkMention: {}".format(self.memberid, self.link_mention)
+
+class DiscordChannelTournamentLink(models.Model):
+    tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, blank=True, null=True)
+    channelid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
+    discord_user = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.CASCADE)
 
 class Engine(models.Model):
     last_run_time = models.DateTimeField(default=timezone.now)
@@ -79,3 +87,8 @@ class DiscordUserAdmin(admin.ModelAdmin):
     pass
 
 admin.site.register(DiscordUser, DiscordUserAdmin)
+
+class DiscordChannelTournamentLinkAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(DiscordChannelTournamentLink, DiscordChannelTournamentLinkAdmin)

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import ModelAdmin, SimpleListFilter
 from wlct.logging import LogLevel, Logger, TournamentGameLog, TournamentGameStatusLog, TournamentLog, ProcessGameLog, ProcessNewGamesLog
-from wlct.tournaments import Tournament, SwissTournament, GroupStageTournament, GroupStageTournamentGroup, RoundRobinTournament, SeededTournament, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TournamentGame, TournamentTeam, TournamentGameEntry, TournamentRound, TournamentInvite, TournamentPlayer, PromotionalRelegationLeague, PromotionalRelegationLeagueSeason, ClanLeague, ClanLeagueDivision, ClanLeagueTournament, ClanLeagueDivisionClan, ClanLeagueTemplate, RealTimeLadderTemplate, RealTimeLadder
+from wlct.tournaments import Tournament, SwissTournament, GroupStageTournament, GroupStageTournamentGroup, RoundRobinTournament, SeededTournament, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TournamentGame, TournamentTeam, TournamentGameEntry, TournamentRound, TournamentInvite, TournamentPlayer, PromotionalRelegationLeague, PromotionalRelegationLeagueSeason, ClanLeague, ClanLeagueDivision, ClanLeagueTournament, ClanLeagueDivisionClan, ClanLeagueTemplate, RealTimeLadderTemplate, RealTimeLadder, PromotionalRelegationLeagueTournament
 
 class LogFilter(SimpleListFilter):
     title = 'Log Level' # a label for our filter
@@ -17,7 +17,8 @@ class LogFilter(SimpleListFilter):
             ('warning', 'Warning'),
             ('tournament', 'Tournament'),
             ('tournament_game', 'Tournament Game'),
-            ('tournament_game_status', 'Tournament Game Status')
+            ('tournament_game_status', 'Tournament Game Status'),
+            ('engine', 'Engine')
         ]
 
     def queryset(self, request, queryset):
@@ -32,6 +33,8 @@ class LogFilter(SimpleListFilter):
             return queryset.distinct().filter(level=LogLevel.warning)
         if self.value() == 'error':
             return queryset.distinct().filter(level=LogLevel.error)
+        if self.value() == 'engine':
+            return queryset.distinct().filter(level=LogLevel.engine)
 
 
 class LogAdmin(admin.ModelAdmin):
@@ -49,7 +52,7 @@ admin.site.register(ProcessGameLog, ProcessGameLogAdmin)
 
 
 class ProcessNewGamesLogAdmin(admin.ModelAdmin):
-    search_fields = ['tournament__id', 'tournament__name', 'timestamp']
+    search_fields = ['tournament__id']
     raw_id_fields = ['tournament']
 
 admin.site.register(ProcessNewGamesLog, ProcessNewGamesLogAdmin)
@@ -57,7 +60,7 @@ admin.site.register(ProcessNewGamesLog, ProcessNewGamesLogAdmin)
 
 class TournamentLogAdmin(admin.ModelAdmin):
     search_fields = ['tournament__name', 'tournament__id', 'msg', 'timestamp']
-    raw_id_fiels = ['tournament']
+    raw_id_fields = ['tournament']
 
 admin.site.register(TournamentLog, TournamentLogAdmin)
 
@@ -71,6 +74,7 @@ admin.site.register(TournamentGameStatusLog, TournamentGameStatusLogAdmin)
 
 # Register admin models here
 class TournamentAdmin(admin.ModelAdmin):
+    raw_id_fields = ['created_by', 'winning_team']
     pass
 
 
@@ -78,6 +82,7 @@ admin.site.register(Tournament, TournamentAdmin)
 
 
 class TournamentGameLogAdmin(admin.ModelAdmin):
+    search_fields = ['game__gameid']
     raw_id_fields = ['tournament', 'game']
 
 admin.site.register(TournamentGameLog, TournamentGameLogAdmin)
@@ -107,7 +112,7 @@ class GroupStageTournamentGroupAdmin(admin.ModelAdmin):
 admin.site.register(GroupStageTournamentGroup, GroupStageTournamentGroupAdmin)
 
 class RoundRobinTournamentAdmin(admin.ModelAdmin):
-    pass
+    raw_id_fields = ['parent_tournament', 'winning_team', 'first_place', 'second_place']
 
 admin.site.register(RoundRobinTournament, RoundRobinTournamentAdmin)
 
@@ -130,6 +135,7 @@ admin.site.register(TournamentGameEntry, TournamentGameEntryAdmin)
 
 
 class TournamentGameAdmin(admin.ModelAdmin):
+    search_fields = ['gameid', 'id']
     raw_id_fields = ['winning_team', 'tournament']
 
 admin.site.register(TournamentGame, TournamentGameAdmin)
@@ -157,14 +163,23 @@ class MonthlyTemplateRotationAdmin(admin.ModelAdmin):
 admin.site.register(MonthlyTemplateRotation, MonthlyTemplateRotationAdmin)
 
 class PromotionalRelegationLeagueAdmin(admin.ModelAdmin):
-    pass
+    raw_id_fields = ['created_by', 'winning_team']
+    search_fields = ['name', 'id']
 
 admin.site.register(PromotionalRelegationLeague, PromotionalRelegationLeagueAdmin)
 
 class PromotionalRelegationLeagueSeasonAdmin(admin.ModelAdmin):
-    pass
+    search_fields = ['name', 'id']
+    raw_id_fields = ['created_by', 'winning_team']
 
 admin.site.register(PromotionalRelegationLeagueSeason, PromotionalRelegationLeagueSeasonAdmin)
+
+class PromotionalRelegationLeagueTournamentAdmin(admin.ModelAdmin):
+    search_fields = ['name', 'id']
+    raw_id_fields = ['created_by', 'winning_team']
+
+admin.site.register(PromotionalRelegationLeagueTournament, PromotionalRelegationLeagueTournamentAdmin)
+
 
 class ClanLeagueAdmin(admin.ModelAdmin):
     pass

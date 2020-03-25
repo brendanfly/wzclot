@@ -36,6 +36,8 @@ class WZBot(commands.AutoShardedBot):
         self.rtl_channels = []
         self.clan_league_channels = []
         self.mtc_channels = []
+        self.critical_error_channels = []
+        self.game_log_channels = []
         self.last_task_run = timezone.now()
 
         self.executions = 0
@@ -64,7 +66,7 @@ class WZBot(commands.AutoShardedBot):
     async def on_member_join(self, member):
         cog = self.get_cog("tasks")
         if cog:
-            cog.process_member_join(member.id)
+            await cog.process_member_join(member.id)
 
     async def on_ready(self):
         print(f'[CONNECT] Logged in as:\n{self.user} (ID: {self.user.id})\n')
@@ -76,9 +78,14 @@ class WZBot(commands.AutoShardedBot):
                     print("Caching RTL channel in guild: {}".format(guild.name))
                     self.rtl_channels.append(channel)
                 elif channel.name == "monthly-template-circuit" or channel.name == "monthly_template_circuit":
+                    print("Caching MTC channel in guild: {}".format(guild.name))
                     self.mtc_channels.append(channel)
-                elif channel.name == "clan-league-bot-chat" or channel.name == "clan-league-bot-chat":
+                elif channel.name == "clan-league-bot-chat" or channel.name == "clan_league_bot_chat":
+                    print("Caching CL channel in guild: {}".format(guild.name))
                     self.clan_league_channels.append(channel)
+                elif channel.name == "critical-errors":
+                    print("Caching Critical Error Channel in guild: {}".format(guild.name))
+                    self.critical_error_channels.append(channel)
 
         if not hasattr(self, 'uptime'):
             self.uptime = timezone.now()
