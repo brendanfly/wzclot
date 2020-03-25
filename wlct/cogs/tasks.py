@@ -125,8 +125,8 @@ class Tasks(commands.Cog, name="tasks"):
 
                         channel = self.bot.get_channel(cl.channelid)
                         if channel and len(game_log_text) > 0:
-                            # await channel.send(game_log_text)
-                            print("Game Log: {}".format(game_log_text))
+                            await channel.send(game_log_text)
+                            # print("Game Log: {}".format(game_log_text))
                             games_sent.append(game)
                             game_log_text = ""
         except Exception:
@@ -134,7 +134,7 @@ class Tasks(commands.Cog, name="tasks"):
         finally:
             for g in games_sent:
                 g.game_log_sent = True
-                # g.save()
+                g.save()
 
     async def handle_hours6_tasks(self):
         #await self.handle_clan_league_next_game()
