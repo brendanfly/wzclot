@@ -39,8 +39,6 @@ class Command(BaseCommand):
                                   max_instances=1, coalesce=False)
                 scheduler.add_job(tournament_caching, 'interval', seconds=get_run_time()*2, id='tournament_caching',
                                   max_instances=1, coalesce=False)
-                scheduler.add_job(cl_tournament_games_validation, 'interval', seconds=get_run_time(), id='cl_tournament_games_validation',
-                                  max_instances=1, coalesce=False)
                 scheduler.start()
         except ConflictingIdError:
             pass
