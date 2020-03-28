@@ -789,7 +789,7 @@ class Tournament(models.Model):
                                 else:
                                     if player_to_use.team.id not in teams_lost and len(teams_lost) == 0:
                                         teams_lost.append(player_to_use.team.id)
-                                        processGameLog += "Game Finished, team {} lost ".format(player_to_use.team.id)
+                                        processGameLog += "\nGame Finished, team {} lost ".format(player_to_use.team.id)
 
                                 game.finish_game_with_info(game_status)
                                 game.save()
@@ -802,22 +802,22 @@ class Tournament(models.Model):
                                     if len(teams_lost) == 0:
                                         if player_to_use.team.id not in teams_lost:
                                             teams_lost.append(player_to_use.team.id)
-                                            processGameLog += "{} declined game".format(player_to_use.player.name)
+                                            processGameLog += "\n{} declined game".format(player_to_use.player.name)
                                     else:
                                         if player_to_use.team.id not in teams_won and len(teams_won) == 0:
                                             teams_won.append(player_to_use.team.id)
-                                            processGameLog += "Game never started, but team {} won ".format(player_to_use.team.id)
+                                            processGameLog += "\nGame never started, but team {} won ".format(player_to_use.team.id)
 
                                     # regardless of who won/lost, delete the game, we still have the data in memory
                                     # so this is ok
-                                    processGameLog += "{} failed to join (DECLINED), forcing loss and deleting game ".format(
+                                    processGameLog += "\n{} failed to join (DECLINED), forcing loss and deleting game ".format(
                                         player_to_use.player.name)
 
                                     # delete the game
                                     if 'id' in game_status:
                                         delete_status = api.api_delete_game(game_status['id'])
                                     else:
-                                        processGameLog += "Game Status did not contain the game id: {} ".format(game_status)
+                                        processGameLog += "\nGame Status did not contain the game id: {} ".format(game_status)
 
                                     game.finish_game_with_info(game_status)
                                     game.save()
@@ -848,26 +848,26 @@ class Tournament(models.Model):
 
                                     team_on_vacation = self.is_team_on_vacation(player_to_use.team)
 
-                                    processGameLog += "Seconds since created: {}, turn time in minutes: {} ".format(
+                                    processGameLog += "\nSeconds since created: {}, turn time in minutes: {} ".format(
                                         seconds_since_created, turn_time_in_minutes)
                                     seconds_in_turn = int(float(turn_time_in_minutes)) * 60
                                     if seconds_since_created > seconds_in_turn:
-                                        processGameLog += "Game has reached past the boot time...checking vacation status"
+                                        processGameLog += "\nGame has reached past the boot time...checking vacation status"
                                         # check for vacation status for any of the players on the team
                                         # and if they are on vacation, then do not give them the lost
                                         # mark this game as is_finished=False so it gets looked at again
                                         # and continue on
                                         team_on_vacation = self.is_team_on_vacation(player_to_use.team)
-                                        processGameLog += "Team {} is on vacation: {}.".format(player_to_use.team.id, team_on_vacation)
+                                        processGameLog += "\nTeam {} is on vacation: {}.".format(player_to_use.team.id, team_on_vacation)
                                         if team_on_vacation and self.are_vacations_supported():
                                             # continue on case, no result for the game yet
                                             # do we have an interval in which we force a loss (i.e. clan league is 10 days without joining)
                                             if self.has_force_vacation_interval():
-                                                processGameLog += "Force Vacation Hard Interval: Team {} is on vacation due to player {} so the game should not start".format(player_to_use.team.id, player_to_use.player.name)
+                                                processGameLog += "\nForce Vacation Hard Interval: Team {} is on vacation due to player {} so the game should not start".format(player_to_use.team.id, player_to_use.player.name)
                                                 seconds_since_created = int(td.total_seconds())
                                                 seconds_to_wait = 60*60*24*self.vacation_force_interval
                                                 if seconds_since_created < seconds_to_wait:  # # of days
-                                                    processGameLog += "Force vacation interval is at {} seconds and we have until {} seconds".format(seconds_since_created, seconds_to_wait)
+                                                    processGameLog += "\nForce vacation interval is at {} seconds and we have until {} seconds".format(seconds_since_created, seconds_to_wait)
                                                     game.is_finished = False
                                                     game.save()
                                                     return
@@ -885,7 +885,7 @@ class Tournament(models.Model):
                                             if player_to_use.team.id not in teams_won and len(teams_won) == 0:
                                                 teams_won.append(player_to_use.team.id)
 
-                                        processGameLog += "{} failed to join, forcing loss and deleting game ".format(player_to_use.player.name)
+                                        processGameLog += "\n{} failed to join, forcing loss and deleting game ".format(player_to_use.player.name)
                                         game.finish_game_with_info(game_status)
                                         game.save()
 
@@ -893,7 +893,7 @@ class Tournament(models.Model):
                                         if 'id' in game_status:
                                             api.api_delete_game(game_status['id'])
                                         else:
-                                            processGameLog += "Game Status did not contain the game id: {} ".format(game_status)
+                                            processGameLog += "\nGame Status did not contain the game id: {} ".format(game_status)
                                 else:
                                     # if any player in this team has joined, make sure no one else declined
                                     # there's an edge case where if you're the last player looked at but you've already lost
@@ -902,13 +902,17 @@ class Tournament(models.Model):
                                         for team_id in teams_in_game:
                                             if teams_lost[0] != team_id:
                                                 teams_won.append(team_id)
-                                                processGameLog += "Team {} won due to team {} already losing ".format(player_to_use.team.id, teams_lost[0])
+                                                processGameLog += "\nTeam {} won due to team {} already losing ".format(team_id, teams_lost[0])
                         else:
-                            processGameLog += "Can't find player {} in tournament {} ".format(player_data['id'], self.id)
+                            processGameLog += "\nCan't find player {} in tournament {} ".format(player_data['id'], self.id)
                     else:
-                        processGameLog += "Couldn't find player {} ".format(player_data['id'])
+                        processGameLog += "\nCouldn't find player {} ".format(player_data['id'])
             game.save()
 
+            if not len(teams_won) and len(teams_lost):
+                for team_id in teams_in_game:
+                    if team_id not in teams_lost:
+                        teams_won.append(team_id)
 
             # now loop through the winners and losers and update their ratings accordingly
             for team in teams_won:
@@ -3537,6 +3541,15 @@ class ClanLeagueDivision(models.Model):
     league = models.ForeignKey('ClanLeague', on_delete=models.CASCADE, null=True, blank=True)
     pr_season = models.ForeignKey('PromotionalRelegationLeagueSeason', on_delete=models.CASCADE, null=True, blank=True)
 
+    @staticmethod
+    def has_duplicate_clans(clans):
+        set_of_clans = set()
+        for clan in clans:
+            if clan.clan.id in set_of_clans:
+                return True
+            set_of_clans.add(clan.clan.id)
+        return False
+
     def get_division_card(self, type, editable):
         division_data = '<br/><div class ="card gedf-card span6">'
         division_data += '<div class ="card-header">'
@@ -3556,6 +3569,12 @@ class ClanLeagueDivision(models.Model):
             if not self.league.has_started:
                 # load the clan information, including all clans at the top to add to this division
                 if editable:
+                    # check for duplicate clans and return warning
+                    if ClanLeagueDivision.has_duplicate_clans(clans):
+                        division_data += '<div class="alert alert-warning">'
+                        division_data += '<span type="button" class="close" aria-label="Close" data-dismiss="alert"><span aria-hidden="true">&times;</span></span>'
+                        division_data += '<span>Warning: duplicate clans in the division</span>'
+                        division_data += '</div>'
                     all_clans = Clan.objects.all().order_by("name")
                     division_data += '<select name="div-clans-{}" multiple>'
                     for clan in all_clans:
@@ -3881,9 +3900,29 @@ class ClanLeague(Tournament):
     def get_editable_divisions_data(self):
         return self.get_divisions_data_impl(True)
 
+    @staticmethod
+    def has_duplicate_clans_across_divisions(divisions):
+        all_clans = set()
+        for division in divisions:
+            clans = ClanLeagueDivisionClan.objects.filter(division=division)
+            clans_set = set()
+            for clan in clans:
+                clans_set.add(clan.clan.id)
+            total_clans = len(all_clans) + len(clans_set)
+            all_clans = all_clans.union(clans_set)
+            if len(all_clans) < total_clans:
+                return True
+        return False
+
     def get_divisions_data_impl(self, editable):
         division_data = ""
         divisions = ClanLeagueDivision.objects.filter(league=self.id)
+        # check if duplicate clans across division and return warning
+        if editable and ClanLeague.has_duplicate_clans_across_divisions(divisions):
+            division_data += '<div class="alert alert-warning">'
+            division_data += '<span type="button" class="close" aria-label="Close" data-dismiss="alert"><span aria-hidden="true">&times;</span></span>'
+            division_data += '<span>Warning: duplicate clans across divisions</span>'
+            division_data += '</div>'
         for division in divisions:
             # use cards, and outline the divisions here
             division_data += division.get_division_card("add-clans", editable)
