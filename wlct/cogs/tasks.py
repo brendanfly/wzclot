@@ -147,6 +147,22 @@ class Tasks(commands.Cog, name="tasks"):
     async def handle_hours_tasks(self):
         pass
 
+    def handle_day_tasks(self):
+        self.handle_no_winning_team_games()
+
+    async def handle_no_winning_team_games(self):
+        games = TournamentGame.objects.filter(winning_team__isnull=True, is_finished=True, no_winning_team_log_sent=False)
+        msg = ""
+        if games:
+            msg += "**Games finished with no winning team found**\n"
+        for game in games:
+            for cc in self.bot.critical_error_channels:
+                msg += "{} | ID: {} \nLink: <{}> \nLogs: <http://wztourney.herokuapp.com/admin/wlct/tournamentgamelog/?q={}>".format(game.tournament.name, game.gameid, game.game_link, game.gameid)
+                msg = msg[:1999]
+                await cc.send(msg)
+                game.no_winning_team_log_sent = True
+                game.save()
+
     async def handle_rtl_ladder(self):
         tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
         for tournament in tournaments:
@@ -193,10 +209,10 @@ class Tasks(commands.Cog, name="tasks"):
         # calculate the time different here
         # determine if we need hours run or 4 hours run
         # for 1 hour, executions should be 360
-        hours_executions = 360
         hours = (self.executions % 360 == 0)
         hours4 = (self.executions % (360*4) == 0)
         hours6 = (self.executions % (360*6) == 0)
+        day = (self.executions % (360*24) == 0)
         two_minute = (self.executions % 12 == 0)
 
         try:
@@ -206,6 +222,8 @@ class Tasks(commands.Cog, name="tasks"):
                 await self.handle_hours4_tasks()
             if hours6:
                 await self.handle_hours6_tasks()
+            if day:
+                await self.handle_day_tasks()
             if two_minute:
                 await self.handle_rtl_ladder()
 
