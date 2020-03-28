@@ -154,10 +154,10 @@ class Tasks(commands.Cog, name="tasks"):
         games = TournamentGame.objects.filter(winning_team__isnull=True, is_finished=True, no_winning_team_log_sent=False)
         msg = ""
         if games:
-            msg += "**Games finished with no winning team found**\n"
+            msg += "**Games finished with no winning team found**"
         for game in games:
             for cc in self.bot.critical_error_channels:
-                msg += "{} | ID: {} \nLink: <{}> \nLogs: <http://wztourney.herokuapp.com/admin/wlct/tournamentgamelog/?q={}>".format(game.tournament.name, game.gameid, game.game_link, game.gameid)
+                msg += "\n{} | ID: {} \nLink: <{}> \nLogs: <http://wztourney.herokuapp.com/admin/wlct/tournamentgamelog/?q={}>".format(game.tournament.name, game.gameid, game.game_link, game.gameid)
                 msg = msg[:1999]
                 await cc.send(msg)
                 game.no_winning_team_log_sent = True

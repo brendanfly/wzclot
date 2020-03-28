@@ -853,7 +853,7 @@ class Tournament(models.Model):
                                     processGameLog += "{} invited to game ".format(player_to_use.player.name)
 
                                     boot_time = last_turn_time.replace(tzinfo=None) + datetime.timedelta(minutes=turn_time_in_minutes)
-                                    game.game_boot_time = boot_time.replace(tzinfo=tz.utc())
+                                    game.game_boot_time = boot_time.replace(tzinfo=None)
                                     game.save()
 
                                     team_on_vacation = self.is_team_on_vacation(player_to_use.team)
