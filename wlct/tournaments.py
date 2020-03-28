@@ -758,8 +758,17 @@ class Tournament(models.Model):
                             # we might have a parent tournament we belong to, check that next
                             if hasattr(self, 'parent_tournament'):
                                 tournament_player = TournamentPlayer.objects.filter(player=player[0], tournament=self.parent_tournament)
-                        if tournament_player:
-                            if tournament_player.count() > 1 or (tournament_player[0].team.round_robin_tournament is not None and tournament_player[0].team.round_robin_tournament.id is not self.id):
+                        if game.players or tournament_player:
+                            if game.players:
+                                # If players value exists in TournamentGame, use this to find any player on team
+                                team_players_list = game.players.split("-")
+                                for j in range(len(team_players_list)):
+                                    if player_data.get("id") in team_players_list[j].split("."):
+                                        processGameLog += "\nFound team this player is/was a part of, using first player found on team"
+                                        player_to_use_team = TournamentTeam.objects.filter(id=teams[j])[0]
+                                        player_to_use = TournamentPlayer.objects.filter(team=player_to_use_team)[0]
+                                        break
+                            elif tournament_player.count() > 1 or (tournament_player[0].team.round_robin_tournament is not None and tournament_player[0].team.round_robin_tournament.id is not self.id):
                                 # in some cases, the tournament doing the games is parented, and for clan league there can be more than
                                 # one time the same player comes up, in different tournaments. Work around that by looping through all players here
                                 for tplayer in tournament_player:
@@ -900,7 +909,7 @@ class Tournament(models.Model):
                                     # we add the winning team as the losing team below.
                                     if len(teams_lost) > 0 and len(teams_won) == 0:
                                         for team_id in teams_in_game:
-                                            if teams_lost[0] != team_id:
+                                            if team_id not in teams_lost:
                                                 teams_won.append(team_id)
                                                 processGameLog += "\nTeam {} won due to team {} already losing ".format(team_id, teams_lost[0])
                         else:
@@ -2057,19 +2066,19 @@ class RoundRobinTournament(Tournament):
     def update_bracket_game_data(self):
         # table should be all teams on the top and all teams on the bottom
         # the games are from the teams on the left matched up with the teams on the right
-        teams = TournamentTeam.objects.filter(round_robin_tournament=self)
+        teamsCol = TournamentTeam.objects.filter(round_robin_tournament=self).order_by('-wins')
+        teamsRow = teamsCol
         log = '<div style="padding-top:25px;">'.format(self.id)
         log += '<table class="table table-bordered table-condensed clot_table"><tr><td>{}</td>'.format(self.name)
-        for team in teams:
+        for team in teamsRow:
             log += '<td>{}</td>'.format(get_team_data(team))
         log += '</tr>'
-        teams2 = TournamentTeam.objects.filter(round_robin_tournament=self).order_by('-wins')
         teams_left_log = ""
-        for team_left in teams2:
+        for team_left in teamsCol:
             teams_left_log += "TeamLeft: {}".format(get_team_data(team_left))
             log += '<tr>'
             log += '<td>{}</td>'.format(get_team_data(team_left))
-            for team_top in teams:
+            for team_top in teamsRow:
                 teams_left_log += "TeamTop: {}".format(get_team_data(team_top))
                 bg_color = ""
                 # now we create the rows, where each row loops through team and compares
