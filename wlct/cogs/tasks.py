@@ -147,8 +147,8 @@ class Tasks(commands.Cog, name="tasks"):
     async def handle_hours_tasks(self):
         pass
 
-    def handle_day_tasks(self):
-        self.handle_no_winning_team_games()
+    async def handle_day_tasks(self):
+        await self.handle_no_winning_team_games()
 
     async def handle_no_winning_team_games(self):
         games = TournamentGame.objects.filter(winning_team__isnull=True, is_finished=True, no_winning_team_log_sent=False)
