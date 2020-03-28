@@ -148,7 +148,7 @@ class Tasks(commands.Cog, name="tasks"):
         pass
 
     async def handle_day_tasks(self):
-        await self.handle_no_winning_team_games()
+        pass
 
     async def handle_no_winning_team_games(self):
         games = TournamentGame.objects.filter(winning_team__isnull=True, is_finished=True, no_winning_team_log_sent=False)
@@ -236,6 +236,7 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_rtl_tasks()
         await self.handle_critical_errors()
         await self.handle_game_logs()
+        await self.handle_no_winning_team_games()
 
     async def process_member_join(self, memid):
         member = self.bot.get_user(memid)
