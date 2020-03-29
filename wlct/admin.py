@@ -66,7 +66,7 @@ admin.site.register(TournamentLog, TournamentLogAdmin)
 
 
 class TournamentGameStatusLogAdmin(admin.ModelAdmin):
-    search_fields = ['tournament__id', 'tournament__name', 'msg', 'timestamp', 'game__id', 'game__gameid']
+    search_fields = ['tournament__id', 'timestamp', 'game__id', 'game__gameid']
     raw_id_fields = ['tournament', 'game']
 
 admin.site.register(TournamentGameStatusLog, TournamentGameStatusLogAdmin)
