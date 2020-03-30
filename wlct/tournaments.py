@@ -4616,7 +4616,7 @@ class RealTimeLadder(Tournament):
             return data
 
         for t in templates:
-            data += "{} | [Template Link](https://warzone.com/MultiPlayer?TemplateID={})\n".format(t.name, t.template)
+            data += "{} | {} | [Template Link](https://warzone.com/MultiPlayer?TemplateID={})\n".format(t.name, t.template, t.template)
         return data
 
     def get_player_data(self, discord_id):
