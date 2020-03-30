@@ -2519,7 +2519,7 @@ class TournamentGame(models.Model):
     gameid = models.CharField(max_length=255, default="Invalid game id")
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
     teams = models.CharField(max_length=255, null=True, db_index=True)
-    players = models.CharField(max_length=255, null=True)
+    players = models.CharField(max_length=255, null=True, blank=True)
     round = models.ForeignKey('TournamentRound', on_delete=models.DO_NOTHING)
     is_finished = models.BooleanField(default=False, db_index=True)
     outcome = models.CharField(max_length=255, null=True, blank=True)
