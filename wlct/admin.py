@@ -196,7 +196,7 @@ class ClanLeagueDivisionClanAdmin(admin.ModelAdmin):
 admin.site.register(ClanLeagueDivisionClan, ClanLeagueDivisionClanAdmin)
 
 class ClanLeagueTournamentAdmin(admin.ModelAdmin):
-    raw_id_fields = ['created_by', 'winning_team']
+    raw_id_fields = ['created_by', 'winning_team', 'first_place', 'second_place', 'division', 'clan_league_template', 'parent_tournament']
 
 admin.site.register(ClanLeagueTournament, ClanLeagueTournamentAdmin)
 
