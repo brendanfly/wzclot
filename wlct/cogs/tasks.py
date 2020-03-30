@@ -157,11 +157,12 @@ class Tasks(commands.Cog, name="tasks"):
             msg += "**Games finished with no winning team found**"
         for game in games:
             for cc in self.bot.critical_error_channels:
-                msg += "\n{} | ID: {} \nLink: <{}> \nLogs: <http://wztourney.herokuapp.com/admin/wlct/tournamentgamestatuslog/?q={}>".format(game.tournament.name, game.gameid, game.game_link, game.gameid)
+                msg += "\n{} | ID: {} \nLink: <{}> \nLogs: <http://wztourney.herokuapp.com/admin/wlct/processgamelog/?q={}>".format(game.tournament.name, game.gameid, game.game_link, game.gameid)
                 msg = msg[:1999]
                 await cc.send(msg)
                 game.no_winning_team_log_sent = True
                 game.save()
+                msg = ""
 
     async def handle_rtl_ladder(self):
         tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
