@@ -2149,12 +2149,15 @@ class RoundRobinTournament(Tournament):
             # first, lookup all teams and cache their wins/losses
             team_wins = {}
             team_losses = {}
+            print("Total teams to iterate for caching winds/losses".format(tournament_teams.count()))
             for team in tournament_teams.iterator():
                 team_wins[team.id] = team.wins
                 team_losses[team.id] = team.losses
+                print("Team {} went {}-{}".format(team.id, team.wins. team.losses))
 
             # print("Team wins: {} and losses {}".format(team_wins, team_losses))
             team_buchholz = defaultdict(int)
+            print("Total games in tournament: {}".format(games.count()))
             for game in games.iterator():
                 team1 = game.teams.split('.')[0]
                 team2 = game.teams.split('.')[1]
@@ -2173,9 +2176,11 @@ class RoundRobinTournament(Tournament):
 
 
             # now loop through all the teams and print out their buchholz
+            print("Team buccholz: {} entries: {}".format(len(team_buchholz), team_buchholz))
             for team, buchholz in team_buchholz.items():
                 tournament_team = TournamentTeam.objects.filter(id=int(team))
                 if tournament_team:
+                    print("Updating buchholz for team {}: Buchholz".format(team, buchholz))
                     tournament_team[0].buchholz = buchholz
                     tournament_team[0].save()
 
@@ -2184,6 +2189,7 @@ class RoundRobinTournament(Tournament):
             # to break
             teams = TournamentTeam.objects.filter(group=group).order_by('-wins')
             team_buckets = defaultdict(list)
+            print("Looping through {} teams in this group: ".format(teams.count()))
             for team in teams.iterator():
                 if team.wins not in team_buckets:
                     team_buckets[team.wins] = []
@@ -2236,6 +2242,7 @@ class RoundRobinTournament(Tournament):
                             current_place += 1
 
                 else:
+                    print("3 or more teams tied...figure this out later")
                     # 3 or more teams tied...
                     # figure out who had the most wins between the games between these teams
                     # recursively break ties between them falling back to buchholz if there
