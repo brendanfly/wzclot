@@ -2149,8 +2149,8 @@ class RoundRobinTournament(Tournament):
             # first, lookup all teams and cache their wins/losses
             team_wins = {}
             team_losses = {}
-            print("Total teams to iterate for caching winds/losses".format(tournament_teams.count()))
-            for team in tournament_teams.iterator():
+            print("Total teams to iterate for caching wins/losses: {}".format(tournament_teams.count()))
+            for team in tournament_teams:
                 team_wins[team.id] = team.wins
                 team_losses[team.id] = team.losses
                 print("Team {} went {}-{}".format(team.id, team.wins. team.losses))
@@ -2180,7 +2180,7 @@ class RoundRobinTournament(Tournament):
             for team, buchholz in team_buchholz.items():
                 tournament_team = TournamentTeam.objects.filter(id=int(team))
                 if tournament_team:
-                    print("Updating buchholz for team {}: Buchholz".format(team, buchholz))
+                    print("Updating buchholz for team {}: Buchholz {}".format(team.id, buchholz))
                     tournament_team[0].buchholz = buchholz
                     tournament_team[0].save()
 
