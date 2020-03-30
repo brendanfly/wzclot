@@ -2153,7 +2153,7 @@ class RoundRobinTournament(Tournament):
             for team in tournament_teams:
                 team_wins[team.id] = team.wins
                 team_losses[team.id] = team.losses
-                print("Team {} went {}-{}".format(team.id, team.wins. team.losses))
+                print("Team {} went {}-{}".format(team.id, team.wins, team.losses))
 
             # print("Team wins: {} and losses {}".format(team_wins, team_losses))
             team_buchholz = defaultdict(int)
