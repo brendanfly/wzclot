@@ -4578,9 +4578,9 @@ class RealTimeLadder(Tournament):
             data += "\n\n"
         # now grab the last 10 that finished
         finished_data = ""
-        games = TournamentGame.objects.filter(tournament=self, is_finished=True).order_by('-game_finished_time')[:10]
-        if games:
-            finished_data = self.get_game_data(games)
+        finished_games = TournamentGame.objects.filter(tournament=self, is_finished=True).order_by('-game_finished_time')[:10]
+        if finished_games:
+            finished_data = self.get_game_data(finished_games)
 
         if len(data) > 0 or len(finished_data) > 0:
             return (True, (data, finished_data))
