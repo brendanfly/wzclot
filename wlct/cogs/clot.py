@@ -93,6 +93,99 @@ class Clot(commands.Cog, name="clot"):
             await ctx.send("Sorry, you must be a server administrator to use this command.")
 
     @commands.command(
+        brief="Links a channel on your server to a tournament on the CLOT. You must be the tournament creator to use succesfully link the tournament.",
+        usage='''
+                bb!linkd -a division_id - adds a link from this discord channel to stream game logs for tournament_id
+                bb!linkt -r division_id - removes an existing link from this discord channel to tournament_id
+                ''',
+        category="clot")
+    async def linkd(self, ctx, arg="invalid_cmd", arg2="invalid_id"):
+        discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
+        if not discord_user:
+            discord_user = DiscordUser(memberid=ctx.message.author.id)
+            discord_user.save()
+        else:
+            discord_user = discord_user[0]
+
+        if arg == "invalid_cmd":
+            # list the current links for this channel
+            links = "__**Tournaments Linked to this Channel**__\n"
+            discord_channel_link = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id)
+            if discord_channel_link.count() == 0:
+                links += "There are currently no links."
+            else:
+                for link in discord_channel_link:
+                    links += link.tournament.name + "\n"
+            await ctx.send(links)
+            return
+        elif arg != "-a" and arg != "-r":
+            await ctx.send("Please enter a valid option for the command (-a or -r).")
+            return
+
+        if arg2 == "invalid_id" or not arg2.isnumeric():
+            await ctx.send("Please enter a valid tournament or league id to link to this channel.")
+            return
+
+        # we must find the tournament id, and the player associated with the discord user must be the creator
+        # validate that here
+        if ctx.message.author.guild_permissions.administrator or is_admin(ctx.message.author.id):
+            # user is a server admin, process to create the channel -> tournament link
+            tournament = find_tournament_by_id(int(arg2), True)
+            if tournament:
+                # if a private tournament, the person sending this command must be linked and be the creator
+                if tournament.private:
+                    player = Player.objects.filter(discord_member__memberid=ctx.message.author.id)
+                    if player:
+                        player = player[0]
+                        if hasattr(tournament, 'parent_tournament'):
+                            if tournament.parent_tournament:
+                                print("Tournament Parent ID {}".format(tournament.parent_tournament.id))
+                            if player.id != tournament.created_by.id and (
+                                    tournament.parent_tournament and tournament.parent_tournament.id != 51):  # hard code this for clan league
+                                await ctx.send(
+                                    "The creator of the tournament is the only one who can link private tournaments.")
+                                return
+                        else:
+                            # no parent tournament, must be creator
+                            if player.id != tournament.created_by.id:
+                                await ctx.send(
+                                    "The creator of the tournament is the only one who can link private tournaments.")
+                                return
+                    else:
+                        await ctx.send(
+                            "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+                        return
+                if arg == "-a":
+                    # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
+                    # already a tournament hooked up to this channel. We don't even check, just add this tournament
+                    # as a link to this channel
+                    discord_channel_link = DiscordChannelTournamentLink.objects.filter(tournament=tournament,
+                                                                                       channelid=ctx.message.channel.id)
+                    if discord_channel_link:
+                        await ctx.send("You've already linked this channel to tournament: {}".format(tournament.name))
+                        return
+                    discord_channel_link = DiscordChannelTournamentLink(tournament=tournament,
+                                                                        discord_user=discord_user,
+                                                                        channelid=ctx.message.channel.id)
+                    discord_channel_link.save()
+                    await ctx.send(
+                        "You've linked this channel to tournament: {}. Game logs will now show-up here in real-time.".format(
+                            tournament.name))
+                elif arg == "-r":
+                    discord_channel_link = DiscordChannelTournamentLink.objects.filter(tournament=tournament,
+                                                                                       channelid=ctx.message.channel.id)
+                    if discord_channel_link:
+                        discord_channel_link[0].delete()
+                        await ctx.send(
+                            "You've removed the link from this channel and tournament: {}".format(tournament.name))
+                    else:
+                        await ctx.send("There is no existing link for tournament {} and this channel.")
+            else:
+                await ctx.send("Please enter a valid tournament or league id to link to this channel.")
+        else:
+            await ctx.send("Sorry, you must be a server administrator to use this command.")
+
+    @commands.command(
         brief="Links your discord account with your CLOT/Warzone account for use with creating games and bot ladders.",
         usage="bot_token_from_clot_site",
         category="clot")

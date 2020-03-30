@@ -12,20 +12,24 @@ class Ladders(commands.Cog, name="ladders"):
     def __init__(self, bot):
         self.bot = bot
 
+    usage = '''
+           109 -j : joins ladder 109
+           109 -l : leaves ladder 109
+           109 -jl : joins ladder 109 for single game
+           109 -h : displays help with all commands
+           109 -t : displays all templates on the ladder
+           109 -p : displays all players currently on the ladder
+           109 -r : displays full ladder rankings
+           109 -g : displays all in progress games
+           109 -v <templateid>: vetoes a template or displays the current one if no template id is passed
+           109 -me : displays information about yourself on the ladder
+           '''
+
     @commands.command(brief="Lists all real-time ladders hosted by this bot and their IDs",
-             usage='''
-                   109 -j : joins ladder 109
-                   109 -l : leaves ladder 109
-                   109 -t : displays all templates on the ladder
-                   109 -p : displays all players currently on the ladder
-                   109 -r : displays full ladder rankings
-                   109 -g : displays all in progress games
-                   109 -v templateid: vetoes a template or displays the current one if no template id is passed
-                   109 -me : displays information about yourself on the ladder
-                   ''')
+             usage=usage)
     async def rtl(self, ctx, arg_id="invalid_id", arg_cmd="invalid_cmd", arg_cmd2="invalid_cmd2"):
         print("Arguments for RTL id: {} command: {}".format(arg_id, arg_cmd))
-        invalid_cmd_text = "You've entered an invalid command. Please correct it and try again."
+        invalid_cmd_text = "You've entered an invalid command. Use ``bb!rtl 109 -h`` to see list of commands."
         retStr = ""
         do_embed = False
         do_all_channels = False
@@ -37,7 +41,7 @@ class Ladders(commands.Cog, name="ladders"):
             if arg_id.isnumeric():
                 ladder = get_real_time_ladder(int(arg_id))
                 discord_id = ctx.message.author.id
-                if ladder is not None:
+                if ladder is None:
                     if arg_cmd == "-p":
                         # display current players in the ladder
                         retStr = ladder.get_current_joined()
@@ -56,6 +60,11 @@ class Ladders(commands.Cog, name="ladders"):
                         current_joined = ladder.get_current_joined()
                         retStr += "\n\n" + current_joined + "\n"
                         await self.send_ladder_message(current_joined, False, ctx.message)
+                    elif arg_cmd == "-h":
+                        retStr = self.usage
+                        do_embed = True
+                        #emb.title = "Help - Ladder {}".format(ladder.name)
+                        emb.add_field(name="Help", value=retStr)
                     elif arg_cmd == "-t":
                         retStr = ladder.get_current_templates()
                         do_embed = True
