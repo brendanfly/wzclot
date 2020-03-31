@@ -2180,7 +2180,7 @@ class RoundRobinTournament(Tournament):
             for team, buchholz in team_buchholz.items():
                 tournament_team = TournamentTeam.objects.filter(id=int(team))
                 if tournament_team:
-                    print("Updating buchholz for team {}: Buchholz {}".format(team.id, buchholz))
+                    print("Updating buchholz for team {}: Buchholz {}".format(team, buchholz))
                     tournament_team[0].buchholz = buchholz
                     tournament_team[0].save()
 
