@@ -175,7 +175,7 @@ admin.site.register(PromotionalRelegationLeagueSeason, PromotionalRelegationLeag
 
 class PromotionalRelegationLeagueTournamentAdmin(admin.ModelAdmin):
     search_fields = ['name', 'id']
-    raw_id_fields = ['created_by', 'winning_team']
+    raw_id_fields = ['created_by', 'winning_team', 'first_place', 'second_place', 'division', 'parent_tournament']
 
 admin.site.register(PromotionalRelegationLeagueTournament, PromotionalRelegationLeagueTournamentAdmin)
 

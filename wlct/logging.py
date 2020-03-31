@@ -79,7 +79,7 @@ class TournamentLog(Logger):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
     
     def __str__(self):
-        return "Tournament {}-{}".format(self.tournament.id, self.tournament.name)
+        return "[{}] Tournament {}-{}: {}".format(self.timestamp, self.tournament.id, self.tournament.name, self.msg)
 
 
 class TournamentGameLog(Logger):
