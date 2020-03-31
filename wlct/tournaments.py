@@ -2139,7 +2139,7 @@ class RoundRobinTournament(Tournament):
         print("Teams to find matchups for: {}".format(teams_list))
         # first, are we finished?
         games = TournamentGame.objects.filter(tournament=self, is_finished=True)
-        if games.count() == self.total_games:
+        if games.count() == self.total_games and not self.is_finished:
             log_tournament("Found {} finished games with {} total in the RR, ending".format(games.count(), self.total_games), self)
 
             # we need to figure out the buchholz for every team in case there are ties
@@ -2149,7 +2149,7 @@ class RoundRobinTournament(Tournament):
             # first, lookup all teams and cache their wins/losses
             team_wins = {}
             team_losses = {}
-            print("Total teams to iterate for caching wins/losses: {}".format(tournament_teams.count()))
+            log_tournament("Total teams to iterate for caching wins/losses: {}".format(tournament_teams.count()), self)
             for team in tournament_teams:
                 team_wins[team.id] = team.wins
                 team_losses[team.id] = team.losses
@@ -2157,7 +2157,7 @@ class RoundRobinTournament(Tournament):
 
             # print("Team wins: {} and losses {}".format(team_wins, team_losses))
             team_buchholz = defaultdict(int)
-            print("Total games in tournament: {}".format(games.count()))
+            log_tournament("Total games in tournament: {}".format(games.count()), self)
             for game in games.iterator():
                 team1 = game.teams.split('.')[0]
                 team2 = game.teams.split('.')[1]
@@ -2176,11 +2176,11 @@ class RoundRobinTournament(Tournament):
 
 
             # now loop through all the teams and print out their buchholz
-            print("Team buccholz: {} entries: {}".format(len(team_buchholz), team_buchholz))
+            log_tournament("Team buccholz: {} entries: {}".format(len(team_buchholz), team_buchholz), self)
             for team, buchholz in team_buchholz.items():
                 tournament_team = TournamentTeam.objects.filter(id=int(team))
                 if tournament_team:
-                    print("Updating buchholz for team {}: Buchholz {}".format(team, buchholz))
+                    log_tournament("Updating buchholz for team {}: Buchholz {}".format(team, buchholz), self)
                     tournament_team[0].buchholz = buchholz
                     tournament_team[0].save()
 
@@ -2189,7 +2189,7 @@ class RoundRobinTournament(Tournament):
             # to break
             teams = TournamentTeam.objects.filter(group=group).order_by('-wins')
             team_buckets = defaultdict(list)
-            print("Looping through {} teams in this group: ".format(teams.count()))
+            log_tournament("Looping through {} teams in this group: ".format(teams.count()), self)
             for team in teams.iterator():
                 if team.wins not in team_buckets:
                     team_buckets[team.wins] = []
@@ -2204,7 +2204,7 @@ class RoundRobinTournament(Tournament):
                     # base easy case, give them the place
                     tournament_team = TournamentTeam.objects.filter(id=int(teams[0]))
                     if tournament_team:
-                        print("Team {} got {} place".format(teams[0], current_place))
+                        log_tournament("Team {} got {} place".format(teams[0], current_place), self)
                         tournament_team[0].place = current_place
                         tournament_team[0].save()
                         current_place += 1
@@ -2229,20 +2229,20 @@ class RoundRobinTournament(Tournament):
                         # lookup both teams
                         first_tournament_team = TournamentTeam.objects.filter(id=first_team)
                         if first_tournament_team:
-                            print("Team {} got {} place".format(first_team, current_place))
+                            log_tournament("Team {} got {} place".format(first_team, current_place), self)
                             first_tournament_team[0].place = current_place
                             first_tournament_team[0].save()
                             current_place += 1
 
                         second_tournament_team = TournamentTeam.objects.filter(id=second_team)
                         if second_tournament_team:
-                            print("Team {} got {} place".format(second_team, current_place))
+                            log_tournament("Team {} got {} place".format(second_team, current_place), self)
                             second_tournament_team[0].place = current_place
                             second_tournament_team[0].save()
                             current_place += 1
 
                 else:
-                    print("3 or more teams tied...figure this out later")
+                    log_tournament("3 or more teams tied...figure this out later", self)
                     # 3 or more teams tied...
                     # figure out who had the most wins between the games between these teams
                     # recursively break ties between them falling back to buchholz if there
