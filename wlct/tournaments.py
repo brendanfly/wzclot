@@ -4381,7 +4381,7 @@ class RealTimeLadder(Tournament):
                                 teams_find_games.pop(team1_idx)
                                 raise ContinueOnError
                             
-                            print("# of teams joined but not in a game: {}".format(len(teams_find_games)))
+                            log_tournament("# of teams joined but not in a game: {}".format(len(teams_find_games)), self)
                             tid = templates_list[random.randint(0, len(templates_list)-1)]
 
                             # TODO teams cannot play each other twice in 12 hours
@@ -4407,12 +4407,16 @@ class RealTimeLadder(Tournament):
                                     # that's hard to do since the indexes could be different so
                                     # after we create a game we explicitly remove them from each
                                     # list
-                                    print("Teams haven't had a game in 1 hour")
                                     teams_find_games.pop(team1_idx)
                                     teams_find_games_against.pop(team2_idx)
 
-                                    team1.active = not team1.leave_after_game
-                                    team2.active = not team2.leave_after_game
+                                    log_tournament("Created game {} vs {}: {} leave_after_game:{}, {}.leave_after_game:{}".format(team1.id, team2.id, team1.id, team1.leave_after_game, team2.id, team2.leave_after_game), self)
+
+                                    if team1.leave_after_game:
+                                        team1.active = False
+                                    if team2.leave_after_game:
+                                        team2.active = False
+
                                     team1.leave_after_game = False
                                     team2.leave_after_game = False
                                     team1.save()
@@ -4480,6 +4484,7 @@ class RealTimeLadder(Tournament):
                     tplayer.team.joined_time = timezone.now()
                     tplayer.team.leave_after_game = leave_after_game
                     tplayer.team.save()
+                    log_tournament("Team {} joined the ladder, leave after game: {}".format(tplayer.team.id, leave_after_game), self)
                     return "You've joined the ladder!"
                 elif tplayer.team.active and not join:
                     tplayer.team.active = False
