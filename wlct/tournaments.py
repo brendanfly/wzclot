@@ -4465,7 +4465,7 @@ class RealTimeLadder(Tournament):
                         token = data['id']
                         player = TournamentPlayer.objects.filter(player__token=token)
                         if player:
-                            print("Removing player {} ({}) from ladder".format(player[0].player.name, player[0].player.token))
+                            log_tournament("Removing player {} ({}) from ladder".format(player[0].player.name, player[0].player.token), self)
                             player[0].team.active = False
                             player[0].team.save()
 
