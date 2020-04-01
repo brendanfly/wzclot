@@ -259,6 +259,19 @@ def find_league_by_id(id):
         log_exception()
         log("League wasn't found: {}".format(id), LogLevel.informational)
 
+def find_tournaments_by_division_id(id):
+    try:
+        division = ClanLeagueDivision.objects.filter(pk=id)
+        if division:
+            return ClanLeagueTournament.objects.filter(division=division[0])
+
+    except:
+        # tournament wasn't found
+        log_exception()
+        log("Tournament wasn't found: {}".format(id), LogLevel.informational)
+
+    return []
+
 def find_tournament_by_id(id, query_all=False):
     try:
         # try to get the tournament that has this id
