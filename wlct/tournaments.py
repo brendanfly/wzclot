@@ -839,7 +839,7 @@ class Tournament(models.Model):
                                     td = naive_now - naive_then
 
                                     seconds_since_created = int(td.total_seconds())
-                                    
+
 
                                     # grab the settings from this game, and convert the turn time to minutes
                                     settings = game_status['settings']
@@ -1876,11 +1876,6 @@ class SeededTournament(Tournament):
 
             return draggable_data
 
-
-
-
-
-
 class GroupStageTournament(Tournament):
     type = models.CharField(max_length=255, default="Group Stage")
     groups = models.IntegerField(default=4)
@@ -2187,7 +2182,7 @@ class RoundRobinTournament(Tournament):
 
             # now get the teams in order of wins...and see if there are any ties we need
             # to break
-            teams = TournamentTeam.objects.filter(group=group).order_by('-wins')
+            teams = TournamentTeam.objects.filter(round_robin_tournament=self, group=group).order_by('-wins')
             team_buckets = defaultdict(list)
             log_tournament("Looping through {} teams in this group: ".format(teams.count()), self)
             for team in teams.iterator():
