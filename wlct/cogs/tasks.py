@@ -72,7 +72,6 @@ class Tasks(commands.Cog, name="tasks"):
                 if hasattr(self.bot, 'uptime'):
                     games = TournamentGame.objects.filter(is_finished=True, tournament=cl.tournament, game_finished_time__gt=(self.bot.uptime-datetime.timedelta(days=3)), game_log_sent=False)
                     for game in games:
-                        print("Looking at game: {}".format(game.id))
                         if game.game_finished_time is None and game.winning_team or not game.winning_team:
                             continue  # ignore games with no finished time (which might be 0 and returned in this query)
                         # we have the game, construct the log text and send it to the channel

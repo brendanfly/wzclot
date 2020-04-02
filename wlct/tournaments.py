@@ -838,6 +838,8 @@ class Tournament(models.Model):
                                     naive_then = last_turn_time.replace(tzinfo=None)
                                     td = naive_now - naive_then
 
+                                    utc_diff = datetime.datetime.utcnow() - last_turn_time
+                                    print("Naive Diff: {} UTC Diff: {}".format(td.total_seconds(), utc_diff.total_seconds()))
                                     seconds_since_created = int(td.total_seconds())
 
 
@@ -851,6 +853,7 @@ class Tournament(models.Model):
                                             turn_time_in_minutes = settings['DirectBoot']
 
                                     processGameLog += "{} invited to game ".format(player_to_use.player.name)
+
 
                                     boot_time = last_turn_time.replace(tzinfo=None) + datetime.timedelta(minutes=turn_time_in_minutes)
                                     game.game_boot_time = boot_time.replace(tzinfo=None)
