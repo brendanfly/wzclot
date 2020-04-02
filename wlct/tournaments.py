@@ -842,7 +842,6 @@ class Tournament(models.Model):
                                     print("Naive Diff: {} UTC Diff: {}".format(td.total_seconds(), utc_diff.total_seconds()))
                                     seconds_since_created = int(td.total_seconds())
 
-
                                     # grab the settings from this game, and convert the turn time to minutes
                                     settings = game_status['settings']
                                     turn_time_in_minutes = 0
