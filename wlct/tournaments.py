@@ -4394,9 +4394,11 @@ class RealTimeLadder(Tournament):
                                 # then if only one of them are
                                 while True:
                                     if self.is_template_allowed(tid.template, team1) and self.is_template_allowed(tid.template, team2):
+                                        log_tournament("Picked FINAL template for game: {}".format(tid.template), self)
                                         break
                                     else:
                                         tid = templates_list[random.randint(0, len(templates_list) - 1)]
+                                        log_tournament("Picked new template out of the list: {}".format(tid.template), self)
 
                                 extra_settings = self.get_game_extra_settings()
                                 game = self.create_game_with_template_and_data(round, game_data, tid.template, extra_settings)
@@ -4524,8 +4526,10 @@ class RealTimeLadder(Tournament):
     def is_template_allowed(self, templateid, team):
         veto = RealTimeLadderVeto.objects.filter(team=team, ladder=self, template=int(templateid))
         if veto:
+            log_tournament("Found template veto {} for team {}".format(templateid, team.id), self)
             return False
         else:
+            log_tournament("Template {} was not vetoed by team {}...checking requirements..".format(templateid, team.id), self)
             # check to see if the player can even play this template....
             tplayer = TournamentPlayer.objects.filter(team=team)
             if tplayer:
