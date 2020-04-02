@@ -850,7 +850,7 @@ class Tournament(models.Model):
 
 
                                     boot_time = last_turn_time + datetime.timedelta(minutes=turn_time_in_minutes)
-                                    game.game_boot_time = boot_time
+                                    game.game_boot_time = boot_time.replace(tzinfo=pytz.UTC)
                                     game.save()
 
                                     team_on_vacation = self.is_team_on_vacation(player_to_use.team)
