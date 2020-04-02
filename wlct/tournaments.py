@@ -834,12 +834,7 @@ class Tournament(models.Model):
                                 elif player_data['state'] == 'Invited':
                                     # player is invited and hasn't joined, if we've been waiting too long we've lost
                                     last_turn_time = datetime.datetime.strptime(game_status['lastTurnTime'], '%m/%d/%Y %H:%M:%S')
-                                    naive_now = datetime.datetime.now().replace(tzinfo=None)
-                                    naive_then = last_turn_time.replace(tzinfo=None)
-                                    td = naive_now - naive_then
-
-                                    utc_diff = datetime.datetime.utcnow() - last_turn_time
-                                    print("Naive Diff: {} UTC Diff: {}".format(td.total_seconds(), utc_diff.total_seconds()))
+                                    td = datetime.datetime.utcnow() - last_turn_time
                                     seconds_since_created = int(td.total_seconds())
 
                                     # grab the settings from this game, and convert the turn time to minutes
@@ -854,8 +849,8 @@ class Tournament(models.Model):
                                     processGameLog += "{} invited to game ".format(player_to_use.player.name)
 
 
-                                    boot_time = last_turn_time.replace(tzinfo=None) + datetime.timedelta(minutes=turn_time_in_minutes)
-                                    game.game_boot_time = boot_time.replace(tzinfo=None)
+                                    boot_time = last_turn_time + datetime.timedelta(minutes=turn_time_in_minutes)
+                                    game.game_boot_time = boot_time
                                     game.save()
 
                                     team_on_vacation = self.is_team_on_vacation(player_to_use.team)
