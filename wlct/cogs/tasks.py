@@ -237,7 +237,7 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_rtl_tasks()
         await self.handle_critical_errors()
         await self.handle_game_logs()
-        await self.handle_no_winning_team_games()
+        #await self.handle_no_winning_team_games()
 
     async def process_member_join(self, memid):
         member = self.bot.get_user(memid)
