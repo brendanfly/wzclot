@@ -2322,20 +2322,12 @@ class RoundRobinTournament(Tournament):
         #current_iteration += 1
         log_tournament("Teams with games created so far: {}, teams in division: {}, byes: {}".format(len(games_created), self.number_teams, self.uses_byes()), self)
         if self.uses_byes():
-            if len(games_created) != (self.number_teams-1):
-                shuffle(possible_matchups)
-                games_created.clear()
-                game_data1.clear()
-                game_data2.clear()
-                #iterations += 1
-                log_tournament("Only found {} potential games created so far, moving on to iteration {}".format(len(games_created),
-                                                                                        iterations),
-                               self)
-            else:
-                self.create_games(game_data1, game_data2, round[0])
-                # only if we get here do we update the bye team
-                if bye_team:
-                    bye_team.save()
+            # we always try to create the games as sometimes there will not be a fixed # due to the way byes
+            # and match-ups happen
+            self.create_games(game_data1, game_data2, round[0])
+            # only if we get here do we update the bye team
+            if bye_team:
+                bye_team.save()
         else:
             self.create_games(game_data1, game_data2, round[0])
 
@@ -2351,7 +2343,7 @@ class RoundRobinTournament(Tournament):
                 "Creating Round Robin game for tournament {} between {}  and {}".format(self.id, game_data1[i], game_data2[i]),
                 self)
             game_data = "{}.{}".format(game_data1[i], game_data2[i])
-            #self.create_game(round, game_data)
+            self.create_game(round, game_data)
 
         self.post_create_games()
 
