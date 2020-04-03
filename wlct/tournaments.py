@@ -2113,13 +2113,13 @@ class RoundRobinTournament(Tournament):
 
             # remove one team from the shuffled list before proceeding to create games
             for i in range(0, len(shuffled_team_list_read_only)):
-                print("Looking at team: {}".format(i))
+                log_tournament("Looking at team: {}, with bye: {}".format(shuffled_team_list_read_only[i].id, shuffled_team_list_read_only[i].has_had_bye), self)
                 if not shuffled_team_list_read_only[i].has_had_bye and not found_bye:
                     bye_team = shuffled_team_list_read_only[i]
                     bye_team.has_had_bye = True
                     bye_team.save()
                     found_bye = True
-                    print("Team with bye: {}".format(shuffled_team_list_read_only[i].id))
+                    log_tournament("Team with bye: {}".format(shuffled_team_list_read_only[i].id), self)
                 else:
                     teams_list.append(shuffled_team_list_read_only[i].id)
         else:
