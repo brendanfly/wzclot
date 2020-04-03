@@ -2128,7 +2128,7 @@ class RoundRobinTournament(Tournament):
         matchups = list(itertools.combinations(teams_list, 2))
         shuffle(matchups)
 
-        print("Teams to find matchups for: {}".format(teams_list))
+        log_tournament("Teams to find matchups for: {}".format(teams_list), self)
         # first, are we finished?
         games = TournamentGame.objects.filter(tournament=self, is_finished=True)
         if games.count() == self.total_games and not self.is_finished:
@@ -2312,7 +2312,7 @@ class RoundRobinTournament(Tournament):
                             log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
 
             current_iteration += 1
-            print("Games created so far: {}, teams in division: {}".format(len(games_created), self.number_teams-1))
+            log_tournament("Games created so far: {}, teams in division: {}".format(len(games_created), self.number_teams-1), seflf)
             if self.uses_byes():
                 if len(games_created) != (self.number_teams-1):
                     shuffle(matchups)
@@ -2333,7 +2333,7 @@ class RoundRobinTournament(Tournament):
                 "Creating Round Robin game for tournament {} between {}  and {}".format(self.id, game_data1[i], game_data2[i]),
                 self)
             game_data = "{}.{}".format(game_data1[i], game_data2[i])
-            self.create_game(round, game_data)
+            #self.create_game(round, game_data)
 
     def start(self):
         # start the round robin tournament
