@@ -2105,7 +2105,6 @@ class RoundRobinTournament(Tournament):
         tournament_teams = TournamentTeam.objects.filter(round_robin_tournament=self)
         found_bye = False
         shuffled_team_list_read_only = []
-        bye_team = None
         if self.uses_byes():
             for team in tournament_teams:
                 shuffled_team_list_read_only.append(team)
@@ -2118,6 +2117,7 @@ class RoundRobinTournament(Tournament):
                 if not shuffled_team_list_read_only[i].has_had_bye and not found_bye:
                     bye_team = shuffled_team_list_read_only[i]
                     bye_team.has_had_bye = True
+                    bye_team.save()
                     found_bye = True
                     log_tournament("Team with bye: {}".format(shuffled_team_list_read_only[i].id), self)
                 else:
@@ -2325,13 +2325,8 @@ class RoundRobinTournament(Tournament):
             # we always try to create the games as sometimes there will not be a fixed # due to the way byes
             # and match-ups happen
             self.create_games(game_data1, game_data2, round[0])
-            # only if we get here do we update the bye team
-            if bye_team:
-                bye_team.save()
         else:
             self.create_games(game_data1, game_data2, round[0])
-
-
 
     def post_create_games(self):
         pass
