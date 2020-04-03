@@ -2277,6 +2277,7 @@ class RoundRobinTournament(Tournament):
         current_iteration = 0
         round = TournamentRound.objects.filter(tournament=self, round_number=1)
         while current_iteration < iterations and iterations < 50:
+            shuffle(matchups)
             for matchup in matchups:
                 game_data = "{}.{}".format(matchup[0], matchup[1])
                 game = TournamentGame.objects.filter(tournament=self, teams=game_data)
@@ -2288,6 +2289,7 @@ class RoundRobinTournament(Tournament):
                     game_data = "{}.{}".format(matchup[1], matchup[0])
                     game = TournamentGame.objects.filter(tournament=self, teams=game_data)
                     if game:
+                        log_tournament("Teams {} have already played each other...trying next matchup permutation".format(game_data), self)
                         continue
                     if round:
                         team1 = game_data.split('.')[0]
@@ -2310,7 +2312,7 @@ class RoundRobinTournament(Tournament):
                             log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
 
             current_iteration += 1
-            log_tournament("Games created so far: {}, teams in division: {}".format(len(games_created), self.number_teams-1), self)
+            log_tournament("Teams with games created so far: {}, teams in division: {}, byes: {}".format(len(games_created), self.number_teams, self.uses_byes()), self)
             if self.uses_byes():
                 if len(games_created) != (self.number_teams-1):
                     shuffle(matchups)
@@ -2330,6 +2332,8 @@ class RoundRobinTournament(Tournament):
         if bye_team:
             bye_team.save()
 
+    def post_create_games(self):
+        pass
 
     def create_games(self, game_data1, game_data2, round):
         # we have reached the point where we have enough games to create...create them, whatever we have
@@ -2340,6 +2344,7 @@ class RoundRobinTournament(Tournament):
             game_data = "{}.{}".format(game_data1[i], game_data2[i])
             #self.create_game(round, game_data)
 
+        self.post_create_games()
 
     def start(self):
         # start the round robin tournament
@@ -3794,6 +3799,20 @@ class ClanLeagueTournament(RoundRobinTournament):
         super(ClanLeagueTournament, self).start()
         # just call into the parent and start it
 
+    def post_create_games(self):
+        start_times = self.games_start_times.split(';')
+        # always take the next (first) one
+        if len(start_times[0]) >= 8:  # every start time is a day/month/year, and we need at least 8 characters
+                start_times.pop(0)
+                new_start_times = ""
+                for time in start_times:
+                    new_start_times += "{};".format(time)
+
+                # remove the last character, and save
+                new_start_times = new_start_times[:-1]
+                self.games_start_times = new_start_times
+                self.save()
+
     def should_create_game(self):
         start_times = self.games_start_times.split(';')
 
@@ -3808,16 +3827,6 @@ class ClanLeagueTournament(RoundRobinTournament):
             if int(next_start[0]) == month and int(next_start[1]) == day and int(next_start[2]) == year:
                 # we can start the game now...but before returning true, store the start times again
                 # with the first element missing
-                print("Allowed to allocate another game")
-                start_times.pop(0)
-                new_start_times = ""
-                for time in start_times:
-                    new_start_times += "{};".format(time)
-
-                # remove the last character, and save
-                new_start_times = new_start_times[:-1]
-                self.games_start_times = new_start_times
-                self.save()
                 return True
             return False
         else:
