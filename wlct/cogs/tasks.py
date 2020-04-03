@@ -66,6 +66,8 @@ class Tasks(commands.Cog, name="tasks"):
         games_sent = []
         try:
             for cl in channel_links:
+                channel = self.bot.get_channel(cl.channelid)
+                log_bot_msg("Gathering all game logs to send in channel: {}".format(channel.name))
                 # for each channel, see if there are any new games that have finished in the tournament that's linked
                 # only look at games that have finished times greater than when the bot started
                 game_log_text = ""
@@ -123,7 +125,6 @@ class Tasks(commands.Cog, name="tasks"):
                         game_log_text += "\n<{}>".format(game.game_link)
 
                         log_bot_msg("Looping through channels to log: {}".format(game_log_text))
-                        channel = self.bot.get_channel(cl.channelid)
                         if channel and len(game_log_text) > 0:
                             log_bot_msg("Sending game_log to channel: {}".format(channel.name))
                             await channel.send(game_log_text)
