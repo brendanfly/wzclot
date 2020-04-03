@@ -92,12 +92,15 @@ def check_games(**kwargs):
     print("Running check_games, type={} on thread {}".format(kwargs['type'], threading.get_ident()))
     caching = kwargs['type'] == 'cache'
     tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
+    print("Looping through: {} tournaments".format(tournaments.count()))
     for tournament in tournaments:
         child_tournament = find_tournament_by_id(tournament.id, True)
         if child_tournament and child_tournament.should_process_in_engine():
             log("Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
+            print("Processing: {} ".format(tournament.name))
             try:
                 if child_tournament.update_in_progress and not caching:
+                    log("Tournament {} already has an update...but we're single threaded. This requires a manual fix.".format(tournament.name), LogLevel.critical)
                     continue
                 elif not child_tournament.game_creation_allowed and not caching:
                     continue
