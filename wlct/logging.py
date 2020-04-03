@@ -14,6 +14,7 @@ class LogLevel():
     game = "TournamentGame"
     game_status = "TournamentGameStatus"
     engine = "Engine"
+    bot = "Bot"
 
 def log_exception():
     log(traceback.format_exc(), LogLevel.critical)
@@ -48,6 +49,12 @@ def log_game_status(msg, tournament, game):
     if settings.DEBUG:
         print("{} log: {}".format(logger.level, msg))
 
+    logger.save()
+
+def log_bot_msg(msg):
+    logger = BotLog(msg=msg, level=LogLevel.bot)
+    if settings.DEBUG:
+        print("{} log: {}".format(logger.level, msg))
     logger.save()
 
 class Logger(models.Model):
@@ -90,3 +97,6 @@ class TournamentGameLog(Logger):
 class TournamentGameStatusLog(Logger):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
     game = models.ForeignKey('TournamentGame', on_delete=models.CASCADE)
+
+class BotLog(Logger):
+    pass

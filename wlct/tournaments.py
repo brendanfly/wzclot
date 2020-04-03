@@ -2299,8 +2299,6 @@ class RoundRobinTournament(Tournament):
                     if len(team_game_data[team1]) < self.games_at_once and len(team_game_data[team2]) < self.games_at_once:
                         # go ahead and create the new game
                         if games_created.count(team1) < self.games_created_at_once() and games_created.count(team2) < self.games_created_at_once():
-
-
                             # need to update game lists with newly created games
                             # otherwise teams will get too many games
                             team_game_data[team1].append(team2)
@@ -2320,6 +2318,9 @@ class RoundRobinTournament(Tournament):
                     game_data1.clear()
                     game_data2.clear()
                     iterations += 1
+                    log_tournament("Only found {} potential games created so far, moving on to iteration {}".format(len(games_created),
+                                                                                            iterations),
+                                   self)
                 else:
                     self.create_games(game_data1, game_data2, round[0])
             else:

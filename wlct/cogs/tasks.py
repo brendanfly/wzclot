@@ -5,7 +5,7 @@ from discord.ext import commands, tasks
 from wlct.cogs.common import is_admin
 from django.utils import timezone
 from traceback import print_exc
-from wlct.logging import log_exception, log, LogLevel, Logger
+from wlct.logging import log_exception, log, LogLevel, Logger, log_bot_msg
 import gc
 import datetime
 import pytz
@@ -122,10 +122,11 @@ class Tasks(commands.Cog, name="tasks"):
 
                         game_log_text += "\n<{}>".format(game.game_link)
 
+                        log_bot_msg("Looping through channels to log: {}".format(game_log_text))
                         channel = self.bot.get_channel(cl.channelid)
                         if channel and len(game_log_text) > 0:
+                            log_bot_msg("Sending game_log to channel: {}".format(channel.name))
                             await channel.send(game_log_text)
-                            # print("Game Log: {}".format(game_log_text))
                             games_sent.append(game)
                             game_log_text = ""
         except Exception:
