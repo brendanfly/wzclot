@@ -2335,12 +2335,13 @@ class RoundRobinTournament(Tournament):
                                self)
             else:
                 self.create_games(game_data1, game_data2, round[0])
+                # only if we get here do we update the bye team
+                if bye_team:
+                    bye_team.save()
         else:
             self.create_games(game_data1, game_data2, round[0])
 
-        # only if we get here do we update the bye team
-        if bye_team:
-            bye_team.save()
+
 
     def post_create_games(self):
         pass
