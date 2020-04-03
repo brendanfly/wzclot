@@ -99,14 +99,8 @@ def check_games(**kwargs):
             log("Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
             print("Processing: {} ".format(tournament.name))
             try:
-                if child_tournament.update_in_progress and not caching:
-                    log("Tournament {} already has an update...but we're single threaded. This requires a manual fix.".format(tournament.name), LogLevel.critical)
+                if not child_tournament.game_creation_allowed and not caching:
                     continue
-                elif not child_tournament.game_creation_allowed and not caching:
-                    continue
-                if not caching:
-                    child_tournament.update_in_progress = True
-                    child_tournament.save()
                 games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
                 log("Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.engine)
                 for game in games.iterator():

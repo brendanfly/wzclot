@@ -2298,16 +2298,12 @@ class RoundRobinTournament(Tournament):
                 game = TournamentGame.objects.filter(tournament=self, teams=game_data)
                 if game:
                     # we've already created this one...skip and continue on
-                    log_tournament(
-                        "Teams {} have already played each other...trying next matchup permutation".format(game_data),
-                        self)
                     continue
                 else:
                     # try again, reverting the match-up data
                     game_data = "{}.{}".format(matchup[1], matchup[0])
                     game = TournamentGame.objects.filter(tournament=self, teams=game_data)
                     if game:
-                        log_tournament("Teams {} have already played each other...trying next matchup permutation".format(game_data), self)
                         continue
                     if round:
                         team1 = game_data.split('.')[0]
