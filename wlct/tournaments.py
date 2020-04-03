@@ -2315,8 +2315,8 @@ class RoundRobinTournament(Tournament):
                         log("No round found for round robin tournament {}!".format(self.id), LogLevel.critical)
 
                     # see if both opponents have an available slot to play
-                    log_tournament("Current games for {}: {}".format(team1, team_game_data[team1]), self)
-                    log_tournament("Current games for {}: {}".format(team2, team_game_data[team2]), self)
+                    log_tournament("Current games for {}: {}".format(team1, len(team_game_data[team1])), self)
+                    log_tournament("Current games for {}: {}".format(team2, len(team_game_data[team2])), self)
                     if len(team_game_data[team1]) < self.games_at_once and len(team_game_data[team2]) < self.games_at_once:
                         # go ahead and create the new game
                         if games_created.count(team1) < self.games_created_at_once() and games_created.count(team2) < self.games_created_at_once():
