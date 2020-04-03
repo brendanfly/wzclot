@@ -129,7 +129,7 @@ def check_games(**kwargs):
 def cleanup_logs():
     # get all the logs older than 2 days
     nowdate = datetime.datetime.now(tz=pytz.UTC)
-    enddate = nowdate - datetime.timedelta(days=2)
+    enddate = nowdate - datetime.timedelta(days=5)
     logs = Logger.objects.filter(timestamp__lt=enddate)
     for log_obj in logs.iterator():
         log_obj.delete()
