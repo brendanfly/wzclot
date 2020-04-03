@@ -1313,7 +1313,14 @@ function update_pause_resume_bindings()
             });
     });
 
+
+
     // DOCUMENTREADY
+    $(".time_to_game").each(function ()
+    {
+        handle_game_countdown(jQuery(this));
+    });
+
     //$("#template_table").DataTable();
     $('#player_bot_token').click(function ()
     {

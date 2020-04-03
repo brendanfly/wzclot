@@ -2120,6 +2120,14 @@ class RoundRobinTournament(Tournament):
                     bye_team.save()
                     found_bye = True
                     log_tournament("Team with bye: {}".format(shuffled_team_list_read_only[i].id), self)
+
+                    # check to see if this is the last team that needs a bye. We include this team
+                    # because there could be a chance that they do not get a game in the last two rounds due to
+                    # the games they needed are for teams with byes
+                    teams_with_byes = TournamentTeam.objects.filter(round_robin_tournament=self, has_had_bye=True)
+                    if teams_with_byes.count() == len(shuffled_team_list_read_only):
+                        # all teams have byes now, so include them all to make sure all games get created
+                        teams_list.append(shuffled_team_list_read_only[i].id)
                 else:
                     teams_list.append(shuffled_team_list_read_only[i].id)
         else:
@@ -4051,7 +4059,7 @@ class ClanLeague(Tournament):
                     game_allocation_datetime = datetime.datetime.strptime(game_allocation_date, "%m/%d/%Y")
                     if game_allocation_datetime.replace(tzinfo=None) >= datetime.datetime.now().replace(tzinfo=None):
                         time_to_game = game_allocation_datetime.strftime("%b %d, %Y %H:%M:%S %p")
-                data += '<td class="time_to_boot">{}</td>'.format(time_to_game)
+                data += '<td class="time_to_game">{}</td>'.format(time_to_game)
                 data += '</tr>'
             data += '</table>'
         return data
