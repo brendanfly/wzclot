@@ -3004,6 +3004,8 @@ class MonthlyTemplateRotation(Tournament):
                         team_data_internal = '<tr><td>Unranked</td><td>'
 
                     team_data_internal += get_tournament_player_data(team_players[0])
+                    if request_player.id == self.created_by.id:
+                        team_data_internal += '<button type="button" class="btn btn-info player_status_change" data-action="decline" data-team="{}" name="slot" id="decline-{}">Remove From Circuit</button>'.format(team.id, team.id)
                     team_data_internal += '</td>'
                     team_data_internal += '<td>{}</td>'.format(rating)
                     team_data_internal += '</tr>'

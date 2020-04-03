@@ -392,6 +392,87 @@ function hook_pr_buttons()
     });
 }
 
+function handle_player_status_change(obj, join)
+{
+    var tournamentid = $("#tournamentid").val();
+    var templateid = $("#templateid").val();
+    var old_text_value = obj.text();
+
+    obj.prop('disabled', true);
+    var text = "Leaving Tournament...";
+    if (join)
+    {
+        text = "Joining Tournament...";
+    }
+
+    show_spinning(obj, text);
+    // no need to parse the id, we can do that on the backend, just send the data over
+    var id = obj.attr('id');
+    var send_data = {'tournamentid' : tournamentid, 'templateid' : templateid, 'buttonid': id};
+
+    if (typeof obj.data('team') !== 'undefined')
+    {
+        send_data['team'] = obj.data('team');
+    }
+
+    $.ajax({
+        type:"POST",
+        url:"/tournaments/player_status_change/",
+        headers: {'X-CSRFToken': Cookies.get('csrftoken')},
+        data: send_data,
+        success: function(data)
+        {
+           if (data.success == "true")
+           {
+              // update the table, which should have been returned to us
+              $("#lobbytab").html(data.team_table);
+              hook_player_status_change();
+
+              if (data.can_start_tourney)
+              {
+                    // We can now start the tournament, make sure the start button is enabled
+                    $("#start_tournament").prop('disabled', false);
+              }
+              else
+              {
+                    $("#start_tournament").prop('disabled', true);
+              }
+
+              if (data.is_league)
+              {
+                  $("#join_leave_buttons").html(data.join_leave_buttons);
+              }
+           }
+           else
+           {
+              // display the modal with the error
+              $("#tournament_status_title").text("Tournament Error");
+              $("#tournament_status_text").text(data.error);
+              $("#tournament_status").modal("show");
+           }
+        },
+        error: function(jqXHR, textStatus, errorThrown)
+        {
+            remove_spinning(obj, old_text_value);
+        },
+    }).always(function()
+        {
+            remove_spinning(obj, old_text_value);
+        }).fail(function()
+        {
+            remove_spinning(obj, old_text_value);
+        });
+}
+
+function hook_player_status_change()
+{
+    $('.player_status_change').on('click', function()
+    {
+        var decline = jQuery(this).data('action') === 'decline';
+        handle_player_status_change(jQuery(this), !decline);
+    });
+}
+
 function refresh_tournament_async()
 {
     var tournamentid = $("#tournamentid").val();
@@ -501,6 +582,7 @@ $(function () {
     hook_clan_league_buttons();
     hook_pr_buttons();
     hook_invite_players();
+    hook_player_status_change();
 
     $("#create-division").on('click', function ()
     {
@@ -513,74 +595,15 @@ $(function () {
     });
 
 
-
     // hook up all the decline/join buttons to do the right things
     $(document).on('click', 'button[id^=join]', function() {
-        var tournamentid = $("#tournamentid").val();
-        var templateid = $("#templateid").val();
-        var old_text_value = jQuery(this).text();
-        var thisVar = jQuery(this);
+        handle_player_status_change(jQuery(this), true);
+    });
 
-        thisVar.prop('disabled', true);
-        thisVar.html('<i class="fa fa-spinner fa-spin"></i> Joining Tournament...');
-
-        var join = true;
-
-        // no need to parse the id, we can do that on the backend, just send the data over
-        var id = thisVar.attr('id');
-
-          $.ajax({
-                type:"POST",
-                url:"/tournaments/player_status_change/",
-                headers: {'X-CSRFToken': Cookies.get('csrftoken')},
-                data: {'tournamentid' : tournamentid, 'templateid' : templateid, 'buttonid': id},
-                success: function(data)
-                {
-                   if (data.success == "true")
-                   {
-                      // update the table, which should have been returned to us
-                      $("#lobbytab").html(data.team_table);
-
-                      if (data.can_start_tourney)
-                      {
-                            // We can now start the tournament, make sure the start button is enabled
-                            $("#start_tournament").prop('disabled', false);
-                      }
-                      else
-                      {
-                            $("#start_tournament").prop('disabled', true);
-                      }
-
-                      if (data.is_league)
-                      {
-                          $("#join_leave_buttons").html(data.join_leave_buttons);
-                      }
-                   }
-                   else
-                   {
-                      // display the modal with the error
-                      $("#tournament_status_title").text("Tournament Error");
-                      $("#tournament_status_text").text(data.error);
-                      $("#tournament_status").modal("show");
-                   }
-                },
-                error: function(jqXHR, textStatus, errorThrown)
-                {
-                    // display the modal error form
-                    thisVar.prop('disabled', false);
-                    thisVar.html(old_text_value);
-                },
-            }).always(function()
-                {
-                    thisVar.prop('disabled', false);
-                    thisVar.html(old_text_value);
-                }).fail(function()
-                {
-                    thisVar.html(old_text_value);
-                    thisVar.prop('disabled', false);
-                });
-        });
-
+    // handle and setup the decline button request/code
+    $(document).on('click', 'button[id^=decline]', function() {
+        handle_player_status_change(jQuery(this), false);
+    });
 
     // hook up all the decline/join buttons to do the right things
     $(document).on('click', 'a[id^=cl-template-start-]', function() {
@@ -650,6 +673,7 @@ $(function () {
                    {
                       // update the table, which should have been returned to us
                       $("#lobbytab").html(data.team_table);
+                      hook_player_status_change();
 
                       if ($("div#bracket_seeded_async").length)
                       {
@@ -704,71 +728,6 @@ $(function () {
                 });
     });
 
-    // handle and setup the decline button request/code
-    $(document).on('click', 'button[id^=decline]', function() {
-        var tournamentid = $("#tournamentid").val();
-        var templateid = $("#templateid").val();
-        var old_text_value = jQuery(this).text();
-        var thisVar = jQuery(this);
-
-        thisVar.prop('disabled', true);
-        thisVar.html('<i class="fa fa-spinner fa-spin"></i> Leaving...');
-
-        var join = true;
-
-        // no need to parse the id, we can do that on the backend, just send the data over
-        var id = thisVar.attr('id');
-
-      $.ajax({
-            type:"POST",
-            url:"/tournaments/player_status_change/",
-            headers: {'X-CSRFToken': Cookies.get('csrftoken')},
-            data: {'tournamentid' : tournamentid, 'templateid' : templateid, 'buttonid': id},
-            success: function(data)
-            {
-               if (data.success == "true")
-               {
-                  // update the table, which should have been returned to us
-                  $("#lobbytab").html(data.team_table);
-                  if (data.can_start_tourney)
-                  {
-                        // We can now start the tournament, make sure the start button is enabled
-                        $("#start_tournament").prop('disabled', false);
-                  }
-                  else
-                  {
-                        $("#start_tournament").prop('disabled', true);
-                  }
-
-                  if (data.is_league)
-                  {
-                      $("#join_leave_buttons").html(data.join_leave_buttons);
-                  }
-               }
-               else
-               {
-                  // display the modal with the error
-                  $("#tournament_status_title").text("Tournament Error");
-                  $("#tournament_status_text").text(data.error);
-                  $("#tournament_status").modal("show");
-               }
-            },
-            error: function(jqXHR, textStatus, errorThrown)
-            {
-                // display the modal error form
-                thisVar.prop('disabled', false);
-                thisVar.html(old_text_value);
-            },
-        }).always(function()
-            {
-                thisVar.prop('disabled', false);
-                thisVar.html(old_text_value);
-            }).fail(function()
-            {
-                thisVar.html(old_text_value);
-                thisVar.prop('disabled', false);
-            });
-    });
 
     // handle and setup the decline button request/code
     $(document).on('click', '#start_tournament', function() {

@@ -628,7 +628,16 @@ def tournament_player_status_change(request):
                             if "join" in buttonid:
                                 tournament.join_tournament(request.session['token'], buttonid)
                             elif "decline" in buttonid:
-                                tournament.decline_tournament(request.session['token'])
+                                if "team" in request.POST:
+                                    print("Host forcibly removing a player from MTC")
+                                    teamid = request.POST['team']
+                                    if teamid.isnumeric():
+                                        tplayer = TournamentPlayer.objects.filter(team=int(teamid))
+                                        if tplayer:
+                                            tplayer = tplayer[0]
+                                            tournament.decline_tournament(tplayer.player.token)
+                                else:
+                                    tournament.decline_tournament(request.session['token'])
 
                             # now refresh the list of players
                             allowed_join = is_player_allowed_join(player[0], tournament.template)
