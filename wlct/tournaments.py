@@ -2270,7 +2270,7 @@ class RoundRobinTournament(Tournament):
         # we need to remove all matchups from our list that cannot happen again
         # finished or in progress both count here
         possible_matchups = []
-        log_tournament("Matchups before removing: {}".format(matchups))
+        log_tournament("Matchups before removing: {}".format(matchups), self)
         games = TournamentGame.objects.filter(tournament=self)
         for game in games:
             team1 = game.teams.split('.')[0]
