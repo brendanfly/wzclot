@@ -2277,12 +2277,14 @@ class RoundRobinTournament(Tournament):
         current_iteration = 0
         round = TournamentRound.objects.filter(tournament=self, round_number=1)
         while current_iteration < iterations and iterations < 50:
-            shuffle(matchups)
             for matchup in matchups:
                 game_data = "{}.{}".format(matchup[0], matchup[1])
                 game = TournamentGame.objects.filter(tournament=self, teams=game_data)
                 if game:
                     # we've already created this one...skip and continue on
+                    log_tournament(
+                        "Teams {} have already played each other...trying next matchup permutation".format(game_data),
+                        self)
                     continue
                 else:
                     # try again, reverting the match-up data
@@ -3721,7 +3723,6 @@ class ClanLeagueTournament(RoundRobinTournament):
 
     def uses_byes(self):
         if self.number_teams % 2 != 0:
-            print("Using byes!")
             return True
         return False
 
