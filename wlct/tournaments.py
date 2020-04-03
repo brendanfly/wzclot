@@ -2127,6 +2127,7 @@ class RoundRobinTournament(Tournament):
                     teams_with_byes = TournamentTeam.objects.filter(round_robin_tournament=self, has_had_bye=True)
                     if teams_with_byes.count() == len(shuffled_team_list_read_only):
                         # all teams have byes now, so include them all to make sure all games get created
+                        log_tournament("Last team to get a bye: {}, add it to the list and make sure all games are created".format(shuffled_team_list_read_only[i].id), self)
                         teams_list.append(shuffled_team_list_read_only[i].id)
                 else:
                     teams_list.append(shuffled_team_list_read_only[i].id)
