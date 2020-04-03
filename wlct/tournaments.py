@@ -2312,7 +2312,7 @@ class RoundRobinTournament(Tournament):
                             log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
 
             current_iteration += 1
-            log_tournament("Games created so far: {}, teams in division: {}".format(len(games_created), self.number_teams-1), seflf)
+            log_tournament("Games created so far: {}, teams in division: {}".format(len(games_created), self.number_teams-1), self)
             if self.uses_byes():
                 if len(games_created) != (self.number_teams-1):
                     shuffle(matchups)
