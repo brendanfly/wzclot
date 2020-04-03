@@ -114,7 +114,7 @@ def check_games(**kwargs):
                 # in case tournaments get stalled for some reason
                 # for it to process new games based on current tournament data
                 if not caching:
-                    log("Processing new games for tournament {}".format(games.count(), tournament.name), LogLevel.engine)
+                    log("Processing new games for tournament {}".format(tournament.name), LogLevel.engine)
                     child_tournament.process_new_games()
 
                 # after we process games we always cache the latest data for quick reads
