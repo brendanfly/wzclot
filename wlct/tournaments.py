@@ -2271,18 +2271,19 @@ class RoundRobinTournament(Tournament):
         # finished or in progress both count here
         possible_matchups = []
         log_tournament("Matchups before removing: {}".format(matchups), self)
-
         for matchup in matchups:
             game_data = "{}.{}".format(matchup[0], matchup[1])
             game = TournamentGame.objects.filter(tournament=self, teams=game_data)
             if game:
                 # we've already created this one...skip and continue on
+                log_tournament("Game between {} already exists, moving onto next matchup".format(game_data))
                 continue
             else:
                 # try again, reverting the match-up data
                 game_data = "{}.{}".format(matchup[1], matchup[0])
                 game = TournamentGame.objects.filter(tournament=self, teams=game_data)
                 if game:
+                    log_tournament("Game between {} already exists, moving onto next matchup".format(game_data))
                     continue
             possible_matchups.append(matchup)
 
