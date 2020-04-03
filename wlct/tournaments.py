@@ -2266,6 +2266,22 @@ class RoundRobinTournament(Tournament):
             team_game_data[team1].append(team2)
             team_game_data[team2].append(team1)
 
+
+        # we need to remove all matchups from our list that cannot happen again
+        # finished or in progress both count here
+        possible_matchups = []
+        games = TournamentGame.objects.filter(tournament=self)
+        for game in games:
+            team1 = game.teams.split('.')[0]
+            team2 = game.teams.split('.')[1]
+
+            for matchup in matchups:
+                if (str(matchup[0]) == str(team1) and str(matchup[1]) == str(team2)) or (str(matchup[1]) == str(team1) and str(matchup[0]) == str(team2)):
+                    log_tournament("Removing matchup {} from the possible matchups list".format(matchup), self)
+                    continue
+                possible_matchups.append(matchup)
+
+        log_tournament("Possible matchups in RR: {}".format(possible_matchups), self)
         # lookup the round for the round robin tournament
         # if there are an odd number of teams in the tournament, give out byes to a different team each round
         has_given_bye = False
@@ -2277,7 +2293,7 @@ class RoundRobinTournament(Tournament):
         current_iteration = 0
         round = TournamentRound.objects.filter(tournament=self, round_number=1)
         while current_iteration < iterations and iterations < 50:
-            for matchup in matchups:
+            for matchup in possible_matchups:
                 game_data = "{}.{}".format(matchup[0], matchup[1])
                 game = TournamentGame.objects.filter(tournament=self, teams=game_data)
                 if game:
@@ -2317,7 +2333,7 @@ class RoundRobinTournament(Tournament):
             log_tournament("Teams with games created so far: {}, teams in division: {}, byes: {}".format(len(games_created), self.number_teams, self.uses_byes()), self)
             if self.uses_byes():
                 if len(games_created) != (self.number_teams-1):
-                    shuffle(matchups)
+                    shuffle(possible_matchups)
                     games_created.clear()
                     game_data1.clear()
                     game_data2.clear()
