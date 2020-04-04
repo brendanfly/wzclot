@@ -417,8 +417,10 @@ class Clot(commands.Cog, name="clot"):
                         if games_finished >= 10:
                             tournament_data += "{}) {} - {}\n".format(teams_found + 1, get_team_data_no_clan(team), team.rating)
                             teams_found += 1
-            print("MTC: {}\nLength: {}".format(tournament_data, len(tournament_data)))
-            await ctx.send(tournament_data)
+                print("MTC: {}\nLength: {}".format(tournament_data, len(tournament_data)))
+                await ctx.send(tournament_data)
+            else:
+                await ctx.send("You've entered an invalid MTC league id.")
         except:
             log_exception()
             await ctx.send("An error has occurred and was unable to process the command.")
