@@ -172,6 +172,7 @@ class Tasks(commands.Cog, name="tasks"):
         for game in games:
             game_status = api.api_query_game_feed(game.gameid, None)
             game_status = game_status.json()
+            print("Game Status: {}".format(game_status))
             if 'lastTurnTime' in game_status:
                 last_turn_time = datetime.datetime.strptime(game_status['lastTurnTime'], '%m/%d/%Y %H:%M:%S')
                 print("Updating game {} with time {}".format(game.id, last_turn_time))
