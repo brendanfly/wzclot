@@ -176,8 +176,10 @@ class Tasks(commands.Cog, name="tasks"):
             if 'lastTurnTime' in game_status:
                 last_turn_time = datetime.datetime.strptime(game_status['lastTurnTime'], '%m/%d/%Y %H:%M:%S')
                 print("Updating game {} with time {}".format(game.id, last_turn_time))
-                game.game_finished_time = last_turn_time.replace(tzinfo=pytz.UTC)
-                game.save()
+            elif 'error' in game_status:
+                last_turn_time = datetime.datetime.utcnow()
+            game.game_finished_time = last_turn_time.replace(tzinfo=pytz.UTC)
+            game.save()
 
 
     async def handle_rtl_ladder(self):
