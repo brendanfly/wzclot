@@ -331,7 +331,7 @@ class Clot(commands.Cog, name="clot"):
             division_data = "Clan League Divisions\n"
 
             cl = ClanLeague.objects.filter(id=51)[0]
-            divisions = ClanLeagueDivision.objects.filter(league=cl).order_by('+title')
+            divisions = ClanLeagueDivision.objects.filter(league=cl).order_by('title')
 
             for division in divisions:
                 division_data += "{} | Id: {}\n".format(division.title, division.id)
