@@ -1,16 +1,158 @@
 import discord
 from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink
-from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeagueTournament
+from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision
 from discord.ext import commands
 from django.conf import settings
-from wlct.cogs.common import has_admin_role, is_admin
+from wlct.cogs.common import has_admin_access, is_admin
 
 class Clot(commands.Cog, name="clot"):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.command(brief="Admin commands to manage and debug CLOT",
+                      usage='''
+                          bb!admin logs
+                          bb!admin mtc -r <player_token>
+                          bb!admin rtl -r <discord_id>
+                          ''')
+    async def admin(self, ctx, cmd="", option="", token=""):
+        if  has_admin_access(ctx.message.author.id):
+            if cmd == "logs":
+                pass
+            elif cmd == "mtc":
+                mtc = MonthlyTemplateRotation.objects.filter(id=22)[0]
+                if option == "-r":
+                    if token:
+                        try:
+                            mtc.decline_tournament(token)
+                            await ctx.send("Successfully removed player from MTC with id: {}".format(token))
+                        except:
+                            await ctx.send("Unable to remove player with id: {}".format(token))
+                        pass
+                else:
+                    await ctx.send("Please enter a valid option (-r)")
+            elif cmd == "rtl":
+                rtl = RealTimeLadder.objects.filter(id=109)[0]
+                if option == "-r":
+                    if token:
+                        try:
+                            rtl.leave_ladder(token)
+                            await ctx.send("Successfully removed player from RTL with id: {}".format(token))
+                        except:
+                            await ctx.send("Unable to remove player with id: {}".format(token))
+                        pass
+                else:
+                    await ctx.send("Please enter a valid option (-r)")
+            else:
+                await ctx.send("Please enter a valid command. Use ``bb!help admin`` to see commands.")
+        else:
+            await ctx.send("Only clot-admin's can use this command.")
+
     @commands.command(
-        brief="Links a channel on your server to a tournament on the CLOT. You must be the tournament creator to use succesfully link the tournament.",
+        brief="Links a channel on your server to CL division tournaments on the CLOT. You must be the tournament creator to succesfully link the tournament.",
+        usage='''
+            bb!linkd -a division_id - adds a link from this discord channel to stream game logs for tournaments from division_id
+            bb!linkd -r division_id - removes an existing link from this discord channel for tournaments from division_id
+            ''',
+        category="clot")
+    async def linkd(self, ctx, arg="invalid_cmd", arg2="invalid_id"):
+        discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
+        if not discord_user:
+            discord_user = DiscordUser(memberid=ctx.message.author.id)
+            discord_user.save()
+        else:
+            discord_user = discord_user[0]
+
+        if arg == "invalid_cmd":
+            # list the current links for this channel
+            links = "__**Tournaments Linked to this Channel**__\n"
+            discord_channel_link = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id)
+            if discord_channel_link.count() == 0:
+                links += "There are currently no links."
+            else:
+                for link in discord_channel_link:
+                    links += link.tournament.name + "\n"
+            await ctx.send(links)
+            return
+        elif arg != "-a" and arg != "-r":
+            await ctx.send("Please enter a valid option for the command (-a or -r).")
+            return
+
+        if arg2 == "invalid_id" or not arg2.isnumeric():
+            await ctx.send("Please enter a valid division id to link to this channel.")
+            return
+
+        # we must find the tournament id, and the player associated with the discord user must be the creator
+        # validate that here
+        if ctx.message.author.guild_permissions.administrator or is_admin(ctx.message.author.id):
+            # user is a server admin, process to create the channel -> tournament link
+            tournaments = find_tournaments_by_division_id(int(arg2))
+            total_successfully_updated = 0
+            if not tournaments:
+                await ctx.send(
+                    "Please enter a valid division id to link to this channel. Use ``bb!divisions`` to see list of divisions.")
+                return
+            for tournament in tournaments:
+                # if a private tournament, the person sending this command must be linked and be the creator
+                if tournament.private:
+                    player = Player.objects.filter(discord_member__memberid=ctx.message.author.id)
+                    if player:
+                        player = player[0]
+                        if hasattr(tournament, 'parent_tournament'):
+                            if tournament.parent_tournament:
+                                print("Tournament Parent ID {}".format(tournament.parent_tournament.id))
+                            if player.id != tournament.created_by.id and (
+                                    tournament.parent_tournament and tournament.parent_tournament.id != 51):  # hard code this for clan league
+                                await ctx.send(
+                                    "The creator of the tournament is the only one who can link private tournaments: {}".format(
+                                        tournament.name))
+                                continue
+                        else:
+                            # no parent tournament, must be creator
+                            if player.id != tournament.created_by.id:
+                                await ctx.send(
+                                    "The creator of the tournament is the only one who can link private tournaments: {}".format(
+                                        tournament.name))
+                                continue
+                    else:
+                        await ctx.send(
+                            "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+                        return
+                if arg == "-a":
+                    # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
+                    # already a tournament hooked up to this channel. We don't even check, just add this tournament
+                    # as a link to this channel
+                    discord_channel_link = DiscordChannelTournamentLink.objects.filter(tournament=tournament,
+                                                                                       channelid=ctx.message.channel.id)
+                    if discord_channel_link:
+                        await ctx.send("You've already linked this channel to tournament: {}".format(tournament.name))
+                        continue
+                    discord_channel_link = DiscordChannelTournamentLink(tournament=tournament,
+                                                                        discord_user=discord_user,
+                                                                        channelid=ctx.message.channel.id)
+                    discord_channel_link.save()
+                    total_successfully_updated += 1
+                elif arg == "-r":
+                    discord_channel_link = DiscordChannelTournamentLink.objects.filter(tournament=tournament,
+                                                                                       channelid=ctx.message.channel.id)
+                    if discord_channel_link:
+                        discord_channel_link[0].delete()
+                        total_successfully_updated += 1
+                    else:
+                        await ctx.send(
+                            "There is no existing link for tournament {} and this channel.".format(tournament.name))
+        else:
+            await ctx.send("Sorry, you must be a server administrator to use this command.")
+        if total_successfully_updated and arg == "-a":
+            await ctx.send(
+                "You've linked this channel to {} out of {} tournaments. Game logs will now show-up here in real-time.".format(
+                    total_successfully_updated, len(tournaments)))
+        elif total_successfully_updated and arg == "-r":
+            await ctx.send("You've removed the link to this channel for {} out of {} tournaments.".format(
+                total_successfully_updated, len(tournaments)))
+
+    @commands.command(
+        brief="Links a channel on your server to a tournament on the CLOT. You must be the tournament creator to succesfully link the tournament.",
         usage='''
             bb!linkt -a tournament_id - adds a link from this discord channel to stream game logs for tournament_id
             bb!linkt -r tournament_id - removes an existing link from this discord channel to tournament_id
@@ -93,102 +235,6 @@ class Clot(commands.Cog, name="clot"):
             await ctx.send("Sorry, you must be a server administrator to use this command.")
 
     @commands.command(
-        brief="Links a channel on your server to CL division tournaments on the CLOT. You must be the tournament creator to use succesfully link the tournament.",
-        usage='''
-                bb!linkd -a division_id - adds a link from this discord channel to stream game logs for tournaments from division_id
-                bb!linkd -r division_id - removes an existing link from this discord channel to for tournaments from division_id
-                ''',
-        category="clot")
-    async def linkd(self, ctx, arg="invalid_cmd", arg2="invalid_id"):
-        discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
-        if not discord_user:
-            discord_user = DiscordUser(memberid=ctx.message.author.id)
-            discord_user.save()
-        else:
-            discord_user = discord_user[0]
-
-        if arg == "invalid_cmd":
-            # list the current links for this channel
-            links = "__**Tournaments Linked to this Channel**__\n"
-            discord_channel_link = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id)
-            if discord_channel_link.count() == 0:
-                links += "There are currently no links."
-            else:
-                for link in discord_channel_link:
-                    links += link.tournament.name + "\n"
-            await ctx.send(links)
-            return
-        elif arg != "-a" and arg != "-r":
-            await ctx.send("Please enter a valid option for the command (-a or -r).")
-            return
-
-        if arg2 == "invalid_id" or not arg2.isnumeric():
-            await ctx.send("Please enter a valid tournament or league id to link to this channel.")
-            return
-
-        # we must find the tournament id, and the player associated with the discord user must be the creator
-        # validate that here
-        if ctx.message.author.guild_permissions.administrator or is_admin(ctx.message.author.id):
-            # user is a server admin, process to create the channel -> tournament link
-            tournaments = find_tournaments_by_division_id(int(arg2))
-            total_successfully_updated = 0
-            if not tournaments:
-                await ctx.send("Please enter a valid division id to link to this channel.")
-                return
-            for tournament in tournaments:
-                # if a private tournament, the person sending this command must be linked and be the creator
-                if tournament.private:
-                    player = Player.objects.filter(discord_member__memberid=ctx.message.author.id)
-                    if player:
-                        player = player[0]
-                        if hasattr(tournament, 'parent_tournament'):
-                            if tournament.parent_tournament:
-                                print("Tournament Parent ID {}".format(tournament.parent_tournament.id))
-                            if player.id != tournament.created_by.id and (
-                                    tournament.parent_tournament and tournament.parent_tournament.id != 51):  # hard code this for clan league
-                                await ctx.send(
-                                    "The creator of the tournament is the only one who can link private tournaments: {}".format(tournament.name))
-                                continue
-                        else:
-                            # no parent tournament, must be creator
-                            if player.id != tournament.created_by.id:
-                                await ctx.send(
-                                    "The creator of the tournament is the only one who can link private tournaments: {}".format(tournament.name))
-                                continue
-                    else:
-                        await ctx.send(
-                            "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
-                        return
-                if arg == "-a":
-                    # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
-                    # already a tournament hooked up to this channel. We don't even check, just add this tournament
-                    # as a link to this channel
-                    discord_channel_link = DiscordChannelTournamentLink.objects.filter(tournament=tournament,
-                                                                                       channelid=ctx.message.channel.id)
-                    if discord_channel_link:
-                        await ctx.send("You've already linked this channel to tournament: {}".format(tournament.name))
-                        continue
-                    discord_channel_link = DiscordChannelTournamentLink(tournament=tournament,
-                                                                        discord_user=discord_user,
-                                                                        channelid=ctx.message.channel.id)
-                    discord_channel_link.save()
-                    total_successfully_updated += 1
-                elif arg == "-r":
-                    discord_channel_link = DiscordChannelTournamentLink.objects.filter(tournament=tournament,
-                                                                                       channelid=ctx.message.channel.id)
-                    if discord_channel_link:
-                        discord_channel_link[0].delete()
-                        total_successfully_updated += 1
-                    else:
-                        await ctx.send("There is no existing link for tournament {} and this channel.".format(tournament.name))
-        else:
-            await ctx.send("Sorry, you must be a server administrator to use this command.")
-        if total_successfully_updated and arg == "-a":
-            await ctx.send("You've linked this channel to {} out of {} tournaments. Game logs will now show-up here in real-time.".format(total_successfully_updated, len(tournaments)))
-        elif total_successfully_updated and arg == "-r":
-            await ctx.send("You've removed the link to this channel for {} out of {} tournaments.".format(total_successfully_updated, len(tournaments)))
-
-    @commands.command(
         brief="Links your discord account with your CLOT/Warzone account for use with creating games and bot ladders.",
         usage="bot_token_from_clot_site",
         category="clot")
@@ -230,11 +276,29 @@ class Clot(commands.Cog, name="clot"):
         else:
             await ctx.send("You cannot use the !linkme command unless you are privately messaging the bot.")
 
+    @commands.command(brief="Displays division data from the CLOT",
+                      usage='''
+                          bb!divisions : Displays CL Divisions
+                          ''')
+    async def divisions(self, ctx):
+        await ctx.send("Gathering tournament data....")
+        division_data = "Clan League Divisions\n"
+
+        cl = ClanLeague.objects.filter(id=12)[0]
+        divisions = ClanLeagueDivision.objects.filter(league=cl).order_by('+title')
+
+        for division in divisions:
+            division_data += "{} | Id: {}\n".format(division.title, division.id)
+
+        await ctx.send(division_data)
+
     @commands.command(brief="Displays tournament data from the CLOT",
                       usage='''
-                      bb!tournaments -f : Displays Finished Tournaments
-                      bb!tournaments -o : Displays Open Tournaments
-                      ''')
+                          bb!tournaments -f : Displays Finished Tournaments
+                          bb!tournaments -o : Displays Open Tournaments
+                          bb!tournaments -p : Displays Tournaments In Progress
+                          bb!tournaments -cl : Displays Clan League Tournaments
+                          ''')
     async def tournaments(self, ctx, arg):
         await ctx.send("Gathering tournament data....")
         tournament_data = ""
@@ -299,10 +363,10 @@ class Clot(commands.Cog, name="clot"):
 
     @commands.command(brief="Displays all registered clan members on the CLOT",
                       usage='''
-                      Hint: to see a list of clan ids, use bb!clans
-                      bb!clan clanid
-                      bb!clan clanid -d - List of players in the clan who have linked their discord accounts
-                      ''')
+                          Hint: to see a list of clan ids, use bb!clans
+                          bb!clan clanid
+                          bb!clan clanid -d - List of players in the clan who have linked their discord accounts
+                          ''')
     async def clan(self, ctx, clanid, discord_arg=""):
         await ctx.send("Gathering player data for clan {}....".format(clanid))
         clan_obj = Clan.objects.filter(pk=int(clanid))
@@ -333,16 +397,6 @@ class Clot(commands.Cog, name="clot"):
         else:
             await ctx.send("Clan with id {} not found. Please use bb!clans to show valid clans.".format(clanid))
 
-    @commands.command(brief="Display your Warzone Profile Link")
-    async def profile(self, ctx):
-        discord_id = ctx.message.author.id
-
-        player = Player.objects.filter(discord_member__memberid=discord_id)
-        if player:
-            await ctx.send("{} | https://warzone.com/Profile?p={}".format(player.name, player.token))
-        else:
-            await ctx.send("Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
-
     @commands.command(brief="Displays all clans on the CLOT")
     async def clans(self, ctx):
         clans = Clan.objects.all()
@@ -354,44 +408,16 @@ class Clot(commands.Cog, name="clot"):
                 clans_data += "{}: {}\n".format(clan.id, clan.name)
         await ctx.send(clans_data)
 
-    @commands.command(brief="Admin commands to manage and debug CLOT",
-                      usage='''
-                          bb!admin logs
-                          bb!admin mtc -r <player_token>
-                          bb!admin rtl -r <discord_id>
-                          ''')
-    async def admin(self, ctx, cmd="", option="", token=""):
-        if ctx.message.guild.id == 387022482051301379 and has_admin_role(ctx.message.author.roles):
-            if cmd == "logs":
-                pass
-            elif cmd == "mtc":
-                mtc = MonthlyTemplateRotation.objects.filter(id=22)[0]
-                if option == "-r":
-                    if token:
-                        try:
-                            mtc.decline_tournament(token)
-                            await ctx.send("Successfully removed player from MTC with id: {}".format(token))
-                        except:
-                            await ctx.send("Unable to remove player with id: {}".format(token))
-                        pass
-                else:
-                    await ctx.send("Please enter a valid option (-r)")
-            elif cmd == "rtl":
-                rtl = RealTimeLadder.objects.filter(id=109)[0]
-                if option == "-r":
-                    if token:
-                        try:
-                            rtl.leave_ladder(token)
-                            await ctx.send("Successfully removed player from RTL with id: {}".format(token))
-                        except:
-                            await ctx.send("Unable to remove player with id: {}".format(token))
-                        pass
-                else:
-                    await ctx.send("Please enter a valid option (-r)")
-            else:
-                await ctx.send("Please enter a valid command. Use ``bb!help admin`` to see commands.")
+    @commands.command(brief="Display your Warzone Profile Link")
+    async def profile(self, ctx):
+        discord_id = ctx.message.author.id
+
+        player = Player.objects.filter(discord_member__memberid=discord_id)
+        if player:
+            await ctx.send("{} | https://warzone.com/Profile?p={}".format(player.name, player.token))
         else:
-            await ctx.send("Only clot-admin's can use this command.")
+            await ctx.send("Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+
 
 def setup(bot):
     bot.add_cog(Clot(bot))

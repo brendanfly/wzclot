@@ -12,10 +12,11 @@ import datetime
 from django.core.paginator import Paginator
 
 
-def has_admin_role(roles):
-    for role in roles:
-        if role.name == "clot-admin" or role.name == "admin":
-            return True
+def has_admin_access(discord_id):
+    # B/Cowboy/Justin's ID
+    admins = ["288807658264330242", "199018621098262528", "162968893177069568"]
+    if str(discord_id) in admins:
+        return True
     return False
 
 def is_admin(discord_id):
