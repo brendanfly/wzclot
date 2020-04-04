@@ -2970,7 +2970,10 @@ class MonthlyTemplateRotation(Tournament):
         tournamentteams = TournamentTeam.objects.filter(tournament=self.id, active=True).order_by('-rating', '-wins')
         if tournamentteams:
             table += '<table class="table table-hover">'
-            table += '<tr><th>Rank</th><th>Player</th><th>Rating</th></tr>'
+            table += '<tr><th>Rank</th><th>Player</th><th>Rating</th>'
+            if request_player and (request_player.id == self.created_by.id):
+                table += '<th>Manage</th>'
+            table += '</tr>'
             team_index = 1
             ordered_team_data = []
 
@@ -3004,10 +3007,11 @@ class MonthlyTemplateRotation(Tournament):
                         team_data_internal = '<tr><td>Unranked</td><td>'
 
                     team_data_internal += get_tournament_player_data(team_players[0])
-                    if request_player and (request_player.id == self.created_by.id):
-                        team_data_internal += '<button type="button" class="btn btn-info player_status_change" data-action="decline" data-team="{}" name="slot" id="decline-{}">Remove From Circuit</button>'.format(team.id, team.id)
                     team_data_internal += '</td>'
                     team_data_internal += '<td>{}</td>'.format(rating)
+
+                    if request_player and (request_player.id == self.created_by.id):
+                        team_data_internal += '<td><button type="button" class="btn btn-info btn-sm player_status_change" data-action="decline" data-team="{}" name="slot" id="decline-{}">Remove From Circuit</button></td>'.format(team.id, team.id)
                     team_data_internal += '</tr>'
 
                     if ranked:
