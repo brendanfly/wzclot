@@ -167,7 +167,7 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_no_finished_time_games(self):
         games = TournamentGame.objects.filter(game_finished_time__isnull=True, is_finished=True)
-        print("There are {} games with no game finished times".format(games.count()))
+        print("There are {} finished games with no game finished times".format(games.count()))
         api = API()
         for game in games:
             game_status = api.api_query_game_feed(game.gameid, None)
