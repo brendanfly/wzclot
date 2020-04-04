@@ -330,7 +330,7 @@ class Clot(commands.Cog, name="clot"):
             await ctx.send("Gathering tournament data....")
             division_data = "Clan League Divisions\n"
 
-            cl = ClanLeague.objects.filter(id=12)[0]
+            cl = ClanLeague.objects.filter(id=51)[0]
             divisions = ClanLeagueDivision.objects.filter(league=cl).order_by('+title')
 
             for division in divisions:
@@ -395,11 +395,15 @@ class Clot(commands.Cog, name="clot"):
             await ctx.send("An error has occurred and was unable to process the command.")
 
     @commands.command(brief="Displays the MTC top ten on the CLOT")
-    async def mtc(self, ctx):
+    async def mtc(self, ctx, mtc_id="0"):
         try:
             await ctx.send("Gathering Monthly Template Rotation data....")
             tournament_data = ""
-            tournament = MonthlyTemplateRotation.objects.filter(id=22)
+
+            if mtc_id == "0":
+                mtc_id = "22"
+
+            tournament = MonthlyTemplateRotation.objects.filter(id=int(mtc_id))
             if tournament:
                 tournament = tournament[0]
                 tournamentteams = TournamentTeam.objects.filter(tournament=tournament.id, active=True).order_by('-rating',
