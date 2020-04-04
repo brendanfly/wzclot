@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import ModelAdmin, SimpleListFilter
 from wlct.logging import LogLevel, Logger, TournamentGameLog, TournamentGameStatusLog, TournamentLog, ProcessGameLog, ProcessNewGamesLog
-from wlct.tournaments import Tournament, SwissTournament, GroupStageTournament, GroupStageTournamentGroup, RoundRobinTournament, SeededTournament, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TournamentGame, TournamentTeam, TournamentGameEntry, TournamentRound, TournamentInvite, TournamentPlayer, PromotionalRelegationLeague, PromotionalRelegationLeagueSeason, ClanLeague, ClanLeagueDivision, ClanLeagueTournament, ClanLeagueDivisionClan, ClanLeagueTemplate, RealTimeLadderTemplate, RealTimeLadder, PromotionalRelegationLeagueTournament
+from wlct.tournaments import Tournament, SwissTournament, GroupStageTournament, GroupStageTournamentGroup, RoundRobinTournament, SeededTournament, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TournamentGame, TournamentTeam, TournamentGameEntry, TournamentRound, TournamentInvite, TournamentPlayer, PromotionalRelegationLeague, PromotionalRelegationLeagueSeason, ClanLeague, ClanLeagueDivision, ClanLeagueTournament, ClanLeagueDivisionClan, ClanLeagueTemplate, RealTimeLadderTemplate, RealTimeLadder, PromotionalRelegationLeagueTournament, RealTimeLadderVeto
 
 class LogFilter(SimpleListFilter):
     title = 'Log Level' # a label for our filter
@@ -217,3 +217,8 @@ class RealTimeLadderTemplateAdmin(admin.ModelAdmin):
     pass
 
 admin.site.register(RealTimeLadderTemplate, RealTimeLadderTemplateAdmin)
+
+class RealTimeLadderVetoAdmin(admin.ModelAdmin):
+    raw_id_fields = ['team']
+
+admin.site.register(RealTimeLadderVeto, RealTimeLadderVetoAdmin)
