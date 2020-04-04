@@ -192,7 +192,7 @@ class Clot(commands.Cog, name="clot"):
             tournament_data += "MTC Top 10\n"
             teams_found = 0
             for team in tournamentteams:
-                if teams_found <= 10:
+                if teams_found < 10:
                     games_finished = get_games_finished_for_team_since(team.id, tournament, 90)
                     if games_finished >= 10:
                         tournament_data += "{}) {} - {}\n".format(teams_found + 1, get_team_data_no_clan(team), team.rating)
