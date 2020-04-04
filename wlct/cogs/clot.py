@@ -398,7 +398,6 @@ class Clot(commands.Cog, name="clot"):
                       usage='bb!mtc <league_id>')
     async def mtc(self, ctx, mtc_id="0"):
         try:
-            await ctx.send("Gathering Monthly Template Rotation data....")
             tournament_data = ""
 
             if mtc_id == "0":
@@ -406,6 +405,7 @@ class Clot(commands.Cog, name="clot"):
 
             tournament = MonthlyTemplateRotation.objects.filter(id=int(mtc_id))
             if tournament:
+                await ctx.send("Gathering Monthly Template Rotation data....")
                 tournament = tournament[0]
                 tournamentteams = TournamentTeam.objects.filter(tournament=tournament.id, active=True).order_by('-rating',
                                                                                                                 '-wins')
