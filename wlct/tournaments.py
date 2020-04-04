@@ -4542,8 +4542,8 @@ class RealTimeLadder(Tournament):
             return "You haven't joined the ladder yet. You must join the ladder in order to veto a template."
 
     def is_template_allowed(self, templateid, team):
-        veto = RealTimeLadderVeto.objects.filter(team=team, ladder=self, template__template=int(templateid))
-        if veto:
+        veto = RealTimeLadderVeto.objects.filter(team=team, ladder=self)
+        if veto and veto[0].template.template == int(templateid):
             log_tournament("Found template veto {} for team {}".format(templateid, team.id), self)
             return False
         else:
