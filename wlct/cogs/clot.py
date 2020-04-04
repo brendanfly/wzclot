@@ -12,9 +12,9 @@ class Clot(commands.Cog, name="clot"):
     @commands.command(brief="Admin commands to manage and debug CLOT",
                       usage='''
                           bb!admin logs - shows logs
-                          bb!admin mtc -p - Shows current players on the MTC
+                          bb!admin mtc -p - shows current players on the MTC
                           bb!admin mtc -r <player_token> - removes player from MTC using wz token
-                          bb!admin rtl -p - Shows current players on the RTL
+                          bb!admin rtl -p - shows current players on the RTL
                           bb!admin rtl -r <discord_id> - removes player from RTL using Discord ID
                           ''',
                       category="clot")
@@ -31,7 +31,7 @@ class Clot(commands.Cog, name="clot"):
                         for tplayer in tplayers:
                             if tplayer.team.active:
                                 player_data += "{} | Id: {}\n".format(tplayer.player.name,
-                                                                              tplayer.player.id)
+                                                                              tplayer.player.token)
                         await ctx.send(player_data)
                     else:
                         await ctx.send("Currently there are no players on the MTC")
@@ -42,7 +42,8 @@ class Clot(commands.Cog, name="clot"):
                             await ctx.send("Successfully removed player from MTC with id: {}".format(token))
                         except:
                             await ctx.send("Unable to remove player from MTC with id: {}".format(token))
-                        pass
+                    else:
+                        ctx.send("Please enter a valid token. Use ``bb!admin mtc -p`` to see current players.")
                 else:
                     await ctx.send("Please enter a valid option (-p or -r)")
             elif cmd == "rtl":
@@ -64,7 +65,8 @@ class Clot(commands.Cog, name="clot"):
                             await ctx.send("Successfully removed player from RTL with id: {}".format(token))
                         except:
                             await ctx.send("Unable to remove player from RTL with id: {}".format(token))
-                        pass
+                    else:
+                        ctx.send("Please enter a valid id. Use ``bb!admin rtl -p`` to see current players.")
                 else:
                     await ctx.send("Please enter a valid option (-p or -r)")
             else:
@@ -178,6 +180,7 @@ class Clot(commands.Cog, name="clot"):
     @commands.command(
         brief="Links a channel on your server to a tournament on the CLOT. You must be the tournament creator to succesfully link the tournament.",
         usage='''
+            Hint: to link the RTL, use the command: ``bb!linkt -a 109``
             bb!linkt -a tournament_id - adds a link from this discord channel to stream game logs for tournament_id
             bb!linkt -r tournament_id - removes an existing link from this discord channel to tournament_id
             ''',
@@ -324,7 +327,7 @@ class Clot(commands.Cog, name="clot"):
                           bb!tournaments -p : Displays Tournaments In Progress
                           bb!tournaments -cl : Displays Clan League Tournaments
                           ''',
-                      category="clot")
+                          category="clot")
     async def tournaments(self, ctx, arg):
         await ctx.send("Gathering tournament data....")
         tournament_data = ""

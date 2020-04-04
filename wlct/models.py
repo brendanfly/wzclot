@@ -22,11 +22,6 @@ class DiscordUser(models.Model):
     def __str__(self):
         return "Member: {}, LinkMention: {}".format(self.memberid, self.link_mention)
 
-class DiscordChannelRTLadderLink(models.Model):
-    rtladder = models.ForeignKey('RealTimeLadder', on_delete=models.CASCADE, blank=True, null=True)
-    channelid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
-    discord_user = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.CASCADE)
-
 class DiscordChannelTournamentLink(models.Model):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, blank=True, null=True)
     channelid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
