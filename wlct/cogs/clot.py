@@ -11,38 +11,62 @@ class Clot(commands.Cog, name="clot"):
 
     @commands.command(brief="Admin commands to manage and debug CLOT",
                       usage='''
-                          bb!admin logs
-                          bb!admin mtc -r <player_token>
-                          bb!admin rtl -r <discord_id>
-                          ''')
+                          bb!admin logs - shows logs
+                          bb!admin mtc -p - Shows current players on the MTC
+                          bb!admin mtc -r <player_token> - removes player from MTC using wz token
+                          bb!admin rtl -p - Shows current players on the RTL
+                          bb!admin rtl -r <discord_id> - removes player from RTL using Discord ID
+                          ''',
+                      category="clot")
     async def admin(self, ctx, cmd="", option="", token=""):
         if  has_admin_access(ctx.message.author.id):
             if cmd == "logs":
                 pass
             elif cmd == "mtc":
                 mtc = MonthlyTemplateRotation.objects.filter(id=22)[0]
-                if option == "-r":
+                if option == "-p":
+                    tplayers = TournamentPlayer.objects.filter(tournament=mtc)
+                    if tplayers:
+                        player_data = "Current Players on the MTC:\n"
+                        for tplayer in tplayers:
+                            if tplayer.team.active:
+                                player_data += "{} | Id: {}\n".format(tplayer.player.name,
+                                                                              tplayer.player.id)
+                        await ctx.send(player_data)
+                    else:
+                        await ctx.send("Currently there are no players on the MTC")
+                elif option == "-r":
                     if token:
                         try:
                             mtc.decline_tournament(token)
                             await ctx.send("Successfully removed player from MTC with id: {}".format(token))
                         except:
-                            await ctx.send("Unable to remove player with id: {}".format(token))
+                            await ctx.send("Unable to remove player from MTC with id: {}".format(token))
                         pass
                 else:
-                    await ctx.send("Please enter a valid option (-r)")
+                    await ctx.send("Please enter a valid option (-p or -r)")
             elif cmd == "rtl":
                 rtl = RealTimeLadder.objects.filter(id=109)[0]
-                if option == "-r":
+                if option == "-p":
+                    tplayers = TournamentPlayer.objects.filter(tournament=rtl)
+                    if tplayers:
+                        player_data = "Current Players on the RTL:\n"
+                        for tplayer in tplayers:
+                            if tplayer.team.active:
+                                player_data += "{} | Discord Id: {}\n".format(tplayer.player.name, tplayer.player.discord_member.memberid)
+                        await ctx.send(player_data)
+                    else:
+                        await ctx.send("Currently there are no players on the RTL")
+                elif option == "-r":
                     if token:
                         try:
                             rtl.leave_ladder(token)
                             await ctx.send("Successfully removed player from RTL with id: {}".format(token))
                         except:
-                            await ctx.send("Unable to remove player with id: {}".format(token))
+                            await ctx.send("Unable to remove player from RTL with id: {}".format(token))
                         pass
                 else:
-                    await ctx.send("Please enter a valid option (-r)")
+                    await ctx.send("Please enter a valid option (-p or -r)")
             else:
                 await ctx.send("Please enter a valid command. Use ``bb!help admin`` to see commands.")
         else:
@@ -279,7 +303,8 @@ class Clot(commands.Cog, name="clot"):
     @commands.command(brief="Displays division data from the CLOT",
                       usage='''
                           bb!divisions : Displays CL Divisions
-                          ''')
+                          ''',
+                      category="clot")
     async def divisions(self, ctx):
         await ctx.send("Gathering tournament data....")
         division_data = "Clan League Divisions\n"
@@ -298,7 +323,8 @@ class Clot(commands.Cog, name="clot"):
                           bb!tournaments -o : Displays Open Tournaments
                           bb!tournaments -p : Displays Tournaments In Progress
                           bb!tournaments -cl : Displays Clan League Tournaments
-                          ''')
+                          ''',
+                      category="clot")
     async def tournaments(self, ctx, arg):
         await ctx.send("Gathering tournament data....")
         tournament_data = ""
