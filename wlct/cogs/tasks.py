@@ -165,23 +165,6 @@ class Tasks(commands.Cog, name="tasks"):
                 game.save()
                 msg = ""
 
-    async def handle_no_finished_time_games(self):
-        games = TournamentGame.objects.filter(game_finished_time__isnull=True, is_finished=True)
-        print("There are {} finished games with no game finished times".format(games.count()))
-        api = API()
-        for game in games:
-            game_status = api.api_query_game_feed(game.gameid, None)
-            game_status = game_status.json()
-            print("Game Status: {}".format(game_status))
-            if 'lastTurnTime' in game_status:
-                last_turn_time = datetime.datetime.strptime(game_status['lastTurnTime'], '%m/%d/%Y %H:%M:%S')
-                print("Updating game {} with time {}".format(game.id, last_turn_time))
-            elif 'error' in game_status:
-                last_turn_time = datetime.datetime.utcnow()
-            game.game_finished_time = last_turn_time.replace(tzinfo=pytz.UTC)
-            game.save()
-
-
     async def handle_rtl_ladder(self):
         tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
         for tournament in tournaments:
@@ -256,7 +239,6 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_critical_errors()
         await self.handle_game_logs()
         #await self.handle_no_winning_team_games()
-        await self.handle_no_finished_time_games()
 
     async def process_member_join(self, memid):
         member = self.bot.get_user(memid)
