@@ -394,7 +394,8 @@ class Clot(commands.Cog, name="clot"):
             log_exception()
             await ctx.send("An error has occurred and was unable to process the command.")
 
-    @commands.command(brief="Displays the MTC top ten on the CLOT")
+    @commands.command(brief="Displays the MTC top ten on the CLOT. Optional arguments to show any MTC top 10.",
+                      usage='bb!mtc <league_id>')
     async def mtc(self, ctx, mtc_id="0"):
         try:
             await ctx.send("Gathering Monthly Template Rotation data....")
