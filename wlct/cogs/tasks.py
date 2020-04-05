@@ -111,7 +111,7 @@ class Tasks(commands.Cog, name="tasks"):
                                         player_name = player_name[0].name
                                     else:
                                         player_name = tplayer.player.name
-                                    game_log_text += "*{}* ,".format(player_name)
+                                    game_log_text += "*{}*,".format(player_name)
 
                                 game_log_text = game_log_text[:-1]
                                 if not wrote_defeats:
