@@ -7,6 +7,7 @@ from enum import Enum
 import pytz
 from django.utils import timezone
 
+
 # list of levels
 class LogLevel:
     informational = "Informational"
@@ -30,6 +31,7 @@ def log_critical_msg(msg):
 
 def log_command_exception(msg):
     log(msg + "\n" + traceback.format_exc(), LogLevel.critical)
+
 
 def log_exception():
     log(traceback.format_exc(), LogLevel.critical)
