@@ -21,16 +21,13 @@ class Tasks(commands.Cog, name="tasks"):
     async def handle_rtl_tasks(self):
         ladders = RealTimeLadder.objects.all()
         for ladder in ladders:
-            print("Handling rtl tasks....")
             games = TournamentGame.objects.filter(tournament=ladder, is_finished=False, mentioned=False)
-            print("Total game count: {}".format(games.count()))
             # cache the game data + link for use with the embed
             emb = discord.Embed(color=self.bot.embed_color)
             emb.set_author(icon_url=self.bot.user.avatar_url, name="WarzoneBot")
             emb.title = "New Ladder Game Created"
             emb.set_footer(text="Bot created and maintained by -B#0292")
             for game in games:
-                print("RTL: Found game")
                 data = ""
                 team1 = game.teams.split('.')[0]
                 team2 = game.teams.split('.')[1]
@@ -113,7 +110,7 @@ class Tasks(commands.Cog, name="tasks"):
                                         player_name = tplayer.player.name
                                     game_log_text += "*{}*, ".format(player_name)
 
-                                game_log_text = game_log_text[:-1]
+                                game_log_text = game_log_text[:-2]
                                 if not wrote_defeats:
                                     game_log_text += " defeats "
                                     wrote_defeats = True

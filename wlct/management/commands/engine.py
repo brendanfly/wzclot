@@ -96,7 +96,6 @@ def check_games(**kwargs):
         child_tournament = find_tournament_by_id(tournament.id, True)
         if child_tournament and child_tournament.should_process_in_engine():
             log("Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
-            print("Processing: {} ".format(tournament.name))
             try:
                 if not child_tournament.game_creation_allowed and not caching:
                     continue
