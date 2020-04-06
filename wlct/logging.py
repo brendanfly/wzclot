@@ -6,7 +6,7 @@ from django.conf import settings
 from enum import Enum
 
 # list of levels
-class LogLevel(Enum):
+class LogLevel:
     informational = "Informational"
     critical = "Critical"
     error = "Error"
@@ -118,64 +118,63 @@ class LogManager():
     # kwargs['hours'] = 12 (prune all logs before 12 hours prior to the last log)
     # kwargs['days'] = 1 (prune all logs before 1 day prior to the last log)
     def prune_keep_last(self, **kwargs):
+        print("Removing logs from finished items")
+        log_end = "No Logs"
         start = datetime.datetime.utcnow()
         if self.type == LogLevel.tournament:
-            logs = TournamentLog.objects.filter(self.kwargs).order_by('-pk')
+            logs = TournamentLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log = logs[0]
-                log_end = log.timestamp - datetime.timedelta(kwargs)
+                log_end = logs[0].timestamp - datetime.timedelta(kwargs)
         if self.type == LogLevel.game:
-            logs = TournamentGameLog.objects.filter(self.kwargs).order_by('-pk')
+            logs = TournamentGameLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log = logs[0]
-                log_end = log.timestamp - datetime.timedelta(kwargs)
+                log_end = logs[0].timestamp - datetime.timedelta(kwargs)
         if self.type == LogLevel.game_status:
-            logs = TournamentGameStatusLog.objects.filter(self.kwargs).order_by('-pk')
+            logs = TournamentGameStatusLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log = logs[0]
-                log_end = log.timestamp - datetime.timedelta(kwargs)
+                l = logs[0]
+                log_end = logs[0].timestamp - datetime.timedelta(kwargs)
         if self.type == LogLevel.process_game:
-            logs = ProcessGameLog.objects.filter(self.kwargs).order_by('-pk')
+            logs = ProcessGameLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log = logs[0]
-                log_end = log.timestamp - datetime.timedelta(kwargs)
+                log_end = logs[0].timestamp - datetime.timedelta(kwargs)
         if self.type == LogLevel.process_new_games:
-            logs = ProcessNewGamesLog.objects.filter(self.kwargs).order_by('-pk')
+            logs = ProcessNewGamesLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log = logs[0]
-                log_end = log.timestamp - datetime.timedelta(kwargs)
-        print("Removing all 'finished' {} logs older than: {}".format(self.type, log_end))
-        for log in logs:
-            if log.timestamp < log_end:
-                log.delete()
+                log_end = logs[0].timestamp - datetime.timedelta(kwargs)
+        print("Removing {} logs 'finished' {} logs older than: {}".format(logs.count(), self.type, log_end))
+        for l in logs:
+            if l.timestamp < log_end:
+                #log.delete()
+                pass
         time_spent = datetime.datetime.utcnow() - start
-        log("Spent {} seconds prune_keep_last logs.".foramt(time_spent.total_seconds()), LogLevel.clean_logs)
+        log("Spent {} seconds prune_keep_last logs.".format(time_spent.total_seconds()), LogLevel.clean_logs)
 
     # straight prunes the logs based on the parameters passed in
     def prune(self):
         start = datetime.datetime.utcnow()
         if self.type == LogLevel.critical:
-            Logger.objects.filter(self.kwargs).delete()
+            Logger.objects.filter(**self.kwargs).delete()
         if self.type == LogLevel.informational:
-            Logger.objects.filter(self.kwargs).delete()
+            Logger.objects.filter(**self.kwargs).delete()
         if self.type == LogLevel.warning:
-            Logger.objects.filter(self.kwargs).delete()
+            Logger.objects.filter(**self.kwargs).delete()
         if self.type == LogLevel.error:
-            Logger.objects.filter(self.kwargs).delete()
+            Logger.objects.filter(**self.kwargs).delete()
         if self.type == LogLevel.bot:
-            Logger.objects.filter(self.kwargs).delete()
+            Logger.objects.filter(**self.kwargs).delete()
         if self.type == LogLevel.engine:
-            Logger.objects.filter(self.kwargs).delete()
+            Logger.objects.filter(**self.kwargs).delete()
         if self.type == LogLevel.tournament:
-            TournamentLog.objects.filter(self.kwargs).delete()
+            TournamentLog.objects.filter(**self.kwargs).delete()
         if self.type == LogLevel.game:
-            TournamentGameLog.objects.filter(self.kwargs).delete()
+            TournamentGameLog.objects.filter(**self.kwargs).delete()
         if self.type == LogLevel.game_status:
-            TournamentGameStatusLog.objects.filter(self.kwargs).delete()
+            TournamentGameStatusLog.objects.filter(**self.kwargs).delete()
         if self.type == LogLevel.process_game:
-            ProcessGameLog.objects.filter(self.kwargs).delete()
+            ProcessGameLog.objects.filter(**self.kwargs).delete()
         if self.type == LogLevel.process_new_games:
-            ProcessNewGamesLog.objects.filter(self.kwargs).delete()
+            ProcessNewGamesLog.objects.filter(**self.kwargs).delete()
 
         end = datetime.datetime.utcnow() - start
-        log("Spent {} seconds pruning {} logs.".format(end.total_seconds(), type))
+        log("Spent {} seconds pruning {} logs.".format(end.total_seconds(), self.type), LogLevel.clean_logs)

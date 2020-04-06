@@ -27,9 +27,7 @@ def schedule_jobs():
             # use the name 'default' instead of 'djangojobstore'.
             scheduler.add_jobstore(DjangoJobStore(), 'default')
             if not scheduler.running:
-                scheduler.add_job(tournament_engine, 'interval', seconds=10, id='tournament_engine',
-                                  max_instances=1, coalesce=False)
-                scheduler.add_job(tournament_caching, 'interval', seconds=30, id='tournament_caching',
+                scheduler.add_job(tournament_caching, 'interval', seconds=10, id='tournament_engine',
                                   max_instances=1, coalesce=False)
                 scheduler.start()
         except ConflictingIdError:

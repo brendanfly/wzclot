@@ -130,23 +130,27 @@ def cleanup_logs():
     nowdate = datetime.datetime.utcnow()
     enddate = nowdate - datetime.timedelta(days=3)
 
-    for log_type in LogLevel:
-        if log_type.data == LogLevel.process_game or log_type.data == LogLevel.game or log_type.data == LogLevel.game_status:
-            LogManager(log_type.value, timestamp__lt=enddate, game__is_finished=False).prune()
-            LogManager(log_type.value, game__is_finished=True).prune_keep_last(hours=12)
-        elif log_type.data == LogLevel.tournament or log_type.data == LogLevel.process_new_games:
-            LogManager(log_type.value, timestamp__lt=enddate, tournament__is_finished=False).prune()
-            LogManager(log_type.value, tournament__is_finished=True).prune_keep_last(hours=12)
-        else:
-            LogManager(log_type.value, timestamp__lt=enddate).prune()
+    for log_type, value in vars(LogLevel).items():
+        if not log_type.startswith('__'):
+            if value == LogLevel.process_game or value == LogLevel.game or value == LogLevel.game_status:
+                LogManager(value, game__is_finished=True).prune_keep_last(hours=12)
+                LogManager(value, timestamp__lt=enddate, game__is_finished=False).prune()
+            elif value == LogLevel.tournament or value == LogLevel.process_new_games:
+                LogManager(value, tournament__is_finished=True).prune_keep_last(hours=12)
+                LogManager(value, timestamp__lt=enddate, tournament__is_finished=False).prune()
+            else:  # generic logging runtime cases
+                LogManager(value, timestamp__lt=enddate).prune()
 
 # globals to get executed on every load of the web server
 slow_update_threshold = 25
 current_clan_update = 1
 
 def tournament_caching():
-    cleanup_logs()
-    check_games(type='cache')
+    try:
+        cleanup_logs()
+        check_games(type='cache')
+    except Exception as e:
+        log_exception()
 
 def tournament_engine():
     try:
