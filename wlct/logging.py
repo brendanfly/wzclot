@@ -143,7 +143,7 @@ class LogManager():
             if logs:
                 log_end = logs[0].timestamp - datetime.timedelta(kwargs)
         print("Removing {} logs 'finished' {} logs older than: {}".format(logs.count(), self.type, log_end))
-        for l in logs:
+        for l in logs.iterator():
             if l.timestamp < log_end:
                 #log.delete()
                 pass
