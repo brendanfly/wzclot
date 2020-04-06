@@ -154,27 +154,29 @@ class LogManager():
     def prune(self):
         start = datetime.datetime.utcnow()
         if self.type == LogLevel.critical:
-            Logger.objects.filter(**self.kwargs).delete()
+            logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.informational:
-            Logger.objects.filter(**self.kwargs).delete()
+            logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.warning:
-            Logger.objects.filter(**self.kwargs).delete()
+            logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.error:
-            Logger.objects.filter(**self.kwargs).delete()
+            logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.bot:
-            Logger.objects.filter(**self.kwargs).delete()
+            logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.engine:
-            Logger.objects.filter(**self.kwargs).delete()
+            logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.tournament:
-            TournamentLog.objects.filter(**self.kwargs).delete()
+            logs = TournamentLog.objects.filter(**self.kwargs)
         if self.type == LogLevel.game:
-            TournamentGameLog.objects.filter(**self.kwargs).delete()
+            logs = TournamentGameLog.objects.filter(**self.kwargs)
         if self.type == LogLevel.game_status:
-            TournamentGameStatusLog.objects.filter(**self.kwargs).delete()
+            logs = TournamentGameStatusLog.objects.filter(**self.kwargs)
         if self.type == LogLevel.process_game:
-            ProcessGameLog.objects.filter(**self.kwargs).delete()
+            logs = ProcessGameLog.objects.filter(**self.kwargs)
         if self.type == LogLevel.process_new_games:
-            ProcessNewGamesLog.objects.filter(**self.kwargs).delete()
+            logs = ProcessNewGamesLog.objects.filter(**self.kwargs)
 
+        for l in logs.iterator():
+            l.delete()
         end = datetime.datetime.utcnow() - start
         log("Spent {} seconds pruning {} logs.".format(end.total_seconds(), self.type), LogLevel.clean_logs)
