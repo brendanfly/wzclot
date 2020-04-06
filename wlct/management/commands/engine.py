@@ -89,10 +89,9 @@ def is_correct_player(player_token, player_team):
         return False
 
 def check_games(**kwargs):
-    print("Running check_games, type={} on thread {}".format(kwargs['type'], threading.get_ident()))
+    log("Running check_games, type={} on thread {}".format(kwargs['type'], threading.get_ident()), LogLevel.engine)
     caching = kwargs['type'] == 'cache'
     tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
-    print("Looping through: {} tournaments".format(tournaments.count()))
     for tournament in tournaments:
         child_tournament = find_tournament_by_id(tournament.id, True)
         if child_tournament and child_tournament.should_process_in_engine():
@@ -118,11 +117,13 @@ def check_games(**kwargs):
                 if caching:
                     log("Caching data for {}".format(tournament.name), LogLevel.engine)
                     child_tournament.cache_data()
+                log("Finished processing games for tournament {}".format(tournament.name), LogLevel.engine)
             except Exception as e:
                 log_exception()
             finally:
                 child_tournament.update_in_progress = False
                 child_tournament.save()
+                log("Child tournament {} update done.".format(tournament.name), LogLevel.engine)
         gc.collect()
 
 def cleanup_logs():
@@ -234,5 +235,3 @@ def tournament_engine():
         engine.last_run_time = finished_time
         engine.next_run_time = next_run
         engine.save()
-
-        pass
