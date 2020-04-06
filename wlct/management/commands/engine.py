@@ -1,7 +1,7 @@
 # the main engine for the scheduler
 import threading
 import datetime
-from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog, TournamentGameLog, TournamentGameStatusLog, ProcessGameLog, ProcessNewGamesLog, BotLog
+from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog, TournamentGameLog, TournamentGameStatusLog, ProcessGameLog, ProcessNewGamesLog, BotLog, LogManager
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
 from wlct.models import Clan, Engine, Player
@@ -128,97 +128,17 @@ def check_games(**kwargs):
 def cleanup_logs():
     # get all the logs older than 2 days
     nowdate = datetime.datetime.utcnow()
-    enddate = nowdate - datetime.timedelta(days=4)
+    enddate = nowdate - datetime.timedelta(days=3)
 
-    ''' TournamentLogs '''
-    nowdate = datetime.datetime.utcnow()
-    TournamentLog.objects.filter(timestamp__lt=enddate, is_finished=False).delete()
-    time_spent = datetime.datetime.utcnow() - nowdate
-    log("Spent {} seconds cleaning in progress TournamentLog.".format(time_spent.total_seconds()), LogLevel.clean_logs)
-
-    nowdate = datetime.datetime.utcnow()
-    tlogs = TournamentLog.objects.filter(is_finished=True).order_by('-pk')  # get the last logs first
-    if tlogs:
-        # grab the first one, then issue another query deleting everything older than 1 day before the first log
-        log = tlogs[0]
-        log_end = log.timestamp - datetime.timedelta(hours=12)
-        TournamentLog.objects.filter(is_finished=True, timestamp__lt=log_end).delete()
-    time_spent = datetime.datetime.utcnow() - nowdate
-    log("Spent {} seconds cleaning finished TournamentLog".format(time_spent.total_seconds()), LogLevel.clean_logs)
-
-    ''' TournamentGameLogs '''
-    nowdate = datetime.datetime.utcnow()
-    TournamentGameLog.objects.filter(timestamp__lt=enddate, is_finished=False).delete()
-    time_spent = datetime.datetime.utcnow() - nowdate
-    log("Spent {} seconds cleaning in progress TournamentGameLog".format(time_spent.total_seconds(), LogLevel.clean_logs))
-
-    nowdate = datetime.datetime.utcnow()
-    logs = TournamentGameLog.objects.filter(is_finished=True).order_by('-pk')  # get the last logs first
-    if logs:
-        # grab the first one, then issue another query deleting everything older than 1 day before the first log
-        log = logs[0]
-        log_end = log.timestamp - datetime.timedelta(hours=12)
-        TournamentLog.objects.filter(is_finished=True, timestamp__lt=log_end).delete()
-    time_spent = datetime.datetime.utcnow() - nowdate
-    log("Spent {} seconds cleaning finished TournamentGameLog".format(time_spent.total_seconds()), LogLevel.clean_logs)
-
-    ''' TournamentGameStatusLog '''
-    nowdate = datetime.datetime.utcnow()
-    TournamentGameStatusLog.objects.filter(timestamp__lt=enddate, is_finished=False).delete()
-    time_spent = datetime.datetime.utcnow() - nowdate
-    log("Spent {} seconds cleaning in progress TournamentGameLog".format(time_spent.total_seconds(), LogLevel.clean_logs))
-
-    nowdate = datetime.datetime.utcnow()
-    logs = TournamentGameStatusLog.objects.filter(is_finished=True).order_by('-pk')  # get the last logs first
-    if logs:
-        # grab the first one, then issue another query deleting everything older than 1 day before the first log
-        log = logs[0]
-        log_end = log.timestamp - datetime.timedelta(hours=12)
-        TournamentGameStatusLog.objects.filter(is_finished=True, timestamp__lt=log_end).delete()
-    time_spent = datetime.datetime.utcnow() - nowdate
-    log("Spent {} seconds cleaning finished TournamentGameLog".format(time_spent.total_seconds()), LogLevel.clean_logs)
-
-    ''' ProcessGame Logs '''
-    nowdate = datetime.datetime.utcnow()
-    ProcessGameLog.objects.filter(timestamp__lt=enddate, is_finished=False).delete()
-    time_spent = datetime.datetime.utcnow() - nowdate
-    log("Spent {} seconds cleaning in progress ProcessGameLog.".format(time_spent.total_seconds()), LogLevel.clean_logs)
-
-    nowdate = datetime.datetime.utcnow()
-    tlogs = ProcessGameLog.objects.filter(is_finished=True).order_by('-pk')  # get the last logs first
-    if tlogs:
-        # grab the first one, then issue another query deleting everything older than 1 day before the first log
-        log = tlogs[0]
-        log_end = log.timestamp - datetime.timedelta(hours=12)
-        ProcessGameLog.objects.filter(is_finished=True, timestamp__lt=log_end).delete()
-    time_spent = datetime.datetime.utcnow() - nowdate
-    log("Spent {} seconds cleaning finished ProcessGameLog".format(time_spent.total_seconds()), LogLevel.clean_logs)
-
-    ''' ProcessNewGame Logs '''
-    nowdate = datetime.datetime.utcnow()
-    ProcessNewGamesLog.objects.filter(timestamp__lt=enddate, is_finished=False).delete()
-    time_spent = datetime.datetime.utcnow() - nowdate
-    log("Spent {} seconds cleaning in progress ProcessGameLog.".format(time_spent.total_seconds()), LogLevel.clean_logs)
-
-    nowdate = datetime.datetime.utcnow()
-    tlogs = ProcessNewGamesLog.objects.filter(is_finished=True).order_by('-pk')  # get the last logs first
-    if tlogs:
-        # grab the first one, then issue another query deleting everything older than 1 day before the first log
-        log = tlogs[0]
-        log_end = log.timestamp - datetime.timedelta(hours=12)
-        ProcessNewGamesLog.objects.filter(is_finished=True, timestamp__lt=log_end).delete()
-    time_spent = datetime.datetime.utcnow() - nowdate
-    log("Spent {} seconds cleaning finished ProcessGameLog".format(time_spent.total_seconds()), LogLevel.clean_logs)
-
-
-
-    ''' Cleanup informational, critical, errors...etc... '''
-    # for now delete all logs older than 4 days
-    # eventually we will have separate logic for all logging types...as certain types of logs we want to keep around
-    Logger.objects.filter(timestamp__lt=enddate).delete()
-    time_spent = datetime.datetime.utcnow() - nowdate
-    log("Spent {} seconds cleaning up all other logs.".format(time_spent.total_seconds()), LogLevel.clean_logs)
-
+    for log_type in LogLevel:
+        if log_type.data == LogLevel.process_game or log_type.data == LogLevel.game or log_type.data == LogLevel.game_status:
+            LogManager(log_type.value, timestamp__lt=enddate, game__is_finished=False).prune()
+            LogManager(log_type.value, game__is_finished=True).prune_keep_last(hours=12)
+        elif log_type.data == LogLevel.tournament or log_type.data == LogLevel.process_new_games:
+            LogManager(log_type.value, timestamp__lt=enddate, tournament__is_finished=False).prune()
+            LogManager(log_type.value, tournament__is_finished=True).prune_keep_last(hours=12)
+        else:
+            LogManager(log_type.value, timestamp__lt=enddate).prune()
 
 # globals to get executed on every load of the web server
 slow_update_threshold = 25

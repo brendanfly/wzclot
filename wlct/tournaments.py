@@ -962,7 +962,7 @@ class Tournament(models.Model):
             log_exception()
             processGameLog += "Tournament {}/{} found exception: {}".format(self.name, self.id, traceback.format_exc())
         finally:
-            pgl = ProcessGameLog(game=game, msg=processGameLog)
+            pgl = ProcessGameLog(game=game, msg=processGameLog, level=LogLevel.process_game)
             pgl.save()
 
     def get_tournament_logs(self):
@@ -2966,7 +2966,7 @@ class MonthlyTemplateRotation(Tournament):
 
                     if num_games < team.max_games_at_once:  # break if we have less than 2 game regardless, it's ok to only have 1 at this time
                         break
-        pngl = ProcessNewGamesLog(tournament=self, msg=processNewGamesLog)
+        pngl = ProcessNewGamesLog(tournament=self, msg=processNewGamesLog, level=LogLevel.process_new_games)
         pngl.save()
 
     def get_team_table(self, allow_buttons, logged_in, request_player):
