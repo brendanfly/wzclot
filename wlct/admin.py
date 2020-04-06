@@ -19,7 +19,8 @@ class LogFilter(SimpleListFilter):
             ('tournament_game', 'Tournament Game'),
             ('tournament_game_status', 'Tournament Game Status'),
             ('engine', 'Engine'),
-            ('bot', 'Bot')
+            ('bot', 'Bot'),
+            ('clean_logs', 'Log Cleanup')
         ]
 
     def queryset(self, request, queryset):
@@ -38,6 +39,8 @@ class LogFilter(SimpleListFilter):
             return queryset.distinct().filter(level=LogLevel.engine)
         if self.value() == 'bot':
             return queryset.distinct().filter(level=LogLevel.bot)
+        if self.value() == 'clean_logs':
+            return queryset.distinct().filter(level=LogLevel.clean_logs)
 
 
 class LogAdmin(admin.ModelAdmin):

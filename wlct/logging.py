@@ -15,6 +15,7 @@ class LogLevel():
     game_status = "TournamentGameStatus"
     engine = "Engine"
     bot = "Bot"
+    clean_logs = "Log Cleanup"
 
 def log_exception():
     log(traceback.format_exc(), LogLevel.critical)

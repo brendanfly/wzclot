@@ -1,7 +1,7 @@
 # the main engine for the scheduler
 import threading
 import datetime
-from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog
+from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog, TournamentGameLog, TournamentGameStatusLog, ProcessGameLog, ProcessNewGamesLog, BotLog
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
 from wlct.models import Clan, Engine, Player
@@ -95,12 +95,12 @@ def check_games(**kwargs):
     for tournament in tournaments:
         child_tournament = find_tournament_by_id(tournament.id, True)
         if child_tournament and child_tournament.should_process_in_engine():
-            log("Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
+            log("Type[{}]: Checking games for tournament: {}".format(kwargs['type'], tournament.name), LogLevel.engine)
             try:
                 if not child_tournament.game_creation_allowed and not caching:
                     continue
                 games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
-                log("Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.engine)
+                log("Type[{}]: Processing {} games for tournament {}".format(kwargs['type'], games.count(), tournament.name), LogLevel.engine)
                 for game in games.iterator():
                     # process the game
                     # query the game status
@@ -109,83 +109,115 @@ def check_games(**kwargs):
                 # in case tournaments get stalled for some reason
                 # for it to process new games based on current tournament data
                 if not caching:
-                    log("Processing new games for tournament {}".format(tournament.name), LogLevel.engine)
+                    log("Type[{}]: Processing new games for tournament {}".format(kwargs['type'], tournament.name), LogLevel.engine)
                     child_tournament.process_new_games()
 
                 # after we process games we always cache the latest data for quick reads
                 if caching:
-                    log("Caching data for {}".format(tournament.name), LogLevel.engine)
+                    log("Type[{}]: Caching data for {}".format(kwargs['type'], tournament.name), LogLevel.engine)
                     child_tournament.cache_data()
-                log("Finished processing games for tournament {}".format(tournament.name), LogLevel.engine)
+                log("Type[{}]: Finished processing games for tournament {}".format(kwargs['type'], tournament.name), LogLevel.engine)
             except Exception as e:
                 log_exception()
             finally:
                 child_tournament.update_in_progress = False
                 child_tournament.save()
-                log("Child tournament {} update done.".format(tournament.name), LogLevel.engine)
+                log("Type[{}]: Child tournament {} update done.".format(kwargs['type'], tournament.name), LogLevel.engine)
         gc.collect()
 
 def cleanup_logs():
     # get all the logs older than 2 days
-    nowdate = datetime.datetime.now(tz=pytz.UTC)
+    nowdate = datetime.datetime.utcnow()
     enddate = nowdate - datetime.timedelta(days=4)
-    logs = Logger.objects.filter(timestamp__lt=enddate)
-    for log_obj in logs.iterator():
-        log_obj.delete()
-        gc.collect()
 
-        # only get 3 minutes to run, the engine must continue
-        time_spent = datetime.datetime.now(tz=pytz.UTC) - nowdate
-        if time_spent.total_seconds() >= get_run_time():
-            log("Returned early from cleaning up logs, spent {} seconds cleaning.".format(time_spent.total_seconds()), LogLevel.engine)
-            return
+    ''' TournamentLogs '''
+    nowdate = datetime.datetime.utcnow()
+    TournamentLog.objects.filter(timestamp__lt=enddate, is_finished=False).delete()
+    time_spent = datetime.datetime.utcnow() - nowdate
+    log("Spent {} seconds cleaning in progress TournamentLog.".format(time_spent.total_seconds()), LogLevel.clean_logs)
 
+    nowdate = datetime.datetime.utcnow()
+    tlogs = TournamentLog.objects.filter(is_finished=True).order_by('-pk')  # get the last logs first
+    if tlogs:
+        # grab the first one, then issue another query deleting everything older than 1 day before the first log
+        log = tlogs[0]
+        log_end = log.timestamp - datetime.timedelta(hours=12)
+        TournamentLog.objects.filter(is_finished=True, timestamp__lt=log_end).delete()
+    time_spent = datetime.datetime.utcnow() - nowdate
+    log("Spent {} seconds cleaning finished TournamentLog".format(time_spent.total_seconds()), LogLevel.clean_logs)
+
+    ''' TournamentGameLogs '''
+    nowdate = datetime.datetime.utcnow()
+    TournamentGameLog.objects.filter(timestamp__lt=enddate, is_finished=False).delete()
+    time_spent = datetime.datetime.utcnow() - nowdate
+    log("Spent {} seconds cleaning in progress TournamentGameLog".format(time_spent.total_seconds(), LogLevel.clean_logs))
+
+    nowdate = datetime.datetime.utcnow()
+    logs = TournamentGameLog.objects.filter(is_finished=True).order_by('-pk')  # get the last logs first
     if logs:
-        log("Cleaned up {} logs.".format(logs.count()), LogLevel.engine)
+        # grab the first one, then issue another query deleting everything older than 1 day before the first log
+        log = logs[0]
+        log_end = log.timestamp - datetime.timedelta(hours=12)
+        TournamentLog.objects.filter(is_finished=True, timestamp__lt=log_end).delete()
+    time_spent = datetime.datetime.utcnow() - nowdate
+    log("Spent {} seconds cleaning finished TournamentGameLog".format(time_spent.total_seconds()), LogLevel.clean_logs)
 
-    tournament_logs = TournamentLog.objects.filter(timestamp__lt=enddate)
-    for tournament_log in tournament_logs.iterator():
-        tournament_log.delete()
-        gc.collect()
+    ''' TournamentGameStatusLog '''
+    nowdate = datetime.datetime.utcnow()
+    TournamentGameStatusLog.objects.filter(timestamp__lt=enddate, is_finished=False).delete()
+    time_spent = datetime.datetime.utcnow() - nowdate
+    log("Spent {} seconds cleaning in progress TournamentGameLog".format(time_spent.total_seconds(), LogLevel.clean_logs))
 
-        # only get 3 minutes to run, the engine must continue
-        time_spent = datetime.datetime.now(tz=pytz.UTC) - nowdate
-        if time_spent.total_seconds() >= get_run_time():
-            log("Returned early from cleaning up logs, spent {} seconds cleaning.".format(time_spent.total_seconds()),
-                LogLevel.engine)
-            return
+    nowdate = datetime.datetime.utcnow()
+    logs = TournamentGameStatusLog.objects.filter(is_finished=True).order_by('-pk')  # get the last logs first
+    if logs:
+        # grab the first one, then issue another query deleting everything older than 1 day before the first log
+        log = logs[0]
+        log_end = log.timestamp - datetime.timedelta(hours=12)
+        TournamentGameStatusLog.objects.filter(is_finished=True, timestamp__lt=log_end).delete()
+    time_spent = datetime.datetime.utcnow() - nowdate
+    log("Spent {} seconds cleaning finished TournamentGameLog".format(time_spent.total_seconds()), LogLevel.clean_logs)
 
-    if tournament_logs:
-        log("Cleaned up {} tournament logs.".format(tournament_logs.count()), LogLevel.engine)
+    ''' ProcessGame Logs '''
+    nowdate = datetime.datetime.utcnow()
+    ProcessGameLog.objects.filter(timestamp__lt=enddate, is_finished=False).delete()
+    time_spent = datetime.datetime.utcnow() - nowdate
+    log("Spent {} seconds cleaning in progress ProcessGameLog.".format(time_spent.total_seconds()), LogLevel.clean_logs)
+
+    nowdate = datetime.datetime.utcnow()
+    tlogs = ProcessGameLog.objects.filter(is_finished=True).order_by('-pk')  # get the last logs first
+    if tlogs:
+        # grab the first one, then issue another query deleting everything older than 1 day before the first log
+        log = tlogs[0]
+        log_end = log.timestamp - datetime.timedelta(hours=12)
+        ProcessGameLog.objects.filter(is_finished=True, timestamp__lt=log_end).delete()
+    time_spent = datetime.datetime.utcnow() - nowdate
+    log("Spent {} seconds cleaning finished ProcessGameLog".format(time_spent.total_seconds()), LogLevel.clean_logs)
+
+    ''' ProcessNewGame Logs '''
+    nowdate = datetime.datetime.utcnow()
+    ProcessNewGamesLog.objects.filter(timestamp__lt=enddate, is_finished=False).delete()
+    time_spent = datetime.datetime.utcnow() - nowdate
+    log("Spent {} seconds cleaning in progress ProcessGameLog.".format(time_spent.total_seconds()), LogLevel.clean_logs)
+
+    nowdate = datetime.datetime.utcnow()
+    tlogs = ProcessNewGamesLog.objects.filter(is_finished=True).order_by('-pk')  # get the last logs first
+    if tlogs:
+        # grab the first one, then issue another query deleting everything older than 1 day before the first log
+        log = tlogs[0]
+        log_end = log.timestamp - datetime.timedelta(hours=12)
+        ProcessNewGamesLog.objects.filter(is_finished=True, timestamp__lt=log_end).delete()
+    time_spent = datetime.datetime.utcnow() - nowdate
+    log("Spent {} seconds cleaning finished ProcessGameLog".format(time_spent.total_seconds()), LogLevel.clean_logs)
 
 
-def check_leagues():
-    # placeholder to check league statuses
-    pass
 
-def check_bot_data():
-    # placeholder to update the bot data cache
-    pass
-
-def validate_game_entries():
-    # loop through all game entries not finished....query the games and see if they are...
-    # these should have been finished in finish_game...but for some reason are not
-    tournaments = MonthlyTemplateRotation.objects.all()
-    for tournament in tournaments:
-        print("Looking at MTC: {}".format(tournament.name))
-        current_month = tournament.get_current_month()
-        # grab all the games and game entries in that month
-        games = TournamentGame.objects.filter(tournament=tournament)
-        for game in games:
-            print("Getting game entries for game {} between {}/{} which is finished: {}".format(game.id, game.teams.split('.')[0], game.teams.split('.')[1], game.is_finished))
-            # get the game entries associated with this game
-            entries = TournamentGameEntry.objects.filter(game=game, tournament=tournament)
-            for entry in entries:
-                print("Found Game Entry: Game: {}, Entry: {}".format(game, entry))
-                if not entry.is_finished and game.is_finished:
-                    print("Updating game entry")
-                    entry.is_finished = True
-                    entry.save()
+    ''' Cleanup informational, critical, errors...etc... '''
+    # for now delete all logs older than 4 days
+    # eventually we will have separate logic for all logging types...as certain types of logs we want to keep around
+    Logger.objects.filter(timestamp__lt=enddate).delete()
+    time_spent = datetime.datetime.utcnow() - nowdate
+    log("Spent {} seconds cleaning up all other logs.".format(time_spent.total_seconds()), LogLevel.clean_logs)
 
 
 # globals to get executed on every load of the web server
@@ -193,8 +225,8 @@ slow_update_threshold = 25
 current_clan_update = 1
 
 def tournament_caching():
-    check_games(type='cache')
     cleanup_logs()
+    check_games(type='cache')
 
 def tournament_engine():
     try:
@@ -221,7 +253,6 @@ def tournament_engine():
         # bulk of the logic, we handle all types of tournaments separately here
         # there must be logic for each tournament type, as the child class contains
         # the logic
-        #validate_game_entries()
         check_games(type='process')
     except Exception as e:
         log_exception()
