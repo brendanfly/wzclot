@@ -139,7 +139,7 @@ def cleanup_logs():
                 LogManager(value, tournament__is_finished=True).prune_keep_last(hours=12)
                 LogManager(value, timestamp__lt=enddate, tournament__is_finished=False).prune()
             else:  # generic logging runtime cases
-                LogManager(value, timestamp__lt=enddate).prune()
+                LogManager(value, timestamp__lt=enddate, level=value).prune()
         gc.collect()
 
 # globals to get executed on every load of the web server

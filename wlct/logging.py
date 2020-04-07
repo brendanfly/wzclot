@@ -144,7 +144,7 @@ class LogManager():
         print("Removing {} logs 'finished' {} logs older than: {}".format(logs.count(), self.type, log_end))
         for l in logs.iterator():
             if l.timestamp < log_end:
-                #log.delete()
+                log.delete()
                 pass
         time_spent = datetime.datetime.utcnow() - start
         log("Spent {} seconds prune_keep_last logs.".format(time_spent.total_seconds()), LogLevel.clean_logs)
@@ -152,6 +152,7 @@ class LogManager():
     # straight prunes the logs based on the parameters passed in
     def prune(self):
         start = datetime.datetime.utcnow()
+        logs = None
         if self.type == LogLevel.critical:
             logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.informational:
@@ -163,6 +164,8 @@ class LogManager():
         if self.type == LogLevel.bot:
             logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.engine:
+            logs = Logger.objects.filter(**self.kwargs)
+        if self.type == LogLevel.clean_logs:
             logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.tournament:
             logs = TournamentLog.objects.filter(**self.kwargs)
@@ -178,6 +181,5 @@ class LogManager():
         if logs:
             for l in logs.iterator():
                 l.delete()
-        print("Pruning {} logs".format(self.type))
         end = datetime.datetime.utcnow() - start
         log("Spent {} seconds pruning {} logs.".format(end.total_seconds(), self.type), LogLevel.clean_logs)
