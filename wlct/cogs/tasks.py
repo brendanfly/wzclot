@@ -194,6 +194,7 @@ class Tasks(commands.Cog, name="tasks"):
         for i in range(0, len(self.bot.cache_queue)):
             t = find_tournament_by_id(self.bot.cache_queue[i], True)
             if t:
+                print("Caching data for {}".format(t.name))
                 t.cache_data()
                 self.bot.cache_queue.pop(i)
 
