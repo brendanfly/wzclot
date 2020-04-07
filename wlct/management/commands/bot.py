@@ -70,7 +70,7 @@ class WZBot(commands.AutoShardedBot):
             await cog.process_member_join(member.id)
 
     def get_default_embed(self, ctx):
-        emb = discord.Embed(color=self.bot.embed_color)
+        emb = discord.Embed(color=self.embed_color)
         emb.set_author(icon_url=ctx.message.author.avatar_url, name=ctx.message.author)
         emb.set_footer(text="Bot created and maintained by -B#0292")
 
