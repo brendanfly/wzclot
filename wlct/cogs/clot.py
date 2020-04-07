@@ -42,7 +42,8 @@ class Clot(commands.Cog, name="clot"):
                 gpi += games.count()
             win_pct = 0
             if wins + losses != 0:
-                win_pct = wins / (wins + losses)
+                win_pct = (wins / (wins + losses)) * 100
+                win_pct = round(win_pct, 2)
             return True, PlayerStats(wins, losses, tpi, gpi, win_pct)
         else:
             return False, None
