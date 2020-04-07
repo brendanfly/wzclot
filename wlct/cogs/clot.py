@@ -81,7 +81,7 @@ class Clot(commands.Cog, name="clot"):
                 else:
                     await ctx.send("You may only mention a single player. User ``bb!help stats`` to see all options.")
 
-                stats = self.get_player_stats(discord_user)
+                stats = self.get_player_stats(discord_user.id)
                 if stats[0]:
                     # success
                     pstats = stats[1]
