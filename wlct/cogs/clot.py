@@ -602,9 +602,8 @@ class Clot(commands.Cog, name="clot"):
                 else:
                     await ctx.send("Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
             else:
-                option.lower()
                 await ctx.send("Searching the CLOT for players starting with {}...".format(option))
-                players = Player.objects.filter(name__startswith=option)
+                players = Player.objects.filter(name__istartswith=option)
                 data = ""
                 current_player = 0
                 for player in players:
