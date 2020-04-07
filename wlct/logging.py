@@ -120,6 +120,7 @@ class LogManager():
     def prune_keep_last(self, **kwargs):
         print("Removing logs from finished items")
         logs = "No Logs"
+        log_end = "No log end"
         start = datetime.datetime.utcnow()
         if self.type == LogLevel.tournament:
             logs = TournamentLog.objects.filter(**self.kwargs).order_by('-pk')
