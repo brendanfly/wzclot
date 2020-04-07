@@ -182,7 +182,6 @@ class Tasks(commands.Cog, name="tasks"):
                     # in case tournaments get stalled for some reason
                     # for it to process new games based on current tournament data
                     child_tournament.process_new_games()
-
                     await self.handle_rtl_tasks()
                 except Exception as e:
                     log_exception()
@@ -231,7 +230,6 @@ class Tasks(commands.Cog, name="tasks"):
                 await self.handle_day_tasks()
             if two_minute:
                 await self.handle_rtl_ladder()
-                await self.handle_cache_queue()
 
             # always tasks
             await self.handle_always_tasks()
@@ -241,6 +239,7 @@ class Tasks(commands.Cog, name="tasks"):
     async def handle_always_tasks(self):
         await self.handle_critical_errors()
         await self.handle_game_logs()
+        await self.handle_cache_queue()
 
     async def process_member_join(self, memid):
         member = self.bot.get_user(memid)
