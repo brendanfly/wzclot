@@ -326,7 +326,7 @@ function update_pr_season(obj, type)
 {
     var tournamentid = $("#tournamentid").val();
     var old_text_value = obj.text();
-    var data = {"tournamentid": tournamentid, "season-name": $("#season-name").val(), "type" : type};
+    var data = {"tournamentid": tournamentid, "season-name": $("#season-name").val(), "games-at-once": $("#games-at-once").val(), "type" : type};
 
     if (type == "add")
     {

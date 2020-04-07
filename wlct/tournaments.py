@@ -3223,10 +3223,12 @@ class PromotionalRelegationLeague(Tournament):
     def season_in_progress(self):
         return False
 
-    def create_season(self, season_name):
+    def create_season(self, season_name, games_at_once):
         if len(season_name) < 3 or len(season_name) > 251:
             raise ValueError("Season name must be between 3-250 characters.")
-        season = PromotionalRelegationLeagueSeason(pr_tournament=self, name=season_name, created_by=self.created_by, private=True)
+        if not games_at_once.isnumeric() or int(games_at_once) < 1 or int(games_at_once) > 100:
+            raise ValueError("Games at once must be 1-100 inclusive.")
+        season = PromotionalRelegationLeagueSeason(pr_tournament=self, name=season_name, created_by=self.created_by, private=True, games_at_once=int(games_at_once))
         season.save()
 
     def get_seasons_editable(self):
@@ -3268,12 +3270,13 @@ class PromotionalRelegationLeague(Tournament):
 class PromotionalRelegationLeagueSeason(Tournament):
     pr_tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, related_name='pr_parent_tournament')
     season_template = models.ForeignKey('ClanLeagueTemplate', on_delete=models.CASCADE, related_name='pr_season_template', blank=True, null=True, default=None)
+    games_at_once = models.IntegerField(default=2)
 
     def start(self, tournament_data):
         divisions = ClanLeagueDivision.objects.filter(pr_season=self)
         for div in divisions:
             teams = TournamentTeam.objects.filter(clan_league_division=div, tournament=self)
-            tournament = PromotionalRelegationLeagueTournament(parent_tournament=self, template=self.season_template.templateid, name=div.title, division=div, created_by=self.created_by, number_players=teams.count()*self.season_template.players_per_team, max_players=teams.count()*self.season_template.players_per_team, number_rounds=teams.count()-1, players_per_team=self.season_template.players_per_team, teams_per_game=2, private=True)
+            tournament = PromotionalRelegationLeagueTournament(parent_tournament=self, template=self.season_template.templateid, name=div.title, division=div, created_by=self.created_by, number_players=teams.count()*self.season_template.players_per_team, max_players=teams.count()*self.season_template.players_per_team, number_rounds=teams.count()-1, players_per_team=self.season_template.players_per_team, teams_per_game=2, private=True, games_at_once=self.games_at_once)
             tournament.save()
             for team in teams:
                 team.round_robin_tournament = tournament
@@ -4363,11 +4366,14 @@ class RealTimeLadder(Tournament):
                 return "Template must have a personal message."
             return "Template added successfully."
         else:
-            return "The template you have entered is inavlid."
+            return "The template you have entered is invalid."
 
     def update_game_log(self):
         self.game_log = ""
         self.save()
+
+    def get_bracket_game_data(self):
+        return ""
 
     def update_bracket_game_data(self):
         self.bracket_game_data = ""

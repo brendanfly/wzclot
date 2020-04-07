@@ -501,7 +501,7 @@ def pr_update_season(request):
                     # create the season
                     try:
                         if request.POST['type'] == "add":
-                            tournament.create_season(request.POST['season-name'])
+                            tournament.create_season(request.POST['season-name'], request.POST['games-at-once'])
                         elif request.POST['type'] == "remove":
                             tournament.remove_season(request.POST['season_id'])
 
