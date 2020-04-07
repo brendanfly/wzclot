@@ -73,7 +73,6 @@ class Clot(commands.Cog, name="clot"):
                 if option == "me":
                     discord_user = ctx.message.author
                     discord_user_id = discord_user.id
-                    await ctx.send(self.bot.discord_link_text)
                 elif option.isnumeric():
                     # try to lookup the player by token
                     player = Player.objects.filter(token=option)
