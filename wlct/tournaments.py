@@ -3553,9 +3553,6 @@ class PromotionalRelegationLeagueTournament(RoundRobinTournament):
     def uses_byes(self):
         return False
 
-    def update_bracket_game_data(self):
-        pass
-
     def process_new_games(self):
         # just call into the parent to create games
         try:
