@@ -119,7 +119,7 @@ class LogManager():
     # kwargs['days'] = 1 (prune all logs before 1 day prior to the last log)
     def prune_keep_last(self, **kwargs):
         print("Removing logs from finished items")
-        logs = "No Logs"
+        logs = None
         log_end = "No log end"
         start = datetime.datetime.utcnow()
         if self.type == LogLevel.tournament:
@@ -145,15 +145,15 @@ class LogManager():
 
         print("Log end time to delete prior: {}".format(log_end))
         current_log = 0
-        for l in logs.iterator():
-            if l.timestamp < log_end:
-                if current_log == 0:
-                    print("Removing {} logs 'finished' {} logs older than: {}, first log was {}".format(logs.count(),
-                                                                                                    self.type, log_end,
-                                                                                                    l.timestamp))
-                current_log += 1
-                l.delete()
-                pass
+        if logs:
+            for l in logs.iterator():
+                if l.timestamp < log_end:
+                    if current_log == 0:
+                        print("Removing {} logs 'finished' {} logs older than: {}, first log was {}".format(logs.count(),
+                                                                                                        self.type, log_end,
+                                                                                                        l.timestamp))
+                    current_log += 1
+                    l.delete()
         time_spent = datetime.datetime.utcnow() - start
         log("Spent {} seconds prune_keep_last logs.".format(time_spent.total_seconds()), LogLevel.clean_logs)
 
