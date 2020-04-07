@@ -2092,6 +2092,8 @@ class RoundRobinTournament(Tournament):
                 game = TournamentGameEntry.objects.filter(team=team_top, team_opp=team_left, tournament=self)
                 if game:
                     game = game[0]
+                    if game.game.winning_team:
+                        print("Caching tournament {}, Game between: {} vs. {} game finished: {} game.winning_team: {}".format(self.name, team_top.id, team_left.id, game.game.is_finished, game.game.winning_team.id))
                     if game.game.is_finished:
                         if game.game.winning_team is not None and game.game.winning_team.id == team_left.id:
                             bg_color = "#cde5b6;"  # light green - win
