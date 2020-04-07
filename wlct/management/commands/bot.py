@@ -69,6 +69,13 @@ class WZBot(commands.AutoShardedBot):
         if cog:
             await cog.process_member_join(member.id)
 
+    def get_default_embed(self, ctx):
+        emb = discord.Embed(color=self.bot.embed_color)
+        emb.set_author(icon_url=ctx.message.author.avatar_url, name=ctx.message.author)
+        emb.set_footer(text="Bot created and maintained by -B#0292")
+
+        return emb
+
     async def on_ready(self):
         print(f'[CONNECT] Logged in as:\n{self.user} (ID: {self.user.id})\n')
 

@@ -142,6 +142,7 @@ class LogManager():
             if logs:
                 log_end = logs[0].timestamp - datetime.timedelta(**kwargs)
 
+        print("Log end time to delete prior: {}".format(log_end))
         current_log = 0
         for l in logs.iterator():
             if l.timestamp < log_end:

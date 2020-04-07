@@ -2070,11 +2070,9 @@ class RoundRobinTournament(Tournament):
         return self.bracket_game_data
 
     def update_bracket_game_data(self):
-        print("Caching bracket data for: {}".format(self.name))
         # table should be all teams on the top and all teams on the bottom
         # the games are from the teams on the left matched up with the teams on the right
         teamsCol = TournamentTeam.objects.filter(round_robin_tournament=self).order_by('-wins')
-        print("{} teams in columns".format(teamsCol.count()))
         teamsRow = teamsCol
         log = '<div style="padding-top:25px;">'.format(self.id)
         log += '<table class="table table-bordered table-condensed clot_table"><tr><td>{}</td>'.format(self.name)
@@ -2083,23 +2081,17 @@ class RoundRobinTournament(Tournament):
         log += '</tr>'
         teams_left_log = ""
         for team_left in teamsCol:
-            print("Iterating columns")
             teams_left_log += "TeamLeft: {}".format(get_team_data(team_left))
             log += '<tr>'
             log += '<td>{}</td>'.format(get_team_data(team_left))
             for team_top in teamsRow:
-                print("Iterating rows")
                 teams_left_log += "TeamTop: {}".format(get_team_data(team_top))
                 bg_color = ""
                 # now we create the rows, where each row loops through team and compares
                 # and looks up all games between then and team2
                 game = TournamentGameEntry.objects.filter(team=team_top, team_opp=team_left, tournament=self)
-                print("Total game entries: {}".format(game.count()))
                 if game:
                     game = game[0]
-                    print(
-                        "Caching tournament {}, Game between: {} vs. {} game finished: {} game entry id: {}".format(
-                            self.name, team_top.id, team_left.id, game.game.is_finished, game.id))
                     if game.game.is_finished:
                         if game.game.winning_team is not None and game.game.winning_team.id == team_left.id:
                             bg_color = "#cde5b6;"  # light green - win

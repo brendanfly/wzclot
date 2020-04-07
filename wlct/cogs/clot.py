@@ -1,6 +1,6 @@
 import discord
 from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink
-from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision
+from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame
 from wlct.logging import log_exception
 from discord.ext import commands
 from django.conf import settings
@@ -9,6 +9,38 @@ from wlct.cogs.common import has_admin_access, is_admin
 class Clot(commands.Cog, name="clot"):
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.command(brief="View CLOT statistics",
+                      usage='''
+                          bb!stats clot - shows overall CLOT stats
+                          bb!stats me - shows your personal stats
+                          bb!stats @User - shows the users CLOT stats (they must be linked to the CLOT)
+                          bb!stats <token> - shows the users CLOT stats based on Warzone token
+                      ''')
+    async def stats(self, ctx, option="", token=""):
+        try:
+            mentions = ctx.message.mentions
+            emb = self.bot.get_default_embed(ctx)
+            for mention in mentions:
+                print("Mentioned in message: {}".format(mention))
+            if option == "clot":
+                # grab total tournaments + games + players
+                p = Player.objects.all()
+                emb.add_field(name="# of Players", value="{}".format(p.count()))
+                t = Tournament.objects.all()
+                emb.add_field(name="# of Tournaments Created", value="{}".format(t.count()))
+                g = TournamentGame.objects.all()
+                emb.add_field(name="# of Games Played", value="{}".format(g.count()))
+                await ctx.send(embed=emb)
+            elif option == "me":
+                await ctx.send("This command is currently under construction")
+            elif option.isnumeric():
+                await ctx.send("This command is currently under construction")
+            else:
+                await ctx.send("You must enter a valid option to the command. Use ``bb!help stats`` to see options.")
+
+        except Exception as e:
+            log_exception()
 
     @commands.command(brief="Admin commands to manage and debug CLOT",
                       usage='''
@@ -22,7 +54,7 @@ class Clot(commands.Cog, name="clot"):
                       category="clot")
     async def admin(self, ctx, cmd="", option="", token=""):
         try:
-            if  has_admin_access(ctx.message.author.id):
+            if has_admin_access(ctx.message.author.id):
                 if cmd == "logs":
                     pass
                 elif cmd == "mtc":
@@ -362,7 +394,7 @@ class Clot(commands.Cog, name="clot"):
                           bb!tournaments -cl : Displays Clan League Tournaments
                           ''',
                           category="clot")
-    async def tournaments(self, ctx, arg):
+    async def tournaments(self, ctx, arg="invalid"):
         try:
             await ctx.send("Gathering tournament data....")
             tournament_data = ""
