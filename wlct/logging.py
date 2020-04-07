@@ -124,24 +124,23 @@ class LogManager():
         if self.type == LogLevel.tournament:
             logs = TournamentLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log_end = logs[0].timestamp - datetime.timedelta(kwargs)
+                log_end = logs[0].timestamp - datetime.timedelta(**kwargs)
         if self.type == LogLevel.game:
             logs = TournamentGameLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log_end = logs[0].timestamp - datetime.timedelta(kwargs)
+                log_end = logs[0].timestamp - datetime.timedelta(**kwargs)
         if self.type == LogLevel.game_status:
             logs = TournamentGameStatusLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                l = logs[0]
-                log_end = logs[0].timestamp - datetime.timedelta(kwargs)
+                log_end = logs[0].timestamp - datetime.timedelta(**kwargs)
         if self.type == LogLevel.process_game:
             logs = ProcessGameLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log_end = logs[0].timestamp - datetime.timedelta(kwargs)
+                log_end = logs[0].timestamp - datetime.timedelta(**kwargs)
         if self.type == LogLevel.process_new_games:
             logs = ProcessNewGamesLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log_end = logs[0].timestamp - datetime.timedelta(kwargs)
+                log_end = logs[0].timestamp - datetime.timedelta(**kwargs)
         print("Removing {} logs 'finished' {} logs older than: {}".format(logs.count(), self.type, log_end))
         for l in logs.iterator():
             if l.timestamp < log_end:
