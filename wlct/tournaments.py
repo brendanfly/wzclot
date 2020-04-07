@@ -2090,6 +2090,7 @@ class RoundRobinTournament(Tournament):
                 # now we create the rows, where each row loops through team and compares
                 # and looks up all games between then and team2
                 game = TournamentGameEntry.objects.filter(team=team_top, team_opp=team_left, tournament=self)
+                print("Total game entries: {}".format(game.count()))
                 if game:
                     game = game[0]
                     print(
