@@ -84,7 +84,11 @@
 
             <div class="tab-content">
                 <div class="tab-pane show active col-md-12" id="pr-season-tab">
+                    {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
                     {{ tournament.get_seasons_editable|safe }}
+                    {% else %}
+                    {{ tournament.get_seasons|safe }}
+                    {% endif %}
                 </div>
             </div>
 
