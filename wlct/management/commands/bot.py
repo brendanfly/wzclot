@@ -40,6 +40,7 @@ class WZBot(commands.AutoShardedBot):
         self.game_log_channels = []
         self.last_task_run = timezone.now()
 
+        self.clot_server = None
         self.executions = 0
 
         # deltas for when the bot does stuff
@@ -73,6 +74,9 @@ class WZBot(commands.AutoShardedBot):
 
         # cache all the guilds we're in when we login and the real-time-ladder channels
         for guild in self.guilds:
+            if guild.name == "-B's CLOT":
+                print("Found -B's CLOT, caching...id: {}".format(guild.id))
+                self.clot_server = guild
             for channel in guild.channels:
                 if channel.name == "real-time-ladder" or channel.name == "real_time_ladder":
                     print("Caching RTL channel in guild: {}".format(guild.name))

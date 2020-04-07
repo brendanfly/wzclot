@@ -175,7 +175,9 @@ class LogManager():
         if self.type == LogLevel.process_new_games:
             logs = ProcessNewGamesLog.objects.filter(**self.kwargs)
 
-        for l in logs.iterator():
-            l.delete()
+        if logs:
+            for l in logs.iterator():
+                l.delete()
+        print("Pruning {} logs".format(self.type))
         end = datetime.datetime.utcnow() - start
         log("Spent {} seconds pruning {} logs.".format(end.total_seconds(), self.type), LogLevel.clean_logs)
