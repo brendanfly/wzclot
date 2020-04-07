@@ -76,7 +76,6 @@ class Ladders(commands.Cog, name="ladders"):
                             else:
                                 game_data = retStr[1][0]
                                 finished_game_data = retStr[1][1]
-                                print("GameData: {}, Finished Data: {}".format(game_data, finished_game_data))
                                 emb.title = "Games - Ladder {}".format(ladder.name)
                                 if len(game_data) > 0:
                                     emb.add_field(name="In Progress", value=game_data)

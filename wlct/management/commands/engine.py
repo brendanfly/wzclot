@@ -88,41 +88,51 @@ def is_correct_player(player_token, player_team):
         log_exception()
         return False
 
+
+def cache_games(**kwargs):
+    tournaments = Tournament.objects.filter(**kwargs)
+    for tournament in tournaments:
+        child_tournament = find_tournament_by_id(tournament.id, True)
+        if child_tournament and child_tournament.should_process_in_engine():
+            log("[CACHE]: Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
+            try:
+                child_tournament.cache_data()
+                log("[CACHE]: Finished processing games for tournament {}".format(tournament.name), LogLevel.engine)
+            except Exception as e:
+                log_exception()
+            finally:
+                log("[CACHE]: Child tournament {} update done.".format(tournament.name), LogLevel.engine)
+        gc.collect()
+
 def check_games(**kwargs):
-    log("Running check_games, type={} on thread {}".format(kwargs['type'], threading.get_ident()), LogLevel.engine)
-    caching = kwargs['type'] == 'cache'
+    log("Running check_games on thread {}".format(threading.get_ident()), LogLevel.engine)
     tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
     for tournament in tournaments:
         child_tournament = find_tournament_by_id(tournament.id, True)
         if child_tournament and child_tournament.should_process_in_engine():
-            log("Type[{}]: Checking games for tournament: {}".format(kwargs['type'], tournament.name), LogLevel.engine)
+            log("[PROCESS GAMES]: Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
             try:
-                if not child_tournament.game_creation_allowed and not caching:
+                if not child_tournament.game_creation_allowed:
                     continue
                 games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
-                log("Type[{}]: Processing {} games for tournament {}".format(kwargs['type'], games.count(), tournament.name), LogLevel.engine)
+                log("[PROCESS GAMES]: Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.engine)
                 for game in games.iterator():
                     # process the game
                     # query the game status
-                    if not caching:
-                        child_tournament.process_game(game)
+                    child_tournament.process_game(game)
                 # in case tournaments get stalled for some reason
                 # for it to process new games based on current tournament data
-                if not caching:
-                    log("Type[{}]: Processing new games for tournament {}".format(kwargs['type'], tournament.name), LogLevel.engine)
-                    child_tournament.process_new_games()
+                log("[PROCESS GAMES]: Processing new games for tournament {}".format(tournament.name), LogLevel.engine)
+                child_tournament.process_new_games()
 
                 # after we process games we always cache the latest data for quick reads
-                if caching:
-                    log("Type[{}]: Caching data for {}".format(kwargs['type'], tournament.name), LogLevel.engine)
-                    child_tournament.cache_data()
-                log("Type[{}]: Finished processing games for tournament {}".format(kwargs['type'], tournament.name), LogLevel.engine)
+                log("[PROCESS GAMES]: Finished processing games for tournament {}".format(tournament.name), LogLevel.engine)
             except Exception as e:
                 log_exception()
             finally:
                 child_tournament.update_in_progress = False
                 child_tournament.save()
-                log("Type[{}]: Child tournament {} update done.".format(kwargs['type'], tournament.name), LogLevel.engine)
+                log("[PROCESS GAMES]: Child tournament {} update done.".format(tournament.name), LogLevel.engine)
         gc.collect()
 
 def cleanup_logs():
@@ -149,7 +159,7 @@ current_clan_update = 1
 def tournament_caching():
     try:
         cleanup_logs()
-        check_games(type='cache')
+        cache_games(has_started=True, is_finished=False)
     except Exception as e:
         log_exception()
 

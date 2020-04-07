@@ -183,14 +183,20 @@ class Tasks(commands.Cog, name="tasks"):
                     # for it to process new games based on current tournament data
                     child_tournament.process_new_games()
 
-                    # after we process games we always cache the latest data for quick reads
-                    child_tournament.cache_data()
+                    await self.handle_rtl_tasks()
                 except Exception as e:
                     log_exception()
                 finally:
                     child_tournament.update_in_progress = False
                     child_tournament.save()
             gc.collect()
+
+    async def handle_cache_queue(self):
+        for i in range(0, len(self.bot.cache_queue)):
+            t = find_tournament_by_id(self.bot.cache_queue[i], True)
+            if t:
+                t.cache_data()
+                self.bot.cache_queue.pop(i)
 
     async def handle_critical_errors(self):
         logs = Logger.objects.filter(level=LogLevel.critical, bot_seen=False)
@@ -225,6 +231,7 @@ class Tasks(commands.Cog, name="tasks"):
                 await self.handle_day_tasks()
             if two_minute:
                 await self.handle_rtl_ladder()
+                await self.handle_cache_queue()
 
             # always tasks
             await self.handle_always_tasks()
@@ -232,10 +239,8 @@ class Tasks(commands.Cog, name="tasks"):
             log_exception()
 
     async def handle_always_tasks(self):
-        await self.handle_rtl_tasks()
         await self.handle_critical_errors()
         await self.handle_game_logs()
-        #await self.handle_no_winning_team_games()
 
     async def process_member_join(self, memid):
         member = self.bot.get_user(memid)

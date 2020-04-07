@@ -39,7 +39,7 @@ class WZBot(commands.AutoShardedBot):
         self.critical_error_channels = []
         self.game_log_channels = []
         self.last_task_run = timezone.now()
-
+        self.cache_queue = []
         self.clot_server = None
         self.executions = 0
 

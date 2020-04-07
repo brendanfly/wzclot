@@ -141,10 +141,11 @@ class LogManager():
             logs = ProcessNewGamesLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
                 log_end = logs[0].timestamp - datetime.timedelta(**kwargs)
-        print("Removing {} logs 'finished' {} logs older than: {}".format(logs.count(), self.type, log_end))
+
+        print("Removing {} logs 'finished' {} logs older than: {}, first log was {}".format(logs.count(), self.type, log_end, logs[0].timestamp))
         for l in logs.iterator():
             if l.timestamp < log_end:
-                log.delete()
+                l.delete()
                 pass
         time_spent = datetime.datetime.utcnow() - start
         log("Spent {} seconds prune_keep_last logs.".format(time_spent.total_seconds()), LogLevel.clean_logs)

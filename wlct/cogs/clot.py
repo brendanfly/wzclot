@@ -17,6 +17,7 @@ class Clot(commands.Cog, name="clot"):
                           bb!admin mtc -r <player_token> - removes player from MTC using wz token
                           bb!admin rtl -p - shows current players on the RTL
                           bb!admin rtl -r <discord_id> - removes player from RTL using Discord ID
+                          bb!admin cache <tournament_id> - forcibly runs the cache on a tournament
                           ''',
                       category="clot")
     async def admin(self, ctx, cmd="", option="", token=""):
@@ -71,6 +72,18 @@ class Clot(commands.Cog, name="clot"):
                             ctx.send("Please enter a valid id. Use ``bb!admin rtl -p`` to see current players.")
                     else:
                         await ctx.send("Please enter a valid option (-p or -r)")
+                elif cmd == "cache":
+                    # forcibly run the game caching
+                    if option.isnumeric():
+                        # option is the tournament id to run caching on
+                        tournament = find_tournament_by_id(int(option), True)
+                        if tournament:
+                            self.bot.cache_queue.append(tournament.id)
+                            await ctx.send("Successfully queued up {} to be re-cached".format(tournament.name))
+                        else:
+                            await ctx.send("Tournament {} does not exist.")
+                    else:
+                        await ctx.send("Please enter a numeric id.")
                 else:
                     await ctx.send("Please enter a valid command. Use ``bb!help admin`` to see commands.")
             else:
