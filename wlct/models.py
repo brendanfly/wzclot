@@ -49,7 +49,7 @@ admin.site.register(Clan, ClanAdmin)
 
 class Player(models.Model):
     token = models.CharField(max_length=32, default=invalid_token_string, db_index=True)
-    name = models.CharField(max_length=64, default=invalid_name_string)
+    name = models.CharField(max_length=64, default=invalid_name_string, db_index=True)
     clan_text = models.CharField(max_length=64, default=invalid_clan_string)
     clan = models.ForeignKey('Clan', blank=True, null=True, on_delete=models.SET_NULL)
     is_on_vacation = models.BooleanField(default=False, blank=True, null=True)

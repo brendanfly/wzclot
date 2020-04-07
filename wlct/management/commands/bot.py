@@ -45,6 +45,7 @@ class WZBot(commands.AutoShardedBot):
 
         # deltas for when the bot does stuff
         self.discord_link_text = "Your discord account is not linked to the CLOT. Please see <http://wztourney.herokuapp.com/me/> for instructions."
+        self.discord_link_text_user = "That user's discord account is not linked to the CLOT."
 
         for ext in EXTENSIONS:
             self.load_extension(ext)
@@ -72,7 +73,7 @@ class WZBot(commands.AutoShardedBot):
 
     def get_embed(self, user):
         emb = discord.Embed(color=self.embed_color)
-        emb.set_author(icon_url=user.avatar_url, name=user.author)
+        emb.set_author(icon_url=user.avatar_url, name=user)
         emb.set_footer(text="Bot created and maintained by -B#0292")
 
         return emb
@@ -107,6 +108,10 @@ class WZBot(commands.AutoShardedBot):
 
     def get_channel_list(self):
         return self.rtl_channels
+
+    async def update_progress(self, message, pct):
+        # shows and updates the same message displaying progress for longer running tasks
+        await message.edit(content="{} %".format(pct))
 
 class Command(BaseCommand):
     help = "Runs the CLOT Bot"

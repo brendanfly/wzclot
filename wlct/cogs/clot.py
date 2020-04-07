@@ -35,8 +35,8 @@ class Clot(commands.Cog, name="clot"):
             gpi = 0
             tplayer = TournamentPlayer.objects.filter(player=player)
             for p in tplayer:
-                wins += p.wins
-                losses += p.losses
+                wins += p.team.wins
+                losses += p.team.losses
                 tpi += 1
                 games = TournamentGameEntry.objects.filter(team=p.team)
                 gpi += games.count()
@@ -51,12 +51,12 @@ class Clot(commands.Cog, name="clot"):
                       usage='''
                           bb!stats clot - shows overall CLOT stats
                           bb!stats me - shows your personal stats
-                          bb!stats @User - shows the users CLOT stats (they must be linked to the CLOT)
-                          bb!stats <token> - shows the users CLOT stats based on Warzone token
+                          bb!stats token - shows the users CLOT stats based on Warzone token
+                          bb!stats discord_name - shows the CLOT stats for a player matching that discord name
                       ''')
     async def stats(self, ctx, option="", token=""):
         try:
-            mentions = ctx.message.mention
+            mentions = []  #ctx.message.mentions
             if option == "clot":
                 emb = self.bot.get_default_embed()
                 # grab total tournaments + games + players
@@ -68,20 +68,22 @@ class Clot(commands.Cog, name="clot"):
                 emb.add_field(name="# of Games Played", value="{}".format(g.count()))
                 await ctx.send(embed=emb)
             elif option == "me" or option.isnumeric() or len(mentions) > 0:
-                discord_user = 0
+                discord_user_id = 0
                 if option == "me":
-                    discord_user = ctx.message.author.id
+                    discord_user = ctx.message.author
+                    discord_user_id = discord_user.id
+                    await ctx.send(self.bot.discord_link_text)
                 elif option.isnumeric():
                     # try to lookup the player by token
                     player = Player.objects.filter(token=option)
                     if player and player[0].discord_member is not None:
                         discord_user = self.bot.get_user(player[0].discord_member.memberid)
-                elif len(mentions) == 1:
-                    discord_user = mentions[0]
+                        discord_user_id = discord_user.id
                 else:
-                    await ctx.send("You may only mention a single player. User ``bb!help stats`` to see all options.")
-
-                stats = self.get_player_stats(discord_user.id)
+                    # try to loop through all users we know of an find the user
+                    #TODO update progress loop
+                    pass
+                stats = self.get_player_stats(discord_user_id)
                 if stats[0]:
                     # success
                     pstats = stats[1]
@@ -92,7 +94,7 @@ class Clot(commands.Cog, name="clot"):
                     emb.add_field(name="Games Played In", value="{}".format(pstats.games))
                     await ctx.send(embed=emb)
                 else:
-                    await ctx.send(self.bot.discord_link_text)
+                    await ctx.send(self.bot.discord_link_text_user)
             else:
                 await ctx.send("You must enter a valid option to the command. Use ``bb!help stats`` to see options.")
 
@@ -583,16 +585,29 @@ class Clot(commands.Cog, name="clot"):
             log_exception()
             ctx.send("An error has occurred, unable to process command.")
 
-    @commands.command(brief="Display your Warzone Profile Link")
-    async def profile(self, ctx):
+    @commands.command(brief="Display your Warzone Profile Link and Searches for others",
+                      usage='''
+                          bb!profile - Displays your personal warzone profile
+                          bb!profile master - Displays warzone profile for players starting with 'master' 
+                      ''')
+    async def profile(self, ctx, option=""):
         try:
-            discord_id = ctx.message.author.id
-
-            player = Player.objects.filter(discord_member__memberid=discord_id)
-            if player:
-                await ctx.send("{} | https://warzone.com/Profile?p={}".format(player.name, player.token))
+            if option == "":
+                discord_id = ctx.message.author.id
+                player = Player.objects.filter(discord_member__memberid=discord_id)
+                if player:
+                    player = player[0]
+                    await ctx.send("{} | https://warzone.com/Profile?p={}".format(player.name, player.token))
+                else:
+                    await ctx.send("Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
             else:
-                await ctx.send("Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+                await ctx.send("Searching the CLOT for players starting with {}...".format(option))
+                players = Player.objects.filter(name__startswith=option)
+                data = ""
+                for player in players:
+                    data += "{} | {} | https://warzone.com/Profile?p={}\n".format(player.name, player.token, player.token)
+                if data != "" and len(data) > 0:
+                    await ctx.send(data)
         except:
             log_exception()
             await ctx.send("An error has occurred and was unable to process the command.")
