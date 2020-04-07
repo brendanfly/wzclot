@@ -4,6 +4,7 @@ import datetime
 import traceback
 from django.conf import settings
 from enum import Enum
+import pytz
 
 # list of levels
 class LogLevel:
@@ -125,23 +126,23 @@ class LogManager():
         if self.type == LogLevel.tournament:
             logs = TournamentLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log_end = logs[0].timestamp - datetime.timedelta(**kwargs)
+                log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
         if self.type == LogLevel.game:
             logs = TournamentGameLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log_end = logs[0].timestamp - datetime.timedelta(**kwargs)
+                log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
         if self.type == LogLevel.game_status:
             logs = TournamentGameStatusLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log_end = logs[0].timestamp - datetime.timedelta(**kwargs)
+                log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
         if self.type == LogLevel.process_game:
             logs = ProcessGameLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log_end = logs[0].timestamp - datetime.timedelta(**kwargs)
+                log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
         if self.type == LogLevel.process_new_games:
             logs = ProcessNewGamesLog.objects.filter(**self.kwargs).order_by('-pk')
             if logs:
-                log_end = logs[0].timestamp - datetime.timedelta(**kwargs)
+                log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
 
         print("Log end time to delete prior: {}".format(log_end))
         current_log = 0

@@ -109,9 +109,9 @@ class WZBot(commands.AutoShardedBot):
     def get_channel_list(self):
         return self.rtl_channels
 
-    async def update_progress(self, message, pct):
+    async def update_progress(self, edit_message, message_text, pct):
         # shows and updates the same message displaying progress for longer running tasks
-        await message.edit(content="{} %".format(pct))
+        await edit_message.edit(content="{}...{} %".format(message_text, pct))
 
 class Command(BaseCommand):
     help = "Runs the CLOT Bot"

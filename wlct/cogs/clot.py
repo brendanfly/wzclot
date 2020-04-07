@@ -55,7 +55,7 @@ class Clot(commands.Cog, name="clot"):
                           bb!stats token - shows the users CLOT stats based on Warzone token
                           bb!stats discord_name - shows the CLOT stats for a player matching that discord name
                       ''')
-    async def stats(self, ctx, option="", token=""):
+    async def stats(self, ctx, option=""):
         try:
             mentions = []  #ctx.message.mentions
             if option == "clot":
@@ -68,7 +68,7 @@ class Clot(commands.Cog, name="clot"):
                 g = TournamentGame.objects.all()
                 emb.add_field(name="# of Games Played", value="{}".format(g.count()))
                 await ctx.send(embed=emb)
-            elif option == "me" or option.isnumeric() or len(mentions) > 0:
+            elif option == "me" or option.isnumeric() or option != "":
                 discord_user_id = 0
                 if option == "me":
                     discord_user = ctx.message.author
@@ -81,9 +81,26 @@ class Clot(commands.Cog, name="clot"):
                         discord_user = self.bot.get_user(player[0].discord_member.memberid)
                         discord_user_id = discord_user.id
                 else:
-                    # try to loop through all users we know of an find the user
-                    #TODO update progress loop
-                    pass
+                    option.lower()
+                    message = await ctx.send("Searching all players I've seen for {}".format(option))
+                    original_text = message.content
+                    await self.bot.update_progress(message, original_text, 0.0)
+
+                    users = self.bot.users
+                    num_users = len(users)
+                    step = 100.0 / num_users
+                    current_step = step
+                    for user in users:
+                        user_name = user.name.lower()
+                        if option in user_name:
+                            discord_user = user
+                            discord_user_id = discord_user.id
+                            break
+                        current_step += step
+                        await self.bot.update_progress(message, original_text, round(current_step, 2))
+                    await self.bot.update_progress(message, original_text, 100.0)
+
+
                 stats = self.get_player_stats(discord_user_id)
                 if stats[0]:
                     # success
@@ -98,8 +115,6 @@ class Clot(commands.Cog, name="clot"):
                     await ctx.send(self.bot.discord_link_text_user)
             else:
                 await ctx.send("You must enter a valid option to the command. Use ``bb!help stats`` to see options.")
-
-
         except Exception as e:
             log_exception()
 
