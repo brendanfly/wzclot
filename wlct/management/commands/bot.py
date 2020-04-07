@@ -44,6 +44,7 @@ class WZBot(commands.AutoShardedBot):
         self.executions = 0
 
         # deltas for when the bot does stuff
+        self.discord_link_text = "Your discord account is not linked to the CLOT. Please see <http://wztourney.herokuapp.com/me/> for instructions."
 
         for ext in EXTENSIONS:
             self.load_extension(ext)
@@ -69,12 +70,15 @@ class WZBot(commands.AutoShardedBot):
         if cog:
             await cog.process_member_join(member.id)
 
-    def get_default_embed(self, ctx):
+    def get_embed(self, user):
         emb = discord.Embed(color=self.embed_color)
-        emb.set_author(icon_url=ctx.message.author.avatar_url, name=ctx.message.author)
+        emb.set_author(icon_url=user.avatar_url, name=user.author)
         emb.set_footer(text="Bot created and maintained by -B#0292")
 
         return emb
+
+    def get_default_embed(self):
+        return self.embed(self)
 
     async def on_ready(self):
         print(f'[CONNECT] Logged in as:\n{self.user} (ID: {self.user.id})\n')

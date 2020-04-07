@@ -1,14 +1,51 @@
 import discord
 from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink
-from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame
+from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry
 from wlct.logging import log_exception
 from discord.ext import commands
 from django.conf import settings
 from wlct.cogs.common import has_admin_access, is_admin
 
+
+class PlayerStats:
+    def __init__(self, wins, losses, tournaments, games, win_pct):
+        self.wins = wins
+        self.losses = losses
+        self.tournaments = tournaments
+        self.games = games
+        self.win_pct = win_pct
+
+
 class Clot(commands.Cog, name="clot"):
     def __init__(self, bot):
         self.bot = bot
+
+    def get_player_stats(self, discord_id):
+        # return a tuple of all the player stats
+        # this tuple will be (Success, Wins, Losses, Tournaments Played In, Games Played In, Win %)
+        # first, grab the player
+        if discord_id == 0:
+            return False, None
+        player = Player.objects.filter(discord_member__memberid=discord_id)
+        if player:
+            player = player[0]
+            wins = 0
+            losses = 0
+            tpi = 0
+            gpi = 0
+            tplayer = TournamentPlayer.objects.filter(player=player)
+            for p in tplayer:
+                wins += p.wins
+                losses += p.losses
+                tpi += 1
+                games = TournamentGameEntry.objects.filter(team=p.team)
+                gpi += games.count()
+            win_pct = 0
+            if wins + losses != 0:
+                win_pct = wins / (wins + losses)
+            return True, PlayerStats(wins, losses, tpi, gpi, win_pct)
+        else:
+            return False, None
 
     @commands.command(brief="View CLOT statistics",
                       usage='''
@@ -19,11 +56,9 @@ class Clot(commands.Cog, name="clot"):
                       ''')
     async def stats(self, ctx, option="", token=""):
         try:
-            mentions = ctx.message.mentions
-            emb = self.bot.get_default_embed(ctx)
-            for mention in mentions:
-                print("Mentioned in message: {}".format(mention))
+            mentions = ctx.message.mention
             if option == "clot":
+                emb = self.bot.get_default_embed()
                 # grab total tournaments + games + players
                 p = Player.objects.all()
                 emb.add_field(name="# of Players", value="{}".format(p.count()))
@@ -32,12 +67,35 @@ class Clot(commands.Cog, name="clot"):
                 g = TournamentGame.objects.all()
                 emb.add_field(name="# of Games Played", value="{}".format(g.count()))
                 await ctx.send(embed=emb)
-            elif option == "me":
-                await ctx.send("This command is currently under construction")
-            elif option.isnumeric():
-                await ctx.send("This command is currently under construction")
+            elif option == "me" or option.isnumeric() or len(mentions) > 0:
+                discord_user = 0
+                if option == "me":
+                    discord_user = ctx.message.author.id
+                elif option.isnumeric():
+                    # try to lookup the player by token
+                    player = Player.objects.filter(token=option)
+                    if player and player[0].discord_member is not None:
+                        discord_user = self.bot.get_user(player[0].discord_member.memberid)
+                elif len(mentions) == 1:
+                    discord_user = mentions[0]
+                else:
+                    await ctx.send("You may only mention a single player. User ``bb!help stats`` to see all options.")
+
+                stats = self.get_player_stats(discord_user)
+                if stats[0]:
+                    # success
+                    pstats = stats[1]
+                    emb = self.bot.get_embed(discord_user)
+                    emb.add_field(name="Overall Record", value="{}-{}".format(pstats.wins, pstats.losses))
+                    emb.add_field(name="Winning %", value="{}".format(pstats.win_pct))
+                    emb.add_field(name="Tournaments Played In", value="{}".format(pstats.tournaments))
+                    emb.add_field(name="Games Played In", value="{}".format(pstats.games))
+                    await ctx.send(embed=emb)
+                else:
+                    await ctx.send(self.bot.discord_link_text)
             else:
                 await ctx.send("You must enter a valid option to the command. Use ``bb!help stats`` to see options.")
+
 
         except Exception as e:
             log_exception()
