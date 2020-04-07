@@ -140,6 +140,7 @@ def cleanup_logs():
                 LogManager(value, timestamp__lt=enddate, tournament__is_finished=False).prune()
             else:  # generic logging runtime cases
                 LogManager(value, timestamp__lt=enddate).prune()
+        gc.collect()
 
 # globals to get executed on every load of the web server
 slow_update_threshold = 25
