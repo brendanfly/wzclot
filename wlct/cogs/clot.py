@@ -80,7 +80,9 @@ class Clot(commands.Cog, name="clot"):
                         discord_user = self.bot.get_user(player[0].discord_member.memberid)
                         discord_user_id = discord_user.id
                 else:
-                    option.lower()
+                    await ctx.send("bb!stats <player name> is currently under construction")
+                    return
+                    '''players = Player.objects.filter(name__istartswith=option)
                     message = await ctx.send("Searching all players I've seen for {}".format(option))
                     original_text = message.content
                     await self.bot.update_progress(message, original_text, 0.0)
@@ -97,7 +99,7 @@ class Clot(commands.Cog, name="clot"):
                             break
                         current_step += step
                         await self.bot.update_progress(message, original_text, round(current_step, 2))
-                    await self.bot.update_progress(message, original_text, 100.0)
+                    await self.bot.update_progress(message, original_text, 100.0)'''
 
 
                 stats = self.get_player_stats(discord_user_id)
