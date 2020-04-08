@@ -40,6 +40,7 @@ class Ladders(commands.Cog, name="ladders"):
             discord_id = ctx.message.author.id
             if ladder is not None:
                 teams = ladder.get_team_count()
+                print("initial team count: {}".format(teams))
                 if arg_cmd == "-p":
                     # display current players in the ladder
                     retStr = ladder.get_current_joined()
@@ -47,12 +48,14 @@ class Ladders(commands.Cog, name="ladders"):
                     retStr = ladder.join_ladder(discord_id, False)
                     current_joined = ladder.get_current_joined()
                     retStr += "\n\n" + current_joined + "\n"
+                    print("New Team count: {}".format(teams))
                     if teams != ladder.get_team_count():
                         await self.send_ladder_message(current_joined, False, ctx.message)
                 elif arg_cmd == "-jl":
                     retStr = ladder.join_ladder(discord_id, True) + " (You will be removed once a game is created)"
                     current_joined = ladder.get_current_joined()
                     retStr += "\n\n" + current_joined + "\n"
+                    print("New Team count: {}".format(teams))
                     if teams != ladder.get_team_count():
                         await self.send_ladder_message(current_joined, False, ctx.message)
                 elif arg_cmd == "-l":
