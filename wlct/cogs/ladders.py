@@ -39,7 +39,7 @@ class Ladders(commands.Cog, name="ladders"):
             ladder = get_real_time_ladder(109)
             discord_id = ctx.message.author.id
             if ladder is not None:
-                teams = ladder.get_team_count()
+                teams = ladder.get_active_team_count()
                 print("initial team count: {}".format(teams))
                 if arg_cmd == "-p":
                     # display current players in the ladder
@@ -49,14 +49,14 @@ class Ladders(commands.Cog, name="ladders"):
                     current_joined = ladder.get_current_joined()
                     retStr += "\n\n" + current_joined + "\n"
                     print("New Team count: {}".format(teams))
-                    if teams != ladder.get_team_count():
+                    if teams != ladder.get_active_team_count():
                         await self.send_ladder_message(current_joined, False, ctx.message)
                 elif arg_cmd == "-jl":
                     retStr = ladder.join_ladder(discord_id, True) + " (You will be removed once a game is created)"
                     current_joined = ladder.get_current_joined()
                     retStr += "\n\n" + current_joined + "\n"
                     print("New Team count: {}".format(teams))
-                    if teams != ladder.get_team_count():
+                    if teams != ladder.get_active_team_count():
                         await self.send_ladder_message(current_joined, False, ctx.message)
                 elif arg_cmd == "-l":
                     retStr = ladder.leave_ladder(discord_id)
@@ -123,11 +123,9 @@ class Ladders(commands.Cog, name="ladders"):
                 retStr = "Real-time Ladder cannot be found. Please contact -B."
 
             if do_embed:
-                print("Sending embed")
-                await ctx.send(embed=emb)
+                 await ctx.send(embed=emb)
             else:
-                print("Sending real message")
-                await ctx.send(retStr)
+                 await ctx.send(retStr)
         except:
             log_exception()
             await ctx.send("An error has occurred and was unable to process the command.")

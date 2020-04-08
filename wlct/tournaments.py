@@ -4323,8 +4323,8 @@ class RealTimeLadder(Tournament):
     auto_boot_seconds = models.IntegerField(default=180, blank=True, null=True)
     seconds_banked = models.IntegerField(default=300, blank=True, null=True)
 
-    def get_team_count(self):
-        return TournamentTeam.objects.filter(tournament=self).count()
+    def get_active_team_count(self):
+        return TournamentTeam.objects.filter(tournament=self, active=True).count()
 
     def should_process_in_engine(self):
         return False
