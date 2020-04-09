@@ -444,6 +444,7 @@ class Tournament(models.Model):
 
     def create_game_with_template_and_data(self, tournament_round, game, tid, extra_data):
         if not self.game_creation_allowed:
+            log_tournament("Game creation is now allowed. Returning...", self)
             return  # don't actually create the games but allow the logging for each tournament to go through
 
         # create the game
