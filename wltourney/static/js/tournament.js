@@ -111,7 +111,6 @@ function hook_invite_players()
             data: {'tournamentid' : tournamentid, 'data_attrib' : data_attrib},
             success: function(data)
             {
-                console.log("Data returned");
                if (data.success == "true")
                {
                     $("#invitetab").html(data.invited_players);
@@ -126,7 +125,18 @@ function hook_invite_players()
                         });
                     });
 
+                    if (data.can_start_tourney)
+                    {
+                        // We can now start the tournament, make sure the start button is enabled
+                        $("#start_tournament").prop('disabled', false);
+                    }
+                    else
+                    {
+                        $("#start_tournament").prop('disabled', true);
+                    }
+
                     $("#cl-update-player").data(thisVar.data());
+                    hook_pr_buttons();
                }
             },
             error: function(jqXHR, textStatus, errorThrown)
@@ -300,6 +310,16 @@ function update_division(type, obj)
                 hook_clan_league_buttons();
                 hook_pr_buttons();
                 hook_invite_players();
+
+                if (data.can_start_tourney)
+                {
+                    // We can now start the tournament, make sure the start button is enabled
+                    $("#start_tournament").prop('disabled', false);
+                }
+                else
+                {
+                    $("#start_tournament").prop('disabled', true);
+                }
             }
             else
             {
@@ -671,37 +691,34 @@ $(function () {
                 {
                    if (data.success == "true")
                    {
-                      // update the table, which should have been returned to us
-                      $("#lobbytab").html(data.team_table);
-                      hook_player_status_change();
+                        // update the table, which should have been returned to us
+                        $("#lobbytab").html(data.team_table);
+                        hook_player_status_change();
 
-                      if ($("div#bracket_seeded_async").length)
-                      {
-                        refresh_tournament_async();
-                      }
-                      else
-                      {
-                        $("#gamestab").html(data.bracket_game_data);
-                      }
+                        if ($("div#bracket_seeded_async").length)
+                        {
+                          refresh_tournament_async();
+                        }
+                        else
+                        {
+                            $("#gamestab").html(data.bracket_game_data);
+                        }
 
-                      if (data.can_start_tourney)
-                      {
+                        if (data.can_start_tourney)
+                        {
                             // We can now start the tournament, make sure the start button is enabled
                             $("#start_tournament").prop('disabled', false);
-                      }
-                      else
-                      {
+                        }
+                        else
+                        {
                             $("#start_tournament").prop('disabled', true);
-                      }
+                        }
 
-                      if ($("div#gamelogtab").length)
-                      {
-                          if (data.game_log)
-                          {
-                               $("#gamelogtab").html(data.game_log);
-                               $('#game_log_data_table').DataTable();
-                          }
-                      }
+                        if ($("div#gamelogtab-inner").length)
+                        {
+                           $("#gamelogtab-inner").html(data.game_log);
+                           $('#game_log_data_table').DataTable();
+                        }
                    }
                    else
                    {
@@ -806,7 +823,17 @@ $(function () {
                   // update the division card table data
                   $('#' + data.division_div).html(data.division_card);
                   hook_invite_players();
+                  hook_pr_buttons();
                   $("#tournament_invites").modal('hide');
+                  if (data.can_start_tourney)
+                  {
+                      // We can now start the tournament, make sure the start button is enabled
+                      $("#start_tournament").prop('disabled', false);
+                  }
+                  else
+                  {
+                      $("#start_tournament").prop('disabled', true);
+                  }
                }
                else
                {

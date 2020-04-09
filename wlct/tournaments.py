@@ -338,7 +338,7 @@ def find_tournament_public(id):
 
 class Tournament(models.Model):
     name = models.CharField(max_length=128, null=True)
-    description = models.CharField(max_length=2000, null=True)
+    description = models.CharField(max_length=2000, null=True, blank=True)
     number_players = models.IntegerField(default=-1)
     teams_per_game = models.IntegerField(default=-1)
     template = models.IntegerField(default=-1)
@@ -353,7 +353,7 @@ class Tournament(models.Model):
     host_sets_tourney = models.BooleanField(default=False)
     start_locked = models.BooleanField(default=False)  # used by tournament that are locked to join, but haven't started
     max_players = models.IntegerField(default=-1)
-    template_settings = models.TextField()
+    template_settings = models.TextField(default="", null=True, blank=True)
     multi_day = models.BooleanField(default=False)
     winning_team = models.ForeignKey('TournamentTeam', on_delete=models.DO_NOTHING, null=True, related_name='winning_team', blank=True)
     update_in_progress = models.BooleanField(default=False)
@@ -443,6 +443,9 @@ class Tournament(models.Model):
         self.save()
 
     def create_game_with_template_and_data(self, tournament_round, game, tid, extra_data):
+        if not self.game_creation_allowed:
+            return  # don't actually create the games but allow the logging for each tournament to go through
+
         # create the game
         api = API()
         data = {}
@@ -507,12 +510,17 @@ class Tournament(models.Model):
                                                                                             game, gameID,
                                                                                             tournament_round.round_number),
                 self, tournament_game)
+
+            self.post_create_games()
             return tournament_game
         else:
             # not good, error, TODO: Log???
             print("Error in creating game: {}".format(gameInfo))
             log("Error in creating tournament game response {}:, data: {}".format(gameInfo, data), LogLevel.critical)
             return None
+
+    def post_create_games(self):
+        pass
 
     def create_game(self, tournament_round, game):
         self.create_game_with_template_and_data(tournament_round, game, self.template, None)
@@ -2350,9 +2358,6 @@ class RoundRobinTournament(Tournament):
         else:
             self.create_games(game_data1, game_data2, round[0])
 
-    def post_create_games(self):
-        pass
-
     def create_games(self, game_data1, game_data2, round):
         # we have reached the point where we have enough games to create...create them, whatever we have
         for i in range(0, len(game_data1)):
@@ -2360,9 +2365,7 @@ class RoundRobinTournament(Tournament):
                 "Creating Round Robin game for tournament {} between {}  and {}".format(self.id, game_data1[i], game_data2[i]),
                 self)
             game_data = "{}.{}".format(game_data1[i], game_data2[i])
-            #self.create_game(round, game_data)
-
-        self.post_create_games()
+            self.create_game(round, game_data)
 
     def start(self):
         # start the round robin tournament
@@ -3157,7 +3160,7 @@ class MonthlyTemplateRotation(Tournament):
         game_log += '<th>Link</th><th>Matchup</th><th>Winner</th></tr></thead><tbody>'
 
         games_output = []
-        tournament_game_entries = TournamentGameEntry.objects.filter(is_finished=True, tournament=self).order_by('-created_date')
+        tournament_game_entries = TournamentGameEntry.objects.filter(tournament=self).order_by('-created_date')
         for entry in tournament_game_entries:
             if entry.game.id in games_output:
                 continue
@@ -3283,6 +3286,7 @@ class PromotionalRelegationLeagueSeason(Tournament):
                 team.save()
             tournament.start()
 
+        self.game_creation_allowed = True
         self.has_started = True
         self.save()
 
@@ -3326,24 +3330,25 @@ class PromotionalRelegationLeagueSeason(Tournament):
     @property
     def can_start_tourney(self):
         # we must have exactly 1 template and atleast 1 division, all divisions must have at least 4 teams
+        can_start = True
         if self.season_template is None:
-            return False
+            can_start = False
         divisions = ClanLeagueDivision.objects.filter(pr_season=self)
         if divisions.count() == 0:
-            return False
+            can_start = False
         for div in divisions:
             teams = TournamentTeam.objects.filter(tournament=self, clan_league_division=div)
             if teams.count() < 4:
-                return False
+                can_start = False
         players = TournamentPlayer.objects.filter(player__token=1, tournament=self)
         if players.count() != 0:
-            return False
+            can_start = False
 
         # set the proper fields on this tournament which is looked at before creating the underlying round robin ones
         self.players_per_team = self.season_template.players_per_team
         self.save()
 
-        return True
+        return can_start
 
 
     def add_team_to_division(self, request):
@@ -3505,7 +3510,6 @@ class PromotionalRelegationLeagueSeason(Tournament):
                 if players:
                     self.numbers_players = players.count()
                 # the creator will get to assign players to these team slots now
-                # so we can go ahead and mark us as "ClanLeague.started=True" and let the site handle this properly.
                 self.game_creation_allowed = False
                 self.save()
                 return division
@@ -3735,7 +3739,7 @@ class ClanLeagueDivision(models.Model):
                     division_data += '{}'.format(get_tournament_player_data(player))
                     if editable:
                         division_data += '<a href="javascript:void(0);" class="badge badge-info invite_players" data-player="{}">Change Player</a>&nbsp;'.format(player.id)
-                if current_team > 4:
+                if current_team > 4 and editable:
                     division_data += '<a href="javascript:void(0);" class="badge badge-danger" id="division-remove-team-{}" data-division="{}" data-team="{}">Remove Team</button>'.format(
                         self.id, self.id, t.id)
                 current_team += 1
