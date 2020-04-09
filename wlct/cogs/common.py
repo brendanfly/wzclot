@@ -6,11 +6,18 @@ import json
 from bs4 import BeautifulSoup
 from wlct.models import Engine
 from wlct.logging import TournamentGameLog, ProcessGameLog, log_exception
+from wlct.models import Player
 from wlct.cogs.help import get_help_embed
 from django.utils import timezone
 import datetime
 from django.core.paginator import Paginator
 
+def is_tournament_creator(discord_id, tournament):
+    player = Player.objects.filter(discord_member__memberid=discord_id)
+    if player:
+        return player[0].id == tournament.created_by.id
+    else:
+        return False
 
 def has_admin_access(discord_id):
     # B/Cowboy/Justin's ID
