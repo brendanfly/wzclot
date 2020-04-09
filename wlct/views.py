@@ -477,9 +477,7 @@ def pr_view_season(request, id):
     try:
         tournament = find_tournament_by_id(id, True)
         if tournament:
-            print("Found p/r league season {}".format(id))
             context = {'tournament': tournament}
-
             player = None
             if is_player_token_valid(request):
                 player = Player.objects.filter(token=request.session['token'])
