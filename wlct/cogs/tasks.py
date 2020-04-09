@@ -162,7 +162,7 @@ class Tasks(commands.Cog, name="tasks"):
                 game.save()
                 msg = ""
 
-    async def handle_rtl_ladder(self):
+    async def handle_rt_ladder(self):
         tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
         for tournament in tournaments:
             child_tournament = find_tournament_by_id(tournament.id, True)
@@ -230,7 +230,7 @@ class Tasks(commands.Cog, name="tasks"):
             if day:
                 await self.handle_day_tasks()
             if two_minute:
-                await self.handle_rtl_ladder()
+                await self.handle_rt_ladder()
 
             # always tasks
             await self.handle_always_tasks()

@@ -1,7 +1,7 @@
 import discord
 from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink
 from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry
-from wlct.logging import log_exception
+from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
 from django.conf import settings
 from wlct.cogs.common import has_admin_access, is_admin
@@ -129,11 +129,38 @@ class Clot(commands.Cog, name="clot"):
                           bb!admin cache <tournament_id> - forcibly runs the cache on a tournament
                           ''',
                       category="clot")
-    async def admin(self, ctx, cmd="", option="", token=""):
+    async def admin(self, ctx, cmd="", option="", arg=""):
         try:
             if has_admin_access(ctx.message.author.id):
                 if cmd == "logs":
-                    pass
+                    if option == "-pg":
+                        if arg:
+                            game = TournamentGame.objects.filter(gameid=arg)
+                            if game:
+                                game_logs = ProcessGameLog.objects.filter(game=game[0]).order_by('timestamp')[-2]
+                                game_log_data = "Last two process game log messages:\n\n"
+                                for log in game_logs:
+                                    game_log_data += "{}\n\n".format(log)
+                                await ctx.send(game_log_data)
+                            else:
+                                await ctx.send("Unable to find game with id: {}".format(arg))
+                        else:
+                            await ctx.send("Please enter a valid game id")
+                    elif option == "-png":
+                        if arg:
+                            tournament = Tournament.objects.filter(id=arg)
+                            if tournament:
+                                new_game_logs = ProcessNewGamesLog.objects.filter(tournament=tournament).order_by('timestamp')[-2]
+                                new_game_log_data = "Last two process game log messages:\n\n"
+                                for log in new_game_logs:
+                                    new_game_log_data += "{}\n\n".format(log)
+                                await ctx.send(new_game_log_data)
+                            else:
+                                await ctx.send("Unable to find tournament with id: {}. Use ``bb!admin tournaments`` to see ids".format(arg))
+                        else:
+                            await ctx.send("Please enter a valid tournament id. Use ``bb!admin tournaments`` to see ids")
+                    else:
+                        await ctx.send("Please enter a valid option (-pg or -png)")
                 elif cmd == "mtc":
                     mtc = MonthlyTemplateRotation.objects.filter(id=22)[0]
                     if option == "-p":
@@ -148,12 +175,12 @@ class Clot(commands.Cog, name="clot"):
                         else:
                             await ctx.send("Currently there are no players on the MTC")
                     elif option == "-r":
-                        if token:
+                        if arg:
                             try:
-                                mtc.decline_tournament(token)
-                                await ctx.send("Successfully removed player from MTC with id: {}".format(token))
+                                mtc.decline_tournament(arg)
+                                await ctx.send("Successfully removed player from MTC with id: {}".format(arg))
                             except:
-                                await ctx.send("Unable to remove player from MTC with id: {}".format(token))
+                                await ctx.send("Unable to remove player from MTC with id: {}".format(arg))
                         else:
                             ctx.send("Please enter a valid token. Use ``bb!admin mtc -p`` to see current players.")
                     else:
@@ -161,22 +188,21 @@ class Clot(commands.Cog, name="clot"):
                 elif cmd == "rtl":
                     rtl = RealTimeLadder.objects.filter(id=109)[0]
                     if option == "-p":
-                        tplayers = TournamentPlayer.objects.filter(tournament=rtl)
+                        tplayers = TournamentPlayer.objects.filter(tournament=rtl, active=True)
                         if tplayers:
                             player_data = "Current Players on the RTL:\n"
                             for tplayer in tplayers:
-                                if tplayer.team.active:
-                                    player_data += "{} | Discord Id: {}\n".format(tplayer.player.name, tplayer.player.discord_member.memberid)
+                                player_data += "{} | Discord Id: {}\n".format(tplayer.player.name, tplayer.player.discord_member.memberid)
                             await ctx.send(player_data)
                         else:
                             await ctx.send("Currently there are no players on the RTL")
                     elif option == "-r":
-                        if token:
+                        if arg:
                             try:
-                                rtl.leave_ladder(token)
-                                await ctx.send("Successfully removed player from RTL with id: {}".format(token))
+                                rtl.leave_ladder(arg)
+                                await ctx.send("Successfully removed player from RTL with id: {}".format(arg))
                             except:
-                                await ctx.send("Unable to remove player from RTL with id: {}".format(token))
+                                await ctx.send("Unable to remove player from RTL with id: {}".format(arg))
                         else:
                             ctx.send("Please enter a valid id. Use ``bb!admin rtl -p`` to see current players.")
                     else:
@@ -196,7 +222,7 @@ class Clot(commands.Cog, name="clot"):
                 else:
                     await ctx.send("Please enter a valid command. Use ``bb!help admin`` to see commands.")
             else:
-                await ctx.send("Only clot-admin's can use this command.")
+                await ctx.send("Only admin's can use this command.")
         except:
             log_exception()
             await ctx.send("An error has occurred and was unable to process the command.")
@@ -517,7 +543,10 @@ class Clot(commands.Cog, name="clot"):
             await ctx.send("An error has occurred and was unable to process the command.")
 
     @commands.command(brief="Displays the MTC top ten on the CLOT. Optional arguments to show any MTC top 10.",
-                      usage='bb!mtc <league_id>')
+                      usage="""
+                      Hint: official MTC will be selected if no id is included
+                      bb!mtc <league_id>
+                      """)
     async def mtc(self, ctx, mtc_id="0"):
         try:
             tournament_data = ""
