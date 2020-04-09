@@ -45,6 +45,9 @@
                 &nbsp;&nbsp;<button type="button" class="btn btn-md btn-danger" id="delete_tournament">Delete Season (Creator
                     Only)
                 </button>
+                {% if tournament.has_started %}
+                <span id="pause_resume_buttons">{{ pause_resume_buttons|safe }}</span>
+                {% endif %}
                 {% if tournament.created_by.token == request.session.token %}
                 <div id="templates">
                     {{ tournament.get_editable_template_data|safe }}

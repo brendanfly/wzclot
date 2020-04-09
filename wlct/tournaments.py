@@ -239,6 +239,10 @@ def get_games_finished_for_team_since(teamid, tournament, days):
 
 def find_league_by_id(id):
     try:
+        child_tourney = PromotionalRelegationLeagueSeason.objects.filter(pk=id)
+        if child_tourney:
+            return child_tourney[0]
+
         child_league = PromotionalRelegationLeague.objects.filter(pk=id)
         if child_league:
             return child_league[0]
@@ -250,10 +254,6 @@ def find_league_by_id(id):
         child_league = ClanLeague.objects.filter(pk=id)
         if child_league:
             return child_league[0]
-
-        child_tourney = PromotionalRelegationLeagueSeason.objects.filter(pk=id)
-        if child_tourney:
-            return child_tourney[0]
     except:
         # league wasn't found
         log_exception()
@@ -2360,7 +2360,7 @@ class RoundRobinTournament(Tournament):
                 "Creating Round Robin game for tournament {} between {}  and {}".format(self.id, game_data1[i], game_data2[i]),
                 self)
             game_data = "{}.{}".format(game_data1[i], game_data2[i])
-            self.create_game(round, game_data)
+            #self.create_game(round, game_data)
 
         self.post_create_games()
 
@@ -3285,6 +3285,26 @@ class PromotionalRelegationLeagueSeason(Tournament):
 
         self.has_started = True
         self.save()
+
+    def get_pause_resume(self, player):
+        if player and player.id == self.created_by.id:
+            if self.game_creation_allowed:
+                pause_resume = '<button type="button" class="btn btn-danger" name="pause" id="pause"><i class="fa fa-pause"></i>&nbsp;Pause Season</button>'
+            else:
+                # resume case
+                pause_resume = '<button type="button" class="btn btn-success" name="resume" id="resume"><i class="fa fa-play"></i>&nbsp;Resume Season</button>'
+            return pause_resume
+        return ""
+
+    def update_game_creation_allowed(self, allowed):
+        self.game_creation_allowed = allowed
+
+        tournaments = PromotionalRelegationLeagueTournament.objects.filter(parent_tournament=self)
+        for tournament in tournaments:
+            tournament.game_creation_allowed = allowed
+            tournament.save()
+        self.save()
+
 
     def update_game_log(self):
         pass

@@ -228,10 +228,8 @@ def league_update_status(request):
             if league is not None:
                 if 'pause' in request.POST:
                     league.update_game_creation_allowed(False)
-                    print("Games cannot be created")
                 elif 'resume' in request.POST:
                     league.update_game_creation_allowed(True)
-                    print("Games can be created")
 
                 player = Player.objects.get(token=request.session['token'])
                 context.update({'success': 'true'})
@@ -480,6 +478,13 @@ def pr_view_season(request, id):
         if tournament:
             print("Found p/r league season {}".format(id))
             context = {'tournament': tournament}
+
+            player = None
+            if is_player_token_valid(request):
+                player = Player.objects.filter(token=request.session['token'])
+                if player:
+                    player = player[0]
+            context.update({'pause_resume_buttons': tournament.get_pause_resume(player)})
             return render(request, "pr_season.html", context)
         else:
             return HttpResponseRedirect('/index/')
