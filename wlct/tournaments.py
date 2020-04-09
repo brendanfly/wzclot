@@ -2295,7 +2295,8 @@ class RoundRobinTournament(Tournament):
 
             team_game_data[team1].append(team2)
             team_game_data[team2].append(team1)
-
+            print("Current games for {}: {}".format(team1, len(team_game_data(team1))))
+            print("Current games for {}: {}".format(team2, len(team_game_data(team2))))
 
         # we need to remove all matchups from our list that cannot happen again
         # finished or in progress both count here
