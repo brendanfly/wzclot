@@ -112,8 +112,6 @@ def check_games(**kwargs):
         if child_tournament and child_tournament.should_process_in_engine():
             log("[PROCESS GAMES]: Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
             try:
-                if not child_tournament.game_creation_allowed:
-                    continue
                 games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
                 log("[PROCESS GAMES]: Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.engine)
                 for game in games.iterator():
@@ -159,7 +157,10 @@ current_clan_update = 1
 def tournament_caching():
     try:
         cleanup_logs()
-        cache_games(has_started=True, is_finished=False)
+        if settings.DEBUG:
+            cache_games(has_started=True)
+        else:
+            cache_games(has_started=True, is_finished=False)
     except Exception as e:
         log_exception()
 

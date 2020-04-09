@@ -96,21 +96,10 @@
                         <div class="tab-pane show active" id="lobbytab">{{ team_table|safe }}
                         </div>
                         <div class="tab-pane" id="gamestab">
-                            {% if not tournament.bracket_seeded_async %}
-                                {{ bracket_game_data|safe }}
-                            {% else %}
-                            <div class="container">
-                                <div class="row">
-                                    <div class="h6">Click on a match to view the game</div>
-                                    <div id="bracket_seeded_async">
-                                    </div>
-                                </div>
-                            </div>
-
-                            {% endif %}
+                            {{ bracket_game_data|safe }}
                         </div>
                         <div class="tab-pane" id="gameslogtab">
-                            <div id="gamelogtable">
+                            <div id="gamelogtab-inner">
                                 {{ game_log|safe }}
                             </div>
                         </div>

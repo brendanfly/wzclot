@@ -27,7 +27,7 @@ def schedule_jobs():
             # use the name 'default' instead of 'djangojobstore'.
             scheduler.add_jobstore(DjangoJobStore(), 'default')
             if not scheduler.running:
-                scheduler.add_job(tournament_caching, 'interval', seconds=10, id='tournament_engine',
+                scheduler.add_job(tournament_caching, 'interval', seconds=30, id='tournament_engine',
                                   max_instances=1, coalesce=False)
                 scheduler.start()
         except ConflictingIdError:
@@ -460,6 +460,7 @@ def cl_update_divisions(request):
                 divisions = tournament.get_editable_divisions_data()
                 context.update({'success': "true"})
                 context.update({'divisions': divisions})
+                context.update({'can_start_tourney': tournament.can_start_tourney})
             else:
                 context.update({'error': "You are not authorized to modify this league."})
             return JsonResponse(context)
@@ -581,7 +582,6 @@ def tournament_invite_players(request):
             tournament = find_tournament_by_id(request.POST['tournamentid'], True)
             if tournament:
                 # get the list of uninvited players (inverse list)
-                print("Getting list of invited players")
                 tournament.invite_player(request.POST)
                 invited_players_inverse = tournament.get_invited_players_inverse_table(tournament.created_by.token, request.POST, request.session['token'])
                 invited_players = tournament.get_invited_players_table()
@@ -598,7 +598,7 @@ def tournament_invite_players(request):
                         division_card = tournament.get_editable_roster_data(divisionid)
                         context.update({"division_card": division_card})
                 context.update({"success": "true"})
-                print("Success returning back")
+                context.update({"can_start_tourney": tournament.can_start_tourney})
                 return JsonResponse(context)
         except ObjectDoesNotExist:
             log("Player {} does not exist!", LogLevel.critical)

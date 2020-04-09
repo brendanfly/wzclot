@@ -161,7 +161,10 @@
 
                             {% endif %}
                         </div>
-                        <div class="tab-pane" id="logtab">{{ game_log|safe }}
+                        <div class="tab-pane" id="logtab">
+                            <div id="gamelogtab-inner">
+                                {{ game_log|safe }}
+                            </div>
                         </div>
                         <div class="tab-pane" id="invitetab">{{ invited_players|safe }}
                         </div>
