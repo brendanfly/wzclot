@@ -3332,25 +3332,24 @@ class PromotionalRelegationLeagueSeason(Tournament):
     @property
     def can_start_tourney(self):
         # we must have exactly 1 template and atleast 1 division, all divisions must have at least 4 teams
-        can_start = True
         if self.season_template is None:
-            can_start = False
+            return False
         divisions = ClanLeagueDivision.objects.filter(pr_season=self)
         if divisions.count() == 0:
-            can_start = False
+            return False
         for div in divisions:
             teams = TournamentTeam.objects.filter(tournament=self, clan_league_division=div)
             if teams.count() < 4:
-                can_start = False
+                return False
         players = TournamentPlayer.objects.filter(player__token=1, tournament=self)
         if players.count() != 0:
-            can_start = False
+            return False
 
         # set the proper fields on this tournament which is looked at before creating the underlying round robin ones
         self.players_per_team = self.season_template.players_per_team
         self.save()
 
-        return can_start
+        return True
 
 
     def add_team_to_division(self, request):
