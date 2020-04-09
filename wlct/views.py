@@ -575,9 +575,8 @@ def tournament_display_view(request, id):
 
 def tournament_invite_players(request):
     context = {'success': 'false'}
-    print("Invite Request: {}".format(request))
+    print("Invite Request: {}".format(request.POST))
     if request.method == 'POST' and is_player_token_valid(request):
-        print("Valid POST method and token")
         try:
             tournament = find_tournament_by_id(request.POST['tournamentid'], True)
             if tournament:
