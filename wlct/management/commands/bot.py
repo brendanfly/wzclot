@@ -93,16 +93,7 @@ class WZBot(commands.AutoShardedBot):
                     self.clot_server = guild
                 for channel in guild.channels:
                     if channel.name == "real-time-ladder" or channel.name == "real_time_ladder":
-                        # create a channel -> tournament link if one does not exist already
-                        print("Caching RTL channel link in guild: {}".format(guild.name))
-                        tournament = get_real_time_ladder(109)
-                        if tournament:
-                            print("Found RTL tournament: {}".format(tournament.name))
-                            channel_link = DiscordChannelTournamentLink.objects.filter(channelid=channel.id, tournament=tournament)
-                            if not channel_link or (channel_link and channel_link.count() == 0):
-                                channel_link = DiscordChannelTournamentLink(channelid=channel.id, tournament=tournament)
-                                channel_link.save()
-                                print("Creating RTL channel link in guild: {}".format(guild.name))
+                        print("Found RTL Channel in guild: {}".format(guild.name))
                     elif channel.name == "monthly-template-circuit" or channel.name == "monthly_template_circuit":
                         print("Caching MTC channel in guild: {}".format(guild.name))
                         self.mtc_channels.append(channel)
