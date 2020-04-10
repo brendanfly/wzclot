@@ -77,7 +77,7 @@ class Ladders(commands.Cog, name="ladders"):
         elif cmd == "-ta":
             if option != "invalid_option":
                 # check to make sure the author has access here
-                if is_admin(ctx.message.author.id):
+                if is_tournament_creator(ctx.message.author.id, ladder):
                     log_bot_msg("User {} has added template with id: {}".format(ctx.message.author.name, option))
                     retStr = ladder.add_template(option)
             else:
