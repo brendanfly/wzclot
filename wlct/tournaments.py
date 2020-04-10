@@ -444,7 +444,7 @@ class Tournament(models.Model):
 
     def create_game_with_template_and_data(self, tournament_round, game, tid, extra_data):
         if not self.game_creation_allowed:
-            log_tournament("Game creation is now allowed. Returning...", self)
+            log_tournament("Game creation is not allowed. Returning...", self)
             return  # don't actually create the games but allow the logging for each tournament to go through
 
         # create the game
@@ -2304,8 +2304,6 @@ class RoundRobinTournament(Tournament):
 
             team_game_data[team1].append(team2)
             team_game_data[team2].append(team1)
-            log_tournament("Before RR loop: Current games for {}: {}".format(team1, len(team_game_data[team1])), self)
-            log_tournament("Before RR loop: Current games for {}: {}".format(team2, len(team_game_data[team2])), self)
 
         # we need to remove all matchups from our list that cannot happen again
         # finished or in progress both count here
