@@ -145,6 +145,8 @@ class Ladders(commands.Cog, name="ladders"):
         processed_channels = []
         for rtl_channel in self.bot.rtl_channels:
             if rtl_channel.id in processed_channels:
+                log_bot_msg(
+                    "Found duplicate cached RTL guild with id {} for original msg id {}".format(guild_original_msg.guild.id, guild_original_msg.id))
                 continue
             processed_channels.append(rtl_channel.id)
             log_bot_msg("Server id to send RTL message to: {}, server original message with msg id {} came from: {}".format(rtl_channel.guild.id,  guild_original_msg.id, guild_original_msg.guild.id))

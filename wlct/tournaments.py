@@ -876,6 +876,11 @@ class Tournament(models.Model):
                                     game.game_boot_time = boot_time.replace(tzinfo=pytz.UTC)
                                     game.save()
 
+                                    # Check if loser has been assigned first
+                                    if len(teams_lost) and player_to_use.team.id not in teams_lost and len(teams_won) == 0:
+                                        teams_won.append(player_to_use.team.id)
+                                        processGameLog += "\nTeam {} won due to team {} already losing ".format(player_to_use.team.id, teams_lost[0])
+
                                     processGameLog += "\nSeconds since created: {}, turn time in minutes: {} ".format(
                                         seconds_since_created, turn_time_in_minutes)
                                     seconds_in_turn = int(float(turn_time_in_minutes)) * 60
@@ -910,7 +915,7 @@ class Tournament(models.Model):
                                                 teams_lost.append(player_to_use.team.id)
                                         else:
                                             # there is already a team that lost, so just give us the win
-                                            if player_to_use.team.id not in teams_won and len(teams_won) == 0:
+                                            if player_to_use.team.id not in teams_lost and len(teams_won) == 0:
                                                 teams_won.append(player_to_use.team.id)
 
                                         processGameLog += "\n{} failed to join, forcing loss and deleting game ".format(player_to_use.player.name)
