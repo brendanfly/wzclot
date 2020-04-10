@@ -2299,8 +2299,8 @@ class RoundRobinTournament(Tournament):
         team_game_data = defaultdict(list)
         games = TournamentGame.objects.filter(tournament=self, is_finished=False)
         for game in games:
-            team1 = game.teams.split('.')[0]
-            team2 = game.teams.split('.')[1]
+            team1 = int(game.teams.split('.')[0])
+            team2 = int(game.teams.split('.')[1])
 
             team_game_data[team1].append(team2)
             team_game_data[team2].append(team1)
