@@ -2302,15 +2302,6 @@ class RoundRobinTournament(Tournament):
             team1 = game.teams.split('.')[0]
             team2 = game.teams.split('.')[1]
 
-            if team1 not in team_game_data:
-                log_tournament("Before RR loop: Team {} is not in team_game_data, creating empty list.".format(team1),
-                               self)
-                team_game_data[team1] = []
-            if team2 not in team_game_data:
-                log_tournament("Before RR loop: Team {} is not in team_game_data, creating empty list.".format(team2),
-                               self)
-                team_game_data[team2] = []
-
             team_game_data[team1].append(team2)
             team_game_data[team2].append(team1)
             log_tournament("Before RR loop: Current games for {}: {}".format(team1, len(team_game_data[team1])), self)
