@@ -115,7 +115,6 @@ class LogManager():
         self.type = type
 
     def prune_keep_last_impl(self, logs, log_end):
-        print("Log end time to delete prior: {}, Type: {}".format(log_end, self.type))
         current_log = 0
         if logs:
             for l in logs.iterator():

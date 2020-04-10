@@ -2320,8 +2320,7 @@ class RoundRobinTournament(Tournament):
         # lookup the round for the round robin tournament
         # if there are an odd number of teams in the tournament, give out byes to a different team each round
         log_tournament(
-            "Before grabbing round: Current games team {}: {}, team {}: {}".format(team1, len(team_game_data[team1]), team2,
-                                                                        len(team_game_data[team2])), self)
+            "Before grabbing round team_game_data: {}".format(team_game_data), self)
         games_created = []
         game_data1 = []
         game_data2 = []
