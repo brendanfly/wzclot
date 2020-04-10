@@ -5,6 +5,7 @@ import datetime
 from django.utils import timezone
 from wlct.tournaments import RealTimeLadder, TournamentGame, get_team_data_sameline, get_team_data_no_clan, get_real_time_ladder
 from wlct.models import Engine, Player, DiscordUser, DiscordChannelTournamentLink
+from wlct.logging import log_exception
 import asyncio
 import discord
 import os
@@ -82,35 +83,40 @@ class WZBot(commands.AutoShardedBot):
         return self.embed(self)
 
     async def on_ready(self):
-        print(f'[CONNECT] Logged in as:\n{self.user} (ID: {self.user.id})\n')
+        try:
+            print(f'[CONNECT] Logged in as:\n{self.user} (ID: {self.user.id})\n')
 
-        # cache all the guilds we're in when we login and the real-time-ladder channels
-        for guild in self.guilds:
-            if guild.name == "-B's CLOT":
-                print("Found -B's CLOT, caching...id: {}".format(guild.id))
-                self.clot_server = guild
-            for channel in guild.channels:
-                if channel.name == "real-time-ladder" or channel.name == "real_time_ladder":
-                    # create a channel -> tournament link if one does not exist already
-                    tournament = get_real_time_ladder(109)
-                    if tournament:
-                        channel_link = DiscordChannelTournamentLink.objects.filter(channelid=channel.id, tournament=tournament)
-                        if not channel_link:
-                            channel_link = DiscordChannelTournamentLink(channelid=channel.id, tournament=tournament)
-                            channel_link.save()
-                            print("Creating RTL channel link in guild: {}".format(guild.name))
-                elif channel.name == "monthly-template-circuit" or channel.name == "monthly_template_circuit":
-                    print("Caching MTC channel in guild: {}".format(guild.name))
-                    self.mtc_channels.append(channel)
-                elif channel.name == "clan-league-bot-chat" or channel.name == "clan_league_bot_chat":
-                    print("Caching CL channel in guild: {}".format(guild.name))
-                    self.clan_league_channels.append(channel)
-                elif channel.name == "critical-errors":
-                    print("Caching Critical Error Channel in guild: {}".format(guild.name))
-                    self.critical_error_channels.append(channel)
+            # cache all the guilds we're in when we login and the real-time-ladder channels
+            for guild in self.guilds:
+                if guild.name == "-B's CLOT":
+                    print("Found -B's CLOT, caching...id: {}".format(guild.id))
+                    self.clot_server = guild
+                for channel in guild.channels:
+                    if channel.name == "real-time-ladder" or channel.name == "real_time_ladder":
+                        # create a channel -> tournament link if one does not exist already
+                        print("Caching RTL channel link in guild: {}".format(guild.name))
+                        tournament = get_real_time_ladder(109)
+                        if tournament:
+                            print("Found RTL tournament: {}".format(tournament.name))
+                            channel_link = DiscordChannelTournamentLink.objects.filter(channelid=channel.id, tournament=tournament)
+                            if not channel_link or (channel_link and channel_link.count() == 0):
+                                channel_link = DiscordChannelTournamentLink(channelid=channel.id, tournament=tournament)
+                                channel_link.save()
+                                print("Creating RTL channel link in guild: {}".format(guild.name))
+                    elif channel.name == "monthly-template-circuit" or channel.name == "monthly_template_circuit":
+                        print("Caching MTC channel in guild: {}".format(guild.name))
+                        self.mtc_channels.append(channel)
+                    elif channel.name == "clan-league-bot-chat" or channel.name == "clan_league_bot_chat":
+                        print("Caching CL channel in guild: {}".format(guild.name))
+                        self.clan_league_channels.append(channel)
+                    elif channel.name == "critical-errors":
+                        print("Caching Critical Error Channel in guild: {}".format(guild.name))
+                        self.critical_error_channels.append(channel)
 
-        if not hasattr(self, 'uptime'):
-            self.uptime = timezone.now()
+            if not hasattr(self, 'uptime'):
+                self.uptime = timezone.now()
+        except Exception as e:
+            log_exception()
 
     async def update_progress(self, edit_message, message_text, pct):
         # shows and updates the same message displaying progress for longer running tasks
