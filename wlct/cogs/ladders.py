@@ -1,7 +1,7 @@
 import discord
 from wlct.models import Clan, Player
 from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame
-from wlct.logging import log_exception
+from wlct.logging import log_bot_msg, log_exception
 from discord.ext import commands, tasks
 from wlct.cogs.common import is_admin
 from django.utils import timezone
@@ -38,6 +38,7 @@ class Ladders(commands.Cog, name="ladders"):
             emb.set_footer(text="Bot created and maintained by -B#0292")
             ladder = get_real_time_ladder(109)
             discord_id = ctx.message.author.id
+            log_bot_msg("Processing message from {} with msg id: {}".format(ctx.message.author.name, ctx.message.id))
             if ladder is not None:
                 teams = ladder.get_active_team_count()
                 if arg_cmd == "-p":
@@ -47,18 +48,21 @@ class Ladders(commands.Cog, name="ladders"):
                     retStr = ladder.join_ladder(discord_id, False)
                     current_joined = ladder.get_current_joined()
                     retStr += "\n\n" + current_joined + "\n"
+                    log_bot_msg("User {} has joined the RTL. New team count: {}".format(ctx.message.author.name, teams))
                     if teams != ladder.get_active_team_count():
                         await self.send_ladder_message(current_joined, False, ctx.message)
                 elif arg_cmd == "-jl":
                     retStr = ladder.join_ladder(discord_id, True) + " (You will be removed once a game is created)"
                     current_joined = ladder.get_current_joined()
                     retStr += "\n\n" + current_joined + "\n"
+                    log_bot_msg("User {} has joined the RTL for one game. New Team count: {}".format(ctx.message.author.name, teams))
                     if teams != ladder.get_active_team_count():
                         await self.send_ladder_message(current_joined, False, ctx.message)
                 elif arg_cmd == "-l":
                     retStr = ladder.leave_ladder(discord_id)
                     current_joined = ladder.get_current_joined()
                     retStr += "\n\n" + current_joined + "\n"
+                    log_bot_msg("User {} has left the RTL. New Team count: {}".format(ctx.message.author.name, teams))
                 elif arg_cmd == "-t":
                     retStr = ladder.get_current_templates()
                     do_embed = True
@@ -83,6 +87,7 @@ class Ladders(commands.Cog, name="ladders"):
                 elif arg_cmd == "-v":
                     if arg_cmd2 != "invalid_cmd2":
                         retStr = ladder.veto_template(discord_id, arg_cmd2)
+                        log_bot_msg("User {} has vetoed template with id: {}".format(ctx.message.author.name, arg_cmd2))
                     else:
                         # display the users current veto
                         retStr = ladder.get_current_vetoes(discord_id)
@@ -91,6 +96,8 @@ class Ladders(commands.Cog, name="ladders"):
                         # check to make sure the author has access here
                         if is_admin(ctx.message.author.id):
                             retStr = ladder.add_template(arg_cmd2)
+                            log_bot_msg(
+                                "User {} has added template with id: {}".format(ctx.message.author.name, arg_cmd2))
                     else:
                         retStr = invalid_cmd_text
                 elif arg_cmd == "-tr":
@@ -98,6 +105,8 @@ class Ladders(commands.Cog, name="ladders"):
                         # check for access
                         if is_admin(ctx.message.author.id):
                             retStr = ladder.remove_template(arg_cmd2)
+                            log_bot_msg(
+                                "User {} has removed template with id: {}".format(ctx.message.author.name, arg_cmd2))
                     else:
                         retStr = invalid_cmd_text
                 elif arg_cmd == "-me":
@@ -133,8 +142,14 @@ class Ladders(commands.Cog, name="ladders"):
     '''
     async def send_ladder_message(self, msg, is_embed, guild_original_msg):
         # loop through all rtl channels sending the appropriate message
+        processed_channels = []
         for rtl_channel in self.bot.rtl_channels:
-            print("Server id to send message to: {}, server original message came from: {}".format(rtl_channel.guild.id, guild_original_msg.guild.id))
+            if rtl_channel.id in processed_channels:
+                log_bot_msg(
+                    "Found duplicate cached RTL guild with id {} for original msg id {}".format(guild_original_msg.guild.id, guild_original_msg.id))
+                continue
+            processed_channels.append(rtl_channel.id)
+            log_bot_msg("Server id to send RTL message to: {}, server original message with msg id {} came from: {}".format(rtl_channel.guild.id,  guild_original_msg.id, guild_original_msg.guild.id))
             if rtl_channel.guild.id == guild_original_msg.guild.id:
                 # skip this one, it came from here
                 continue

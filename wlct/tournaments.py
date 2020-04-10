@@ -699,6 +699,16 @@ class Tournament(models.Model):
 
         return table
 
+    def is_player_on_vacation(self, player):
+        api = API()
+        apirequest = api.api_validate_invite_token(player.token)
+        apirequestJson = apirequest.json()
+        log("IsPlayerOnVacation: {}".format(apirequestJson), LogLevel.informational)
+        if 'onVacationUntil' in apirequestJson:
+            return True
+
+        return False
+
     def is_team_on_vacation(self, team):
         players = TournamentPlayer.objects.filter(team=team)
         api = API()
@@ -834,16 +844,16 @@ class Tournament(models.Model):
                                     if len(teams_lost) == 0:
                                         if player_to_use.team.id not in teams_lost:
                                             teams_lost.append(player_to_use.team.id)
-                                            processGameLog += "\n{} declined game".format(player_to_use.player.name)
+                                            processGameLog += "\n{} declined game".format(player[0].name)
                                     else:
-                                        if player_to_use.team.id not in teams_won and len(teams_won) == 0:
+                                        if player_to_use.team.id not in teams_lost and len(teams_won) == 0:
                                             teams_won.append(player_to_use.team.id)
                                             processGameLog += "\nGame never started, but team {} won ".format(player_to_use.team.id)
 
                                     # regardless of who won/lost, delete the game, we still have the data in memory
                                     # so this is ok
                                     processGameLog += "\n{} failed to join (DECLINED), forcing loss and deleting game ".format(
-                                        player_to_use.player.name)
+                                        player[0].name)
 
                                     # delete the game
                                     if 'id' in game_status:
@@ -875,7 +885,10 @@ class Tournament(models.Model):
                                     game.game_boot_time = boot_time.replace(tzinfo=pytz.UTC)
                                     game.save()
 
-                                    team_on_vacation = self.is_team_on_vacation(player_to_use.team)
+                                    # Check if loser has been assigned first
+                                    if len(teams_lost) and player_to_use.team.id not in teams_lost and len(teams_won) == 0:
+                                        teams_won.append(player_to_use.team.id)
+                                        processGameLog += "\nTeam {} won due to team {} already losing ".format(player_to_use.team.id, teams_lost[0])
 
                                     processGameLog += "\nSeconds since created: {}, turn time in minutes: {} ".format(
                                         seconds_since_created, turn_time_in_minutes)
@@ -886,13 +899,13 @@ class Tournament(models.Model):
                                         # and if they are on vacation, then do not give them the lost
                                         # mark this game as is_finished=False so it gets looked at again
                                         # and continue on
-                                        team_on_vacation = self.is_team_on_vacation(player_to_use.team)
-                                        processGameLog += "\nTeam {} is on vacation: {}.".format(player_to_use.team.id, team_on_vacation)
-                                        if team_on_vacation and self.are_vacations_supported():
+                                        player_on_vacation = self.is_player_on_vacation(player[0])
+                                        processGameLog += "\nPlayer {} is on vacation: {}.".format(player[0].name, player_on_vacation)
+                                        if player_on_vacation and self.are_vacations_supported():
                                             # continue on case, no result for the game yet
                                             # do we have an interval in which we force a loss (i.e. clan league is 10 days without joining)
                                             if self.has_force_vacation_interval():
-                                                processGameLog += "\nForce Vacation Hard Interval: Team {} is on vacation due to player {} so the game should not start".format(player_to_use.team.id, player_to_use.player.name)
+                                                processGameLog += "\nForce Vacation Hard Interval: Team {} is on vacation due to player {} so the game should not start".format(player_to_use.team.id, player[0].name)
                                                 seconds_since_created = int(td.total_seconds())
                                                 seconds_to_wait = 60*60*24*self.vacation_force_interval
                                                 if seconds_since_created < seconds_to_wait:  # # of days
@@ -911,7 +924,7 @@ class Tournament(models.Model):
                                                 teams_lost.append(player_to_use.team.id)
                                         else:
                                             # there is already a team that lost, so just give us the win
-                                            if player_to_use.team.id not in teams_won and len(teams_won) == 0:
+                                            if player_to_use.team.id not in teams_lost and len(teams_won) == 0:
                                                 teams_won.append(player_to_use.team.id)
 
                                         processGameLog += "\n{} failed to join, forcing loss and deleting game ".format(player_to_use.player.name)
