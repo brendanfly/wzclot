@@ -173,7 +173,9 @@ class Ladders(commands.Cog, name="ladders"):
     async def send_ladder_message(self, msg, ladder, is_embed, guild_original_msg):
         # loop through all rtl linked channels sending the appropriate message to all servers
         processed_channels = []
-        channels = DiscordChannelTournamentLink.objects.filter(channelid=guild_original_msg.channel.id, tournament=ladder)
+        channels = DiscordChannelTournamentLink.objects.filter(tournament=ladder)
+        if channels:
+            log_bot_msg("Found {} channels to send RTL messages to.".format(channels.count()))
         for rtl_channel in channels:
             channel = self.bot.get_channel(rtl_channel.channelid)
             if rtl_channel.id in processed_channels:
