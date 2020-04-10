@@ -188,6 +188,7 @@ def tournament_engine():
             engine.next_run_time = timezone.now() + datetime.timedelta(seconds=get_run_time())
             engine.save()
 
+        print("Process Games Starting...")
         # bulk of the logic, we handle all types of tournaments separately here
         # there must be logic for each tournament type, as the child class contains
         # the logic
@@ -200,6 +201,8 @@ def tournament_engine():
         total_run_time = (finished_time - engine.last_run_time).total_seconds()
         log("Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time, total_run_time, next_run),
             LogLevel.engine)
+        print("Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time,
+                                                                                              total_run_time, next_run))
         engine.last_run_time = finished_time
         engine.next_run_time = next_run
         engine.save()
