@@ -114,47 +114,59 @@ class LogManager():
         self.kwargs = kwargs
         self.type = type
 
-    # prunes the logs but removes all logs prior to the delta passed in
-    # Ex.
-    # kwargs['hours'] = 12 (prune all logs before 12 hours prior to the last log)
-    # kwargs['days'] = 1 (prune all logs before 1 day prior to the last log)
-    def prune_keep_last(self, **kwargs):
-        print("Removing logs from finished items")
-        logs = None
-        log_end = "No log end"
-        start = datetime.datetime.utcnow()
-        if self.type == LogLevel.tournament:
-            logs = TournamentLog.objects.filter(**self.kwargs).order_by('-pk')
-            if logs:
-                log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
-        if self.type == LogLevel.game:
-            logs = TournamentGameLog.objects.filter(**self.kwargs).order_by('-pk')
-            if logs:
-                log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
-        if self.type == LogLevel.game_status:
-            logs = TournamentGameStatusLog.objects.filter(**self.kwargs).order_by('-pk')
-            if logs:
-                log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
-        if self.type == LogLevel.process_game:
-            logs = ProcessGameLog.objects.filter(**self.kwargs).order_by('-pk')
-            if logs:
-                log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
-        if self.type == LogLevel.process_new_games:
-            logs = ProcessNewGamesLog.objects.filter(**self.kwargs).order_by('-pk')
-            if logs:
-                log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
-
-        print("Log end time to delete prior: {}".format(log_end))
+    def prune_keep_last_impl(self, logs, log_end):
         current_log = 0
         if logs:
             for l in logs.iterator():
                 if l.timestamp < log_end:
                     if current_log == 0:
-                        print("Removing {} logs 'finished' {} logs older than: {}, first log was {}".format(logs.count(),
+                        log("Removing {} logs 'finished' {} logs older than: {}, first log was {}".format(logs.count(),
                                                                                                         self.type, log_end,
-                                                                                                        l.timestamp))
+                                                                                                        l.timestamp), LogLevel.clean_logs)
+                        print("Removing {} logs 'finished' {} logs older than: {}, first log was {}".format(logs.count(),
+                                                                                                          self.type,
+                                                                                                          log_end,
+                                                                                                          l.timestamp))
                     current_log += 1
                     l.delete()
+
+    # prunes the logs but removes all logs prior to the delta passed in
+    # Ex.
+    # kwargs['hours'] = 12 (prune all logs before 12 hours prior to the last log)
+    # kwargs['days'] = 1 (prune all logs before 1 day prior to the last log)
+    def prune_keep_last(self, iterator, **kwargs):
+        print("Removing logs from finished items")
+        start = datetime.datetime.utcnow()
+        if self.type == LogLevel.tournament:
+            for obj in iterator:
+                logs = TournamentLog.objects.filter(tournament=obj, **self.kwargs).order_by('-timestamp')
+                if logs:
+                    log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
+                    self.prune_keep_last_impl(logs, log_end)
+        if self.type == LogLevel.game:
+            for obj in iterator:
+                logs = TournamentGameLog.objects.filter(game=obj, **self.kwargs).order_by('-timestamp')
+                if logs:
+                    log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
+                    self.prune_keep_last_impl(logs, log_end)
+        if self.type == LogLevel.game_status:
+            for obj in iterator:
+                logs = TournamentGameStatusLog.objects.filter(game=obj, **self.kwargs).order_by('-timestamp')
+                if logs:
+                    log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
+                    self.prune_keep_last_impl(logs, log_end)
+        if self.type == LogLevel.process_game:
+            for obj in iterator:
+                logs = ProcessGameLog.objects.filter(game=obj, **self.kwargs).order_by('-timestamp')
+                if logs:
+                    log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
+                    self.prune_keep_last_impl(logs, log_end)
+        if self.type == LogLevel.process_new_games:
+            for obj in iterator:
+                logs = ProcessNewGamesLog.objects.filter(tournament=obj, **self.kwargs).order_by('-timestamp')
+                if logs:
+                    log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
+                    self.prune_keep_last_impl(logs, log_end)
         time_spent = datetime.datetime.utcnow() - start
         log("Spent {} seconds prune_keep_last logs.".format(time_spent.total_seconds()), LogLevel.clean_logs)
 

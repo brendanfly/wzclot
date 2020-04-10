@@ -141,10 +141,12 @@ def cleanup_logs():
     for log_type, value in vars(LogLevel).items():
         if not log_type.startswith('__'):
             if value == LogLevel.process_game or value == LogLevel.game or value == LogLevel.game_status:
-                LogManager(value, game__is_finished=True).prune_keep_last(hours=12)
+                games = TournamentGame.objects.filter(is_finished=True)
+                LogManager(value, game__is_finished=True).prune_keep_last(games, hours=12)
                 LogManager(value, timestamp__lt=enddate, game__is_finished=False).prune()
             elif value == LogLevel.tournament or value == LogLevel.process_new_games:
-                LogManager(value, tournament__is_finished=True).prune_keep_last(hours=12)
+                tournaments = Tournament.objects.filter(is_finished=True)
+                LogManager(value, tournament__is_finished=True).prune_keep_last(tournaments, hours=12)
                 LogManager(value, timestamp__lt=enddate, tournament__is_finished=False).prune()
             else:  # generic logging runtime cases
                 LogManager(value, timestamp__lt=enddate, level=value).prune()
@@ -186,6 +188,7 @@ def tournament_engine():
             engine.next_run_time = timezone.now() + datetime.timedelta(seconds=get_run_time())
             engine.save()
 
+        print("Process Games Starting...")
         # bulk of the logic, we handle all types of tournaments separately here
         # there must be logic for each tournament type, as the child class contains
         # the logic
@@ -198,6 +201,8 @@ def tournament_engine():
         total_run_time = (finished_time - engine.last_run_time).total_seconds()
         log("Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time, total_run_time, next_run),
             LogLevel.engine)
+        print("Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time,
+                                                                                              total_run_time, next_run))
         engine.last_run_time = finished_time
         engine.next_run_time = next_run
         engine.save()

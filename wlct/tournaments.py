@@ -444,6 +444,7 @@ class Tournament(models.Model):
 
     def create_game_with_template_and_data(self, tournament_round, game, tid, extra_data):
         if not self.game_creation_allowed:
+            log_tournament("Game creation is not allowed. Returning...", self)
             return  # don't actually create the games but allow the logging for each tournament to go through
 
         # create the game
@@ -603,7 +604,7 @@ class Tournament(models.Model):
 
 
     def get_template_settings_dict(self):
-        if self.template_settings is not None:
+        if self.template_settings is not None and len(self.template_settings) > 0:
             try:
                 settings_dict = json.loads('''{}'''.format(self.template_settings))
                 return settings_dict
@@ -697,6 +698,16 @@ class Tournament(models.Model):
             table += "</table>"
 
         return table
+
+    def is_player_on_vacation(self, player):
+        api = API()
+        apirequest = api.api_validate_invite_token(player.token)
+        apirequestJson = apirequest.json()
+        log("IsPlayerOnVacation: {}".format(apirequestJson), LogLevel.informational)
+        if 'onVacationUntil' in apirequestJson:
+            return True
+
+        return False
 
     def is_team_on_vacation(self, team):
         players = TournamentPlayer.objects.filter(team=team)
@@ -833,16 +844,16 @@ class Tournament(models.Model):
                                     if len(teams_lost) == 0:
                                         if player_to_use.team.id not in teams_lost:
                                             teams_lost.append(player_to_use.team.id)
-                                            processGameLog += "\n{} declined game".format(player_to_use.player.name)
+                                            processGameLog += "\n{} declined game".format(player[0].name)
                                     else:
-                                        if player_to_use.team.id not in teams_won and len(teams_won) == 0:
+                                        if player_to_use.team.id not in teams_lost and len(teams_won) == 0:
                                             teams_won.append(player_to_use.team.id)
                                             processGameLog += "\nGame never started, but team {} won ".format(player_to_use.team.id)
 
                                     # regardless of who won/lost, delete the game, we still have the data in memory
                                     # so this is ok
                                     processGameLog += "\n{} failed to join (DECLINED), forcing loss and deleting game ".format(
-                                        player_to_use.player.name)
+                                        player[0].name)
 
                                     # delete the game
                                     if 'id' in game_status:
@@ -874,7 +885,10 @@ class Tournament(models.Model):
                                     game.game_boot_time = boot_time.replace(tzinfo=pytz.UTC)
                                     game.save()
 
-                                    team_on_vacation = self.is_team_on_vacation(player_to_use.team)
+                                    # Check if loser has been assigned first
+                                    if len(teams_lost) and player_to_use.team.id not in teams_lost and len(teams_won) == 0:
+                                        teams_won.append(player_to_use.team.id)
+                                        processGameLog += "\nTeam {} won due to team {} already losing ".format(player_to_use.team.id, teams_lost[0])
 
                                     processGameLog += "\nSeconds since created: {}, turn time in minutes: {} ".format(
                                         seconds_since_created, turn_time_in_minutes)
@@ -885,13 +899,13 @@ class Tournament(models.Model):
                                         # and if they are on vacation, then do not give them the lost
                                         # mark this game as is_finished=False so it gets looked at again
                                         # and continue on
-                                        team_on_vacation = self.is_team_on_vacation(player_to_use.team)
-                                        processGameLog += "\nTeam {} is on vacation: {}.".format(player_to_use.team.id, team_on_vacation)
-                                        if team_on_vacation and self.are_vacations_supported():
+                                        player_on_vacation = self.is_player_on_vacation(player[0])
+                                        processGameLog += "\nPlayer {} is on vacation: {}.".format(player[0].name, player_on_vacation)
+                                        if player_on_vacation and self.are_vacations_supported():
                                             # continue on case, no result for the game yet
                                             # do we have an interval in which we force a loss (i.e. clan league is 10 days without joining)
                                             if self.has_force_vacation_interval():
-                                                processGameLog += "\nForce Vacation Hard Interval: Team {} is on vacation due to player {} so the game should not start".format(player_to_use.team.id, player_to_use.player.name)
+                                                processGameLog += "\nForce Vacation Hard Interval: Team {} is on vacation due to player {} so the game should not start".format(player_to_use.team.id, player[0].name)
                                                 seconds_since_created = int(td.total_seconds())
                                                 seconds_to_wait = 60*60*24*self.vacation_force_interval
                                                 if seconds_since_created < seconds_to_wait:  # # of days
@@ -910,7 +924,7 @@ class Tournament(models.Model):
                                                 teams_lost.append(player_to_use.team.id)
                                         else:
                                             # there is already a team that lost, so just give us the win
-                                            if player_to_use.team.id not in teams_won and len(teams_won) == 0:
+                                            if player_to_use.team.id not in teams_lost and len(teams_won) == 0:
                                                 teams_won.append(player_to_use.team.id)
 
                                         processGameLog += "\n{} failed to join, forcing loss and deleting game ".format(player_to_use.player.name)
@@ -2285,17 +2299,11 @@ class RoundRobinTournament(Tournament):
         team_game_data = defaultdict(list)
         games = TournamentGame.objects.filter(tournament=self, is_finished=False)
         for game in games:
-            team1 = game.teams.split('.')[0]
-            team2 = game.teams.split('.')[1]
-
-            if team1 not in team_game_data:
-                team_game_data[team1] = []
-            if team2 not in team_game_data:
-                team_game_data[team2] = []
+            team1 = int(game.teams.split('.')[0])
+            team2 = int(game.teams.split('.')[1])
 
             team_game_data[team1].append(team2)
             team_game_data[team2].append(team1)
-
 
         # we need to remove all matchups from our list that cannot happen again
         # finished or in progress both count here
@@ -2317,13 +2325,11 @@ class RoundRobinTournament(Tournament):
         log_tournament("Possible matchups in RR: {}".format(possible_matchups), self)
         # lookup the round for the round robin tournament
         # if there are an odd number of teams in the tournament, give out byes to a different team each round
-        has_given_bye = False
-        bye_team = 0
+        log_tournament(
+            "Before grabbing round team_game_data: {}".format(team_game_data), self)
         games_created = []
         game_data1 = []
         game_data2 = []
-        iterations = 1
-        current_iteration = 0
         round = TournamentRound.objects.filter(tournament=self, round_number=1)
         # while current_iteration < iterations and iterations < 50:
         for matchup in possible_matchups:
@@ -2349,7 +2355,6 @@ class RoundRobinTournament(Tournament):
                     game_data2.append(team2)
                     log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
 
-        #current_iteration += 1
         log_tournament("Teams with games created so far: {}, teams in division: {}, byes: {}".format(len(games_created), self.number_teams, self.uses_byes()), self)
         if self.uses_byes():
             # we always try to create the games as sometimes there will not be a fixed # due to the way byes
@@ -3330,25 +3335,24 @@ class PromotionalRelegationLeagueSeason(Tournament):
     @property
     def can_start_tourney(self):
         # we must have exactly 1 template and atleast 1 division, all divisions must have at least 4 teams
-        can_start = True
         if self.season_template is None:
-            can_start = False
+            return False
         divisions = ClanLeagueDivision.objects.filter(pr_season=self)
         if divisions.count() == 0:
-            can_start = False
+            return False
         for div in divisions:
             teams = TournamentTeam.objects.filter(tournament=self, clan_league_division=div)
             if teams.count() < 4:
-                can_start = False
+                return False
         players = TournamentPlayer.objects.filter(player__token=1, tournament=self)
         if players.count() != 0:
-            can_start = False
+            return False
 
         # set the proper fields on this tournament which is looked at before creating the underlying round robin ones
         self.players_per_team = self.season_template.players_per_team
         self.save()
 
-        return can_start
+        return True
 
 
     def add_team_to_division(self, request):
