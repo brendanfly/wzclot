@@ -168,10 +168,6 @@ class Tasks(commands.Cog, name="tasks"):
             child_tournament = find_tournament_by_id(tournament.id, True)
             if child_tournament and not child_tournament.should_process_in_engine():
                 try:
-                    if child_tournament.update_in_progress:
-                        continue
-                    elif not child_tournament.game_creation_allowed:
-                        continue
                     child_tournament.update_in_progress = True
                     child_tournament.save()
                     games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)

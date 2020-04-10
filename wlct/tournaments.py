@@ -338,7 +338,7 @@ def find_tournament_public(id):
 
 class Tournament(models.Model):
     name = models.CharField(max_length=128, null=True)
-    description = models.CharField(max_length=2000, null=True)
+    description = models.CharField(max_length=2000, null=True, blank=True)
     number_players = models.IntegerField(default=-1)
     teams_per_game = models.IntegerField(default=-1)
     template = models.IntegerField(default=-1)
@@ -353,7 +353,7 @@ class Tournament(models.Model):
     host_sets_tourney = models.BooleanField(default=False)
     start_locked = models.BooleanField(default=False)  # used by tournament that are locked to join, but haven't started
     max_players = models.IntegerField(default=-1)
-    template_settings = models.TextField()
+    template_settings = models.TextField(default="", null=True, blank=True)
     multi_day = models.BooleanField(default=False)
     winning_team = models.ForeignKey('TournamentTeam', on_delete=models.DO_NOTHING, null=True, related_name='winning_team', blank=True)
     update_in_progress = models.BooleanField(default=False)
@@ -443,6 +443,10 @@ class Tournament(models.Model):
         self.save()
 
     def create_game_with_template_and_data(self, tournament_round, game, tid, extra_data):
+        if not self.game_creation_allowed:
+            log_tournament("Game creation is now allowed. Returning...", self)
+            return  # don't actually create the games but allow the logging for each tournament to go through
+
         # create the game
         api = API()
         data = {}
@@ -507,12 +511,17 @@ class Tournament(models.Model):
                                                                                             game, gameID,
                                                                                             tournament_round.round_number),
                 self, tournament_game)
+
+            self.post_create_games()
             return tournament_game
         else:
             # not good, error, TODO: Log???
             print("Error in creating game: {}".format(gameInfo))
             log("Error in creating tournament game response {}:, data: {}".format(gameInfo, data), LogLevel.critical)
             return None
+
+    def post_create_games(self):
+        pass
 
     def create_game(self, tournament_round, game):
         self.create_game_with_template_and_data(tournament_round, game, self.template, None)
@@ -595,7 +604,7 @@ class Tournament(models.Model):
 
 
     def get_template_settings_dict(self):
-        if self.template_settings is not None:
+        if self.template_settings is not None and len(self.template_settings) > 0:
             try:
                 settings_dict = json.loads('''{}'''.format(self.template_settings))
                 return settings_dict
@@ -2300,7 +2309,8 @@ class RoundRobinTournament(Tournament):
 
             team_game_data[team1].append(team2)
             team_game_data[team2].append(team1)
-
+            log_tournament("Before RR loop: Current games for {}: {}".format(team1, len(team_game_data[team1])), self)
+            log_tournament("Before RR loop: Current games for {}: {}".format(team2, len(team_game_data[team2])), self)
 
         # we need to remove all matchups from our list that cannot happen again
         # finished or in progress both count here
@@ -2322,13 +2332,9 @@ class RoundRobinTournament(Tournament):
         log_tournament("Possible matchups in RR: {}".format(possible_matchups), self)
         # lookup the round for the round robin tournament
         # if there are an odd number of teams in the tournament, give out byes to a different team each round
-        has_given_bye = False
-        bye_team = 0
         games_created = []
         game_data1 = []
         game_data2 = []
-        iterations = 1
-        current_iteration = 0
         round = TournamentRound.objects.filter(tournament=self, round_number=1)
         # while current_iteration < iterations and iterations < 50:
         for matchup in possible_matchups:
@@ -2354,7 +2360,6 @@ class RoundRobinTournament(Tournament):
                     game_data2.append(team2)
                     log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
 
-        #current_iteration += 1
         log_tournament("Teams with games created so far: {}, teams in division: {}, byes: {}".format(len(games_created), self.number_teams, self.uses_byes()), self)
         if self.uses_byes():
             # we always try to create the games as sometimes there will not be a fixed # due to the way byes
@@ -2363,9 +2368,6 @@ class RoundRobinTournament(Tournament):
         else:
             self.create_games(game_data1, game_data2, round[0])
 
-    def post_create_games(self):
-        pass
-
     def create_games(self, game_data1, game_data2, round):
         # we have reached the point where we have enough games to create...create them, whatever we have
         for i in range(0, len(game_data1)):
@@ -2373,9 +2375,7 @@ class RoundRobinTournament(Tournament):
                 "Creating Round Robin game for tournament {} between {}  and {}".format(self.id, game_data1[i], game_data2[i]),
                 self)
             game_data = "{}.{}".format(game_data1[i], game_data2[i])
-            #self.create_game(round, game_data)
-
-        self.post_create_games()
+            self.create_game(round, game_data)
 
     def start(self):
         # start the round robin tournament
@@ -3170,7 +3170,7 @@ class MonthlyTemplateRotation(Tournament):
         game_log += '<th>Link</th><th>Matchup</th><th>Winner</th></tr></thead><tbody>'
 
         games_output = []
-        tournament_game_entries = TournamentGameEntry.objects.filter(is_finished=True, tournament=self).order_by('-created_date')
+        tournament_game_entries = TournamentGameEntry.objects.filter(tournament=self).order_by('-created_date')
         for entry in tournament_game_entries:
             if entry.game.id in games_output:
                 continue
@@ -3296,6 +3296,7 @@ class PromotionalRelegationLeagueSeason(Tournament):
                 team.save()
             tournament.start()
 
+        self.game_creation_allowed = True
         self.has_started = True
         self.save()
 
@@ -3518,7 +3519,6 @@ class PromotionalRelegationLeagueSeason(Tournament):
                 if players:
                     self.numbers_players = players.count()
                 # the creator will get to assign players to these team slots now
-                # so we can go ahead and mark us as "ClanLeague.started=True" and let the site handle this properly.
                 self.game_creation_allowed = False
                 self.save()
                 return division
@@ -3748,7 +3748,7 @@ class ClanLeagueDivision(models.Model):
                     division_data += '{}'.format(get_tournament_player_data(player))
                     if editable:
                         division_data += '<a href="javascript:void(0);" class="badge badge-info invite_players" data-player="{}">Change Player</a>&nbsp;'.format(player.id)
-                if current_team > 4:
+                if current_team > 4 and editable:
                     division_data += '<a href="javascript:void(0);" class="badge badge-danger" id="division-remove-team-{}" data-division="{}" data-team="{}">Remove Team</button>'.format(
                         self.id, self.id, t.id)
                 current_team += 1
