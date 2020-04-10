@@ -148,8 +148,8 @@ class Clot(commands.Cog, name="clot"):
                         else:
                             await ctx.send("Please enter a valid game id")
                     elif option == "-png":
-                        if arg:
-                            tournament = Tournament.objects.filter(id=arg)
+                        if arg and arg.isnumeric():
+                            tournament = Tournament.objects.filter(id=int(arg))
                             if tournament:
                                 new_game_logs = ProcessNewGamesLog.objects.filter(tournament=tournament[0]).order_by('-timestamp')[:2]
                                 if new_game_logs:
@@ -160,6 +160,21 @@ class Clot(commands.Cog, name="clot"):
                                 await ctx.send("Unable to find tournament with id: {}. Use ``bb!admin tournaments`` to see ids".format(arg))
                         else:
                             await ctx.send("Please enter a valid tournament id. Use the ``bb!tournaments`` command to see ids")
+                    elif option == "-tt":
+                        if arg and arg.isnumeric():
+                            tt = TournamentTeam.objects.filter(id=int(arg))
+                            if tt:
+                                tt = tt[0]
+                                players = TournamentPlayer.objects.filter(team=tt)
+                                team_name_list = []
+                                for player in players:
+                                    team_name_list.append(player.player.name)
+                                team_str = ", ".join(team_name_list)
+                                await ctx.send("Team {}\n{}\n{}".format(arg, team_str, tt.tournament.name))
+                            else:
+                                await ctx.send("Unable to find team with id: {}".format(arg))
+                        else:
+                            await ctx.send("Please enter a valid tournament team id")
                     else:
                         await ctx.send("Please enter a valid option (-pg or -png)")
                 elif cmd == "mtc":
