@@ -31,20 +31,20 @@ class Ladders(commands.Cog, name="ladders"):
             retStr = ladder.join_ladder(discord_id, False)
             current_joined = ladder.get_current_joined()
             retStr += "\n\n" + current_joined + "\n"
-            log_bot_msg("User {} has joined the RTL. New team count: {}".format(ctx.message.author.name, teams))
+            log_bot_msg("[Ladder {}]: User {} has joined the RTL. New team count: {}".format(ladder.id, ctx.message.author.name, teams))
             if teams != ladder.get_active_team_count():
                 await self.send_ladder_message(current_joined, ladder, False, ctx.message)
         elif cmd == "-jl":
             retStr = ladder.join_ladder(discord_id, True) + " (You will be removed once a game is created)"
             current_joined = ladder.get_current_joined()
             retStr += "\n\n" + current_joined + "\n"
-            log_bot_msg("User {} has joined the RTL for one game. New Team count: {}".format(ctx.message.author.name, teams))
+            log_bot_msg("[Ladder {}]: User {} has joined the RTL for one game. New Team count: {}".format(ladder.id, ctx.message.author.name, teams))
             if teams != ladder.get_active_team_count():
                 await self.send_ladder_message(current_joined, ladder, False, ctx.message)
         elif cmd == "-l":
             retStr = ladder.leave_ladder(discord_id)
             current_joined = ladder.get_current_joined()
-            log_bot_msg("User {} has left the RTL. New Team count: {}".format(ctx.message.author.name, teams))
+            log_bot_msg("[Ladder {}]: User {} has left the RTL. New Team count: {}".format(ladder.id, ctx.message.author.name, teams))
             retStr += "\n\n" + current_joined + "\n"
         elif cmd == "-t":
             retStr = ladder.get_current_templates()
@@ -70,7 +70,7 @@ class Ladders(commands.Cog, name="ladders"):
         elif cmd == "-v":
             if option != "invalid_option":
                 retStr = ladder.veto_template(discord_id, option)
-                log_bot_msg("User {} has vetoed template with id: {}".format(ctx.message.author.name, option))
+                log_bot_msg("[Ladder {}]: User {} has vetoed template with id: {}".format(ladder.id, ctx.message.author.name, option))
             else:
                 # display the users current veto
                 retStr = ladder.get_current_vetoes(discord_id)
@@ -78,7 +78,7 @@ class Ladders(commands.Cog, name="ladders"):
             if option != "invalid_option":
                 # check to make sure the author has access here
                 if is_tournament_creator(ctx.message.author.id, ladder):
-                    log_bot_msg("User {} has added template with id: {}".format(ctx.message.author.name, option))
+                    log_bot_msg("[Ladder {}]: User {} has added template with id: {}".format(ladder.id, ctx.message.author.name, option))
                     retStr = ladder.add_template(option)
             else:
                 retStr = invalid_cmd_text
