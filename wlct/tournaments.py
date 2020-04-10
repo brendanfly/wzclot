@@ -604,7 +604,7 @@ class Tournament(models.Model):
 
 
     def get_template_settings_dict(self):
-        if self.template_settings is not None:
+        if self.template_settings is not None and len(self.template_settings) > 0:
             try:
                 settings_dict = json.loads('''{}'''.format(self.template_settings))
                 return settings_dict
@@ -2319,13 +2319,9 @@ class RoundRobinTournament(Tournament):
         log_tournament("Possible matchups in RR: {}".format(possible_matchups), self)
         # lookup the round for the round robin tournament
         # if there are an odd number of teams in the tournament, give out byes to a different team each round
-        has_given_bye = False
-        bye_team = 0
         games_created = []
         game_data1 = []
         game_data2 = []
-        iterations = 1
-        current_iteration = 0
         round = TournamentRound.objects.filter(tournament=self, round_number=1)
         # while current_iteration < iterations and iterations < 50:
         for matchup in possible_matchups:
@@ -2351,7 +2347,6 @@ class RoundRobinTournament(Tournament):
                     game_data2.append(team2)
                     log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
 
-        #current_iteration += 1
         log_tournament("Teams with games created so far: {}, teams in division: {}, byes: {}".format(len(games_created), self.number_teams, self.uses_byes()), self)
         if self.uses_byes():
             # we always try to create the games as sometimes there will not be a fixed # due to the way byes

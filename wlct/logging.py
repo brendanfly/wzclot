@@ -124,23 +124,23 @@ class LogManager():
         log_end = "No log end"
         start = datetime.datetime.utcnow()
         if self.type == LogLevel.tournament:
-            logs = TournamentLog.objects.filter(**self.kwargs).order_by('-pk')
+            logs = TournamentLog.objects.filter(**self.kwargs).order_by('-timestamp')
             if logs:
                 log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
         if self.type == LogLevel.game:
-            logs = TournamentGameLog.objects.filter(**self.kwargs).order_by('-pk')
+            logs = TournamentGameLog.objects.filter(**self.kwargs).order_by('-timestamp')
             if logs:
                 log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
         if self.type == LogLevel.game_status:
-            logs = TournamentGameStatusLog.objects.filter(**self.kwargs).order_by('-pk')
+            logs = TournamentGameStatusLog.objects.filter(**self.kwargs).order_by('-timestamp')
             if logs:
                 log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
         if self.type == LogLevel.process_game:
-            logs = ProcessGameLog.objects.filter(**self.kwargs).order_by('-pk')
+            logs = ProcessGameLog.objects.filter(**self.kwargs).order_by('-timestamp')
             if logs:
                 log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
         if self.type == LogLevel.process_new_games:
-            logs = ProcessNewGamesLog.objects.filter(**self.kwargs).order_by('-pk')
+            logs = ProcessNewGamesLog.objects.filter(**self.kwargs).order_by('-timestamp')
             if logs:
                 log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
 
@@ -150,9 +150,13 @@ class LogManager():
             for l in logs.iterator():
                 if l.timestamp < log_end:
                     if current_log == 0:
-                        print("Removing {} logs 'finished' {} logs older than: {}, first log was {}".format(logs.count(),
+                        log("Removing {} logs 'finished' {} logs older than: {}, first log was {}".format(logs.count(),
                                                                                                         self.type, log_end,
-                                                                                                        l.timestamp))
+                                                                                                        l.timestamp), LogLevel.clean_logs)
+                        print("Removing {} logs 'finished' {} logs older than: {}, first log was {}".format(logs.count(),
+                                                                                                          self.type,
+                                                                                                          log_end,
+                                                                                                          l.timestamp))
                     current_log += 1
                     l.delete()
         time_spent = datetime.datetime.utcnow() - start
