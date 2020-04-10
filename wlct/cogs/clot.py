@@ -138,7 +138,7 @@ class Clot(commands.Cog, name="clot"):
                         if arg:
                             game = TournamentGame.objects.filter(gameid=arg)
                             if game:
-                                game_logs = ProcessGameLog.objects.filter(game=game[0]).order_by('-timestamp')
+                                game_logs = ProcessGameLog.objects.filter(game=game[0]).order_by('-timestamp')[:2]
                                 if game_logs:
                                     await self.send_log_message(ctx, "process game", game_logs)
                                 else:
@@ -151,7 +151,7 @@ class Clot(commands.Cog, name="clot"):
                         if arg:
                             tournament = Tournament.objects.filter(id=arg)
                             if tournament:
-                                new_game_logs = ProcessNewGamesLog.objects.filter(tournament=tournament[0]).order_by('-timestamp')
+                                new_game_logs = ProcessNewGamesLog.objects.filter(tournament=tournament[0]).order_by('-timestamp')[:2]
                                 if new_game_logs:
                                     await self.send_log_message(ctx, "process new game", new_game_logs)
                                 else:
@@ -236,7 +236,7 @@ class Clot(commands.Cog, name="clot"):
         if len(logs) == 1:
             ctx.send("One {} log found: [{} UTC]:\n{}".format(log_type, logs[0].timestamp, logs[0].msg[:1900]))
         else:
-            await ctx.send("Last two {} logs:")
+            await ctx.send("Last two {} logs: ".format(log_type))
             for log in logs:
                 await ctx.send("[{} UTC]:\n{}".format(log.timestamp, log.msg[:1900]))
 
