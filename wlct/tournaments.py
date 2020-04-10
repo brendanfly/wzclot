@@ -2319,12 +2319,17 @@ class RoundRobinTournament(Tournament):
         log_tournament("Possible matchups in RR: {}".format(possible_matchups), self)
         # lookup the round for the round robin tournament
         # if there are an odd number of teams in the tournament, give out byes to a different team each round
+        log_tournament(
+            "Before grabbing round: Current games team {}: {}, team {}: {}".format(team1, len(team_game_data[team1]), team2,
+                                                                        len(team_game_data[team2])), self)
         games_created = []
         game_data1 = []
         game_data2 = []
         round = TournamentRound.objects.filter(tournament=self, round_number=1)
         # while current_iteration < iterations and iterations < 50:
         for matchup in possible_matchups:
+            log_tournament("Begin Loop: Current games team {}: {}, team {}: {}".format(team1, len(team_game_data[team1]), team2,
+                                                                           len(team_game_data[team2])), self)
             if round:
                 team1 = matchup[0]
                 team2 = matchup[1]
