@@ -211,7 +211,7 @@ class ClanLeagueTemplateAdmin(admin.ModelAdmin):
 admin.site.register(ClanLeagueTemplate, ClanLeagueTemplateAdmin)
 
 class RealTimeLadderAdmin(admin.ModelAdmin):
-    pass
+    raw_id_fields = ['created_by', 'winning_team']
 
 admin.site.register(RealTimeLadder, RealTimeLadderAdmin)
 
