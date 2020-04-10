@@ -96,7 +96,7 @@ class Ladders(commands.Cog, name="ladders"):
             me_data = ladder.get_player_data(discord_id)
             if me_data[0]:  # success
                 retStr = me_data[1]
-                emb.title = "Ladder Stats".format(ladder.name)
+                emb.title = "{} Ladder Stats".format(ladder.name)
                 emb.add_field(name="Performance", value=retStr)
                 do_embed = True
             else:
