@@ -2327,8 +2327,6 @@ class RoundRobinTournament(Tournament):
         round = TournamentRound.objects.filter(tournament=self, round_number=1)
         # while current_iteration < iterations and iterations < 50:
         for matchup in possible_matchups:
-            log_tournament("Begin Loop: Current games team {}: {}, team {}: {}".format(team1, len(team_game_data[team1]), team2,
-                                                                           len(team_game_data[team2])), self)
             if round:
                 team1 = matchup[0]
                 team2 = matchup[1]
