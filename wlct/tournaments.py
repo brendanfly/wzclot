@@ -4706,7 +4706,7 @@ class RealTimeLadder(Tournament):
             player = Player.objects.get(discord_member__memberid=discord_id)
             tp = TournamentPlayer.objects.get(player=player, tournament=self)
         except ObjectDoesNotExist:
-            return (False, "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+            return (False, "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions. If you are linked to the CLOT you must join the ladder in order to use this command")
 
         if tp:
             data += "Player: {}\nRating: {}\nTotal W-L: {}-{}\n\n".format(get_team_data_no_clan(tp.team), tp.team.rating, tp.team.wins, tp.team.losses)

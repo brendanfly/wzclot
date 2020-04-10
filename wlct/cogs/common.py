@@ -13,6 +13,9 @@ import datetime
 from django.core.paginator import Paginator
 
 def is_tournament_creator(discord_id, tournament):
+    if is_admin(discord_id):
+        return True
+
     player = Player.objects.filter(discord_member__memberid=discord_id)
     if player:
         return player[0].id == tournament.created_by.id

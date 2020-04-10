@@ -113,7 +113,7 @@ class Ladders(commands.Cog, name="ladders"):
 
 
     @commands.command(brief="Hosts a variety of commands for the 1v1 Real-Time Bot Ladder",
-             usage='''
+                   usage='''
                    -j : joins the 1v1 ladder
                    -l : leaves the 1v1 real-time ladder
                    -jl : joins the 1v1 real-time ladder for a single game
@@ -122,7 +122,11 @@ class Ladders(commands.Cog, name="ladders"):
                    -r : displays full ladder rankings
                    -g : displays all in progress games on the 1v1 real-time ladder
                    -v <templateid>: vetoes a template or displays the current one if no template id is passed
-                   -me : displays information about yourself on the ladder
+                   -me : displays information about yourself on the ladder,
+                   
+                   Admin Commands - only creators of the ladder can add/remove templates
+                   -ta <templateid>: adds a template to the ladder
+                   -tr <templateid> : removes a template from the ladder
                    ''')
     async def rtl(self, ctx, cmd="invalid_cmd", option="invalid_option"):
         try:
@@ -145,7 +149,11 @@ class Ladders(commands.Cog, name="ladders"):
                      -r : displays full ladder rankings
                      -g : displays all in progress games on the 1v1 Real-Time INSS ladder
                      -v <templateid>: vetoes a template or displays the current one if no template id is passed
-                     -me : displays information about yourself on the ladder
+                     -me : displays information about yourself on the ladder,
+                     
+                     Admin Commands - only creators of the ladder can add/remove templates
+                     -ta <templateid>: adds a template to the ladder
+                     -tr <templateid> : removes a template from the ladder
                      ''')
     async def rtl_inss(self, ctx, cmd="invalid_cmd", option="invalid_option"):
         try:
