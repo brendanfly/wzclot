@@ -3,8 +3,8 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 import datetime
 from django.utils import timezone
-from wlct.tournaments import RealTimeLadder, TournamentGame, get_team_data_sameline, get_team_data_no_clan
-from wlct.models import Engine, Player, DiscordUser
+from wlct.tournaments import RealTimeLadder, TournamentGame, get_team_data_sameline, get_team_data_no_clan, get_real_time_ladder
+from wlct.models import Engine, Player, DiscordUser, DiscordChannelTournamentLink
 import asyncio
 import discord
 import os
@@ -91,8 +91,14 @@ class WZBot(commands.AutoShardedBot):
                 self.clot_server = guild
             for channel in guild.channels:
                 if channel.name == "real-time-ladder" or channel.name == "real_time_ladder":
-                    print("Caching RTL channel in guild: {}".format(guild.name))
-                    self.rtl_channels.append(channel)
+                    # create a channel -> tournament link if one does not exist already
+                    tournament = get_real_time_ladder(109)
+                    if tournament:
+                        channel_link = DiscordChannelTournamentLink.objects.filter(channelid=channel.id, tournament=tournament)
+                        if not channel_link:
+                            channel_link = DiscordChannelTournamentLink(channelid=channel.id, tournament=tournament)
+                            channel_link.save()
+                            print("Creating RTL channel link in guild: {}".format(guild.name))
                 elif channel.name == "monthly-template-circuit" or channel.name == "monthly_template_circuit":
                     print("Caching MTC channel in guild: {}".format(guild.name))
                     self.mtc_channels.append(channel)
@@ -105,9 +111,6 @@ class WZBot(commands.AutoShardedBot):
 
         if not hasattr(self, 'uptime'):
             self.uptime = timezone.now()
-
-    def get_channel_list(self):
-        return self.rtl_channels
 
     async def update_progress(self, edit_message, message_text, pct):
         # shows and updates the same message displaying progress for longer running tasks
