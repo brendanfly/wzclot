@@ -121,7 +121,8 @@ class Clot(commands.Cog, name="clot"):
 
     @commands.command(brief="Admin commands to manage and debug CLOT",
                       usage='''
-                          bb!admin logs - shows logs
+                          bb!admin logs -pg <gameid> - shows last 2 ProcessGame logs for game
+                          bb!admin logs -png <tournamentid> - shows last 2 ProcessNewGame logs for tournament
                           bb!admin mtc -p - shows current players on the MTC
                           bb!admin mtc -r <player_token> - removes player from MTC using wz token
                           bb!admin rtl -p - shows current players on the RTL
@@ -137,11 +138,11 @@ class Clot(commands.Cog, name="clot"):
                         if arg:
                             game = TournamentGame.objects.filter(gameid=arg)
                             if game:
-                                game_logs = ProcessGameLog.objects.filter(game=game[0]).order_by('timestamp')[-2]
-                                game_log_data = "Last two process game log messages:\n\n"
-                                for log in game_logs:
-                                    game_log_data += "{}\n\n".format(log)
-                                await ctx.send(game_log_data)
+                                game_logs = ProcessGameLog.objects.filter(game=game[0]).order_by('-timestamp')[2].reverse()
+                                if game_logs:
+                                    await self.send_log_message(ctx, "process game", game_logs)
+                                else:
+                                    await ctx.send("No process game logs were found with that game id")
                             else:
                                 await ctx.send("Unable to find game with id: {}".format(arg))
                         else:
@@ -150,15 +151,15 @@ class Clot(commands.Cog, name="clot"):
                         if arg:
                             tournament = Tournament.objects.filter(id=arg)
                             if tournament:
-                                new_game_logs = ProcessNewGamesLog.objects.filter(tournament=tournament).order_by('timestamp')[-2]
-                                new_game_log_data = "Last two process game log messages:\n\n"
-                                for log in new_game_logs:
-                                    new_game_log_data += "{}\n\n".format(log)
-                                await ctx.send(new_game_log_data)
+                                new_game_logs = ProcessNewGamesLog.objects.filter(tournament=tournament).order_by('-timestamp')
+                                if new_game_logs:
+                                    await self.send_log_message(ctx, "process new game", new_game_logs)
+                                else:
+                                    await ctx.send("No process new game logs were found with that tournament id")
                             else:
                                 await ctx.send("Unable to find tournament with id: {}. Use ``bb!admin tournaments`` to see ids".format(arg))
                         else:
-                            await ctx.send("Please enter a valid tournament id. Use ``bb!admin tournaments`` to see ids")
+                            await ctx.send("Please enter a valid tournament id. Use the ``bb!tournaments`` command to see ids")
                     else:
                         await ctx.send("Please enter a valid option (-pg or -png)")
                 elif cmd == "mtc":
@@ -226,6 +227,18 @@ class Clot(commands.Cog, name="clot"):
         except:
             log_exception()
             await ctx.send("An error has occurred and was unable to process the command.")
+
+    '''
+    Sends messages containing logs to the channel that the admin used to invoke the command.
+    '''
+    @staticmethod
+    async def send_log_message(ctx, log_type, logs):
+        if len(logs) == 1:
+            ctx.send("One {} log found: [{} UTC]:\n{}".format(log_type, logs[0].timestamp, logs[0].msg[:1900]))
+        else:
+            await ctx.send("Last two {} logs:")
+            for log in logs:
+                await ctx.send("[{} UTC]:\n{}".format(log.timestamp, log.msg[:1900]))
 
     @commands.command(
         brief="Links a channel on your server to CL division tournaments on the CLOT. You must be the tournament creator to succesfully link the tournament.",
@@ -482,6 +495,9 @@ class Clot(commands.Cog, name="clot"):
             divisions = ClanLeagueDivision.objects.filter(league=cl).order_by('title')
 
             for division in divisions:
+                if len(division_data) > 1500:
+                    await ctx.send(division_data)
+                    division_data = ""
                 division_data += "{} | Id: {}\n".format(division.title, division.id)
 
             await ctx.send(division_data)
@@ -499,7 +515,6 @@ class Clot(commands.Cog, name="clot"):
                           category="clot")
     async def tournaments(self, ctx, arg="invalid"):
         try:
-            await ctx.send("Gathering tournament data....")
             tournament_data = ""
             tournaments = Tournament.objects.all()
             if arg == "-f":
@@ -512,10 +527,16 @@ class Clot(commands.Cog, name="clot"):
                 tournament_data += "Clan League Tournaments\n"
             else:
                 await ctx.send("You must specify an option. Use ``bb!help tournaments`` to see commands.")
+                return
 
+            await ctx.send("Gathering tournament data....")
             for tournament in tournaments:
                 child_tournament = find_tournament_by_id(tournament.id, True)
                 if child_tournament:
+                    if len(tournament_data) > 1500:
+                        await ctx.send(tournament_data)
+                        tournament_data = ""
+
                     link_text = "http://wztourney.herokuapp.com/"
                     if child_tournament.is_league:
                         link_text += "leagues/{}".format(child_tournament.id)
@@ -523,20 +544,20 @@ class Clot(commands.Cog, name="clot"):
                         link_text += "tournaments/{}".format(child_tournament.id)
                     if arg == "-f":  # only finished tournaments
                         if child_tournament.is_finished:
-                            tournament_data += "{} | <{}> | Winner: {}\n".format(child_tournament.name, link_text,
+                            tournament_data += "{} (Id: {}) | <{}> | Winner: {}\n".format(child_tournament.name, child_tournament.id, link_text,
                                                                          get_team_data(child_tournament.winning_team))
                     elif arg == "-o":  # only open tournaments
                         if not child_tournament.has_started and not child_tournament.private:
-                            tournament_data += "{} | <{}> | {} spots left\n".format(child_tournament.name, link_text,
+                            tournament_data += "{} (Id: {}) | <{}> | {} spots left\n".format(child_tournament.name, child_tournament.id, link_text,
                                                                                child_tournament.spots_left)
                     elif arg == "-p":  # only in progress
                         if child_tournament.has_started and not child_tournament.private:
-                            tournament_data += "{} | <{}>\n".format(child_tournament.name, link_text)
+                            tournament_data += "{} (Id: {}) | <{}>\n".format(child_tournament.name, child_tournament.id, link_text)
                     elif arg == "-cl":  # only in progress
                         if child_tournament.id == 51 and child_tournament.has_started:
                             cl_tourneys = ClanLeagueTournament.objects.filter(parent_tournament=child_tournament).order_by('id')
                             for cl_tourney in cl_tourneys:
-                                tournament_data += "{} | Id: {}\n".format(cl_tourney.name, cl_tourney.id)
+                                tournament_data += "{} (Id: {})\n".format(cl_tourney.name, cl_tourney.id)
             await ctx.send(tournament_data)
         except:
             log_exception()
@@ -582,8 +603,11 @@ class Clot(commands.Cog, name="clot"):
                           bb!clan clanid
                           bb!clan clanid -d - List of players in the clan who have linked their discord accounts
                           ''')
-    async def clan(self, ctx, clanid, discord_arg=""):
+    async def clan(self, ctx, clanid="", discord_arg=""):
         try:
+            if not clanid:
+                await ctx.send("No clanid has been entered. Please use ``bb!clans`` to show clans.")
+                return
             await ctx.send("Gathering player data for clan {}....".format(clanid))
             clan_obj = Clan.objects.filter(pk=int(clanid))
             emb = discord.Embed(color=self.bot.embed_color)
@@ -619,12 +643,15 @@ class Clot(commands.Cog, name="clot"):
     @commands.command(brief="Displays all clans on the CLOT")
     async def clans(self, ctx):
         try:
-            clans = Clan.objects.all()
+            clans = Clan.objects.all().order_by('id')
             await ctx.send("Gathering clans data....")
             clans_data = "Clans on the CLOT\n\n"
             for clan in clans:
                 player = Player.objects.filter(clan=clan)
                 if player:
+                    if len(clans_data) > 1500:
+                        await ctx.send(clans_data)
+                        clans_data = ""
                     clans_data += "{}: {}\n".format(clan.id, clan.name)
             await ctx.send(clans_data)
         except:

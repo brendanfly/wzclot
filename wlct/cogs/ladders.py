@@ -38,6 +38,7 @@ class Ladders(commands.Cog, name="ladders"):
             emb.set_footer(text="Bot created and maintained by -B#0292")
             ladder = get_real_time_ladder(109)
             discord_id = ctx.message.author.id
+            log_bot_msg("Processing message from {} with msg id: {}".format(ctx.message.author.name, ctx.message.id))
             if ladder is not None:
                 teams = ladder.get_active_team_count()
                 if arg_cmd == "-p":
@@ -146,7 +147,7 @@ class Ladders(commands.Cog, name="ladders"):
             if rtl_channel.id in processed_channels:
                 continue
             processed_channels.append(rtl_channel.id)
-            log_bot_msg("Server id to send RTL message to: {}, server original message came from: {}".format(rtl_channel.guild.id, guild_original_msg.guild.id))
+            log_bot_msg("Server id to send RTL message to: {}, server original message with msg id {} came from: {}".format(rtl_channel.guild.id,  guild_original_msg.id, guild_original_msg.guild.id))
             if rtl_channel.guild.id == guild_original_msg.guild.id:
                 # skip this one, it came from here
                 continue
