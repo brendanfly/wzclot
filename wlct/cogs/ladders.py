@@ -122,7 +122,7 @@ class Ladders(commands.Cog, name="ladders"):
                    -r : displays full ladder rankings
                    -g : displays all in progress games on the 1v1 real-time ladder
                    -v <templateid>: vetoes a template or displays the current one if no template id is passed
-                   -me : displays information about yourself on the ladder,
+                   -me : displays information about yourself on the ladder
                    
                    Admin Commands - only creators of the ladder can add/remove templates
                    -ta <templateid>: adds a template to the ladder
@@ -149,7 +149,7 @@ class Ladders(commands.Cog, name="ladders"):
                      -r : displays full ladder rankings
                      -g : displays all in progress games on the 1v1 Real-Time INSS ladder
                      -v <templateid>: vetoes a template or displays the current one if no template id is passed
-                     -me : displays information about yourself on the ladder,
+                     -me : displays information about yourself on the ladder
                      
                      Admin Commands - only creators of the ladder can add/remove templates
                      -ta <templateid>: adds a template to the ladder
