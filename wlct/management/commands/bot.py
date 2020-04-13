@@ -84,7 +84,7 @@ class WZBot(commands.AutoShardedBot):
         return emb
 
     def get_default_embed(self):
-        return self.get_embed(self)
+        return self.get_embed(self.user)
 
     async def on_ready(self):
         try:
