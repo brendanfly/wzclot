@@ -3,7 +3,7 @@ from django.http import HttpResponseRedirect
 from wlct.form_message_handling import FormError
 from wlct.api import API, get_account_token
 from wlct.models import Player, Clan
-from wlct.tournaments import SwissTournament, GroupStageTournament, SeededTournament, TournamentInvite, TournamentPlayer, find_tournament_by_id, Tournament, find_league_by_id, is_player_allowed_join, TournamentGameEntry, get_matchup_data
+from wlct.tournaments import SwissTournament, GroupStageTournament, SeededTournament, TournamentInvite, TournamentPlayer, find_tournament_by_id, Tournament, find_league_by_id, is_player_allowed_join, TournamentGameEntry, get_matchup_data, RealTimeLadder
 from wlct.forms import SwissTournamentForm, SeededTournamentForm, GroupTournamentForm, MonthlyTemplateCircuitForm, PromotionRelegationLeagueForm, ClanLeagueForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -561,7 +561,12 @@ def tournament_display_view(request, id):
             context.update({'bracket_game_data': tournament.get_bracket_game_data()})
             context.update({'template_settings': tournament.get_template_settings_table()})
             context.update({'game_log' : tournament.get_game_log()})
-            return render(request, 'tournament.html', context)
+
+            if isinstance(tournament, RealTimeLadder):
+                context.update({'join_leave_buttons': tournament.get_join_leave(allowed_join, is_player_token_valid(request), player)})
+                return render(request, "rtl.html", context)
+            else:
+                return render(request, 'tournament.html', context)
         else:
             log("Tournament could not be found!", LogLevel.informational)
             return HttpResponseRedirect('/index/')
@@ -629,7 +634,6 @@ def tournament_player_status_change(request):
                                 tournament.join_tournament(request.session['token'], buttonid)
                             elif "decline" in buttonid:
                                 if "team" in request.POST:
-                                    print("Host forcibly removing a player from MTC")
                                     teamid = request.POST['team']
                                     if teamid.isnumeric():
                                         tplayer = TournamentPlayer.objects.filter(team=int(teamid))
@@ -640,7 +644,10 @@ def tournament_player_status_change(request):
                                     tournament.decline_tournament(request.session['token'])
 
                             # now refresh the list of players
-                            allowed_join = is_player_allowed_join(player[0], tournament.template)
+                            if isinstance(tournament, RealTimeLadder):
+                                allowed_join = True
+                            else:
+                                allowed_join = is_player_allowed_join(player[0], tournament.template)
                             context.update({'team_table': tournament.get_team_table(allowed_join,
                                                                                        is_player_token_valid(
                                                                                            request), player[0])})
@@ -716,11 +723,6 @@ def mytourneys_view(request):
                         if child_tourney:
                             result_list.append(child_tourney)
                             tournaments_found.append(tourney.tournament.id)
-                        elif tourney.tournament.id not in leagues_found and hasattr(tourney.tournament, 'pr_parent_tournament'):
-                            child_league = find_league_by_id(tourney.tournament.id)
-                            if child_league:
-                                league_list.append(child_league.pr_tournament)
-                                leagues_found.append(child_league.pr_tournament.id)
                     elif tourney.tournament.id not in leagues_found and tourney.tournament.is_league:
                         child_league = find_league_by_id(tourney.tournament.id)
                         if child_league:
@@ -770,6 +772,22 @@ def mytourneys_view(request):
 
 
 @ensure_csrf_cookie
+def settings_generate_clot_token_view(request):
+    if is_player_token_valid(request):
+        try:
+            player = Player.objects.get(token=request.session['token'])
+            player.discord_member = None
+            randomSource = string.ascii_letters + string.digits
+            player.bot_token = ''.join(random.choice(randomSource) for i in range(32))
+            player.save()
+
+            return settings_view(request)
+        except ObjectDoesNotExist:
+            return mytourneys_view(request)
+    else:
+        return mytourneys_view(request)
+
+@ensure_csrf_cookie
 def settings_view(request):
     context = {}
     if is_player_token_valid(request):
@@ -783,7 +801,6 @@ def settings_view(request):
                 player.bot_token = ''.join(random.choice(randomSource) for i in range(32))
                 player.save()
 
-            print("Player Bot Token: {}".format(player.bot_token))
             context.update({'player': player})
             return render(request, "settings.html", context)
         except ObjectDoesNotExist:
@@ -840,7 +857,7 @@ def index(request):
         request.session['account_token'] = get_account_token()
 
         result_list = []
-        tournaments = Tournament.objects.filter(private=False, is_finished=False, has_started=False).order_by("-created_date")
+        tournaments = Tournament.objects.filter(private=False, is_finished=False, has_started=False).order_by("-is_official", "-created_date")
         for tournament in tournaments:
             child_tournament = find_tournament_by_id(tournament.id)
             if child_tournament:
@@ -853,8 +870,12 @@ def index(request):
             if child_league:
                 league_list.append(child_league)
 
+        ladder_list = []
+
         context.update({'leagues': league_list})
         context.update({'tournaments': result_list})
+        context.update({'ladders': ladder_list})
+
 
         return render(request, 'mytourneys.html', context)
     except ObjectDoesNotExist:

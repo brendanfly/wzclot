@@ -1158,14 +1158,18 @@ class Tournament(models.Model):
     @property
     def spots_left(self):
         # how many players are currently in the tournament
+        return_text = ""
         try:
             if self.has_started:
-                return "In Progress"
-            players_in_tournament = TournamentPlayer.objects.filter(tournament=self)
-            if players_in_tournament:
-                return self.max_players - players_in_tournament.count()
+                return_text = "In Progress"
             else:
-                return self.max_players
+                players_in_tournament = TournamentPlayer.objects.filter(tournament=self)
+                if players_in_tournament:
+                    return_text = self.max_players - players_in_tournament.count()
+                else:
+                    return_text = self.max_players
+
+            return "<h3>{}</h3><h5>spots left</h5>".format(return_text)
         except:
             log_exception()
             return 0
@@ -4400,6 +4404,11 @@ class RealTimeLadder(Tournament):
     auto_boot_seconds = models.IntegerField(default=180, blank=True, null=True)
     seconds_banked = models.IntegerField(default=300, blank=True, null=True)
 
+    @property
+    def spots_left(self):
+        # how many players are currently in the tournament
+        return "<h3>{}</h3><h5>currently playing</h5>".format(self.get_active_team_count())
+
     def get_active_team_count(self):
         return TournamentTeam.objects.filter(tournament=self, active=True).count()
 
@@ -4408,6 +4417,75 @@ class RealTimeLadder(Tournament):
 
     def player_data_in_name(self):
         return True
+
+    def join_tournament(self, token, buttonid):
+        return ""
+
+    def decline_tournament(self, token):
+        return ""
+
+    def get_join_leave(self, allow_buttons, logged_in, request_player):
+        # get's the join/leave buttons based on the player wanting to join
+        join = ''
+        if logged_in:
+            # is the player currently active in the tournament?
+            tournament_player = TournamentPlayer.objects.filter(player=request_player, tournament=self)
+            if tournament_player and not tournament_player[0].team.active and allow_buttons:
+                join += '<button type="button" class="btn btn-info" name="slot" id="join">Join Ladder</button>&nbsp;<button type="button" class="btn btn-info" name="slot" id="decline" disabled="disabled">Leave Ladder</button>'
+            elif tournament_player and tournament_player[0].team.active:
+                join += '<button type="button" class="btn btn-info" name="slot" id="join" disabled="disabled">Join Ladder</button>&nbsp;<button type="button" class="btn btn-info" name="slot" id="decline">Leave Ladder</button>'
+            elif not tournament_player and allow_buttons:
+                join += '<button type="button" class="btn btn-info" name="slot" id="join">Join Ladder</button>&nbsp;<button type="button" class="btn btn-info" name="slot" id="decline" disabled="disabled">Leave Ladder</button>'
+        return join
+
+    def get_team_table(self, allow_buttons, logged_in, request_player):
+        table = ''
+
+        # a few overrides on the pass in values
+        if logged_in:
+            allow_buttons = True
+
+        in_tournament = False
+        tournament_player = TournamentPlayer.objects.filter(player=request_player, tournament=self.id)
+        if tournament_player:
+            in_tournament = True
+
+        tournamentteams = TournamentTeam.objects.filter(tournament=self.id).order_by('-active', '-rating', 'team_index')
+        if tournamentteams:
+            table += '<table class="table table-hover">'
+            if self.has_started:
+                table += '<tr><th>Team</th><th>Record</th></tr>'
+            for team in tournamentteams:
+                if self.players_per_team > 1:
+                    table += "<tr><td><b>Team {} </b></td></tr>".format(team.team_index)
+
+                total_players = 0
+                team_players = TournamentPlayer.objects.filter(team=team)
+                if team_players:
+                    for player in team_players:
+                        table += '<tr><td>'
+                        if player.player.clan is not None:
+                            table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
+                                player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
+
+                        table += '<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+                            player.player.token, player.player.name)
+
+                        table += '</td>'
+                        table += '<td>{}-{}</td>'.format(team.wins, team.losses)
+                        table += '</tr>'
+
+                        total_players += 1
+
+                # if we get here, we need to add an open slot
+                while total_players < self.players_per_team:
+                    table += add_open_slot(team.team_index, total_players + 1, self.players_per_team, allow_buttons,
+                                           logged_in, in_tournament)
+                    total_players += 1
+
+            table += "</table>"
+
+        return table
 
     def get_player_from_teamid(self, team):
         tplayer = TournamentPlayer.objects.filter(team=int(team))
@@ -4446,7 +4524,54 @@ class RealTimeLadder(Tournament):
             return "The template you have entered is invalid."
 
     def update_game_log(self):
-        self.game_log = ""
+        game_log = '<div class="row"><div class="container">'
+        game_log += '<table class="table table-hover table_condensed clot_table compact stripe cell-border" id="game_log_data_table">'
+        game_log += '<thead><tr>'
+        game_log += '<th>Match-up</th><th>Link</th><th>State</th><th>Winner</th><th>End-Time</th>'
+        game_log += '</tr></thead>'
+        game_log += '<tbody>'
+
+        games_output = []
+        tournament_game_entries = TournamentGameEntry.objects.filter(tournament=self).order_by('-created_date')
+        for entry in tournament_game_entries:
+            if entry.game.id in games_output:
+                continue
+
+            game_log += '<tr>'
+
+            # Match-Up
+            game_log += '<td>{} vs. {}</td>'.format(get_team_data_sameline(entry.team), get_team_data_sameline(entry.team_opp))
+
+            # link to the game
+            game_log += '<td><a href="{}" target="_blank">Game Link</a></td>'.format(entry.game.game_link)
+
+            # Game State
+            if entry.game.is_finished:
+                finished_text = '<span class="text-success"><b>Finished</b></span>'
+            else:
+                finished_text = '<span class="text-info">{}</span>'.format(entry.game.current_state)
+            game_log += '<td>{}</td>'.format(finished_text)
+
+            # Winner
+            winner = ""
+            if entry.game.winning_team is not None:
+                if entry.team.id == entry.game.winning_team.id:
+                    winner = get_team_data(entry.team)
+                else:
+                    winner = get_team_data(entry.team_opp)
+            game_log += '<td>{}</td>'.format(winner)
+
+            # End-Time
+            # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
+            end_time = entry.game.game_finished_time.strftime(
+                "%b %d, %Y %H:%M:%S %p") if entry.game.is_finished and entry.game.game_finished_time else 'N/A'
+            game_log += '<td>{}</td>'.format(end_time)
+
+            game_log += '</tr>'
+
+            games_output.append(entry.game.id)
+        game_log += '</tbody></table></div></div>'
+        self.game_log = game_log
         self.save()
 
     def get_bracket_game_data(self):

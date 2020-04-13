@@ -8,6 +8,11 @@
 	<!-- Tournaments section bg -->
 <div class="row">
 	<div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+        <div class="custom-control custom-switch">
+            <input type="checkbox" class="custom-control-input" id="finished-filter">
+            <label class="custom-control-label" for="finished-filter">Show finished</label>
+        </div>
+        <input type="text" placeholder="type to filter tournaments" id="tournament-filter" class="form-control" /><br /><br/>
 		<ul class="nav nav-tabs" id="myTab" role="tablist">
 			<li class="nav-item">
 				<a class="nav-link active" id="tournaments-tab" href="#tournaments" data-toggle="tab">Tournaments</a>
@@ -22,10 +27,11 @@
 				<div class="container" id="swiss_tournaments_pane">
                     {% for t in tournaments %}
                     {% if t.has_started %}
-                    <div class="bs-callout bs-callout-success">
+                    <div class="bs-callout bs-callout-success" data-role="tournament">
                     {% else %}
-                    <div class="bs-callout bs-callout-primary">
+                    <div class="bs-callout bs-callout-primary" data-role="tournament">
                     {% endif %}
+                    <input type="hidden" value="{{ t.is_finished }}" data-role="finished-text" />
                         <div class="row">
                             <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 text-center">
                             {% if t.has_started %}
@@ -35,16 +41,15 @@
                                 <h3>In Progress</h3>
                                 {% endif %}
                             {% else %}
-                                <h3>{{ t.spots_left }}</h3>
-                                <h5>spots left</h5>
+                                {{ t.spots_left|safe }}
                             {% endif %}
                             </div>
                             <div class="col-xs-10 col-sm-10 col-md-10 col-lg-10">
                                 <a class="card-link" href="{% url 'tournament_display_view' t.id %}">
-                                    <span class="card-title h5"> {{ t.name }} </span><span class="text-muted h7 mb-2"> <i class="fa fa-clock-o"></i>&nbsp;created {{ t.time_since_created }}</span></span>
+                                    <span class="card-title h5" data-role="filter-text"> {{ t.name }} </span><span class="text-muted h7 mb-2"> <i class="fa fa-clock-o"></i>&nbsp;created {{ t.time_since_created }}</span>
                                 </a>
                                 <br/>
-                                <span class="card-text h7">
+                                <span class="card-text h7" data-role="filter-text">
                                     {{ t.description }}
                                 </span>
                                 <div>
@@ -58,9 +63,9 @@
                                     <a href="https://warzone.com/MultiPlayer?TemplateID={{ t.template }}" target="_blank" class="badge badge-primary">Template {{ t.template }}</a>
                                     <span class="badge badge-primary">Players Per Team: {{ t.players_per_team }}</span>
                                     <span class="badge badge-primary">Pace:&nbsp;{{ t.multi_day_str }}</span>
-                                    <span class="badge badge-warning">Type: {{ t.type }}</span>
+                                    <span class="badge badge-warning">Type: <span data-role="filter-text">{{ t.type }}</span></span>
                                 </div>
-                                {% if t.Wplayer_invited %}
+                                {% if t.player_invited %}
                                 <div>
                                     <span class="text-info h6">Please join or decline this tournament</span>
                                 </div>
@@ -76,17 +81,18 @@
 				{% if leagues %}
 				<div class="container" id="leagues_pane">
                     {% for league in leagues %}
-                    <div class="bs-callout bs-callout-primary">
+                    <div class="bs-callout bs-callout-primary" data-role="tournament">
+                    <input type="hidden" value="{{ t.is_finished }}" data-role="finished-text" />
                         <div class="row">
                             <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 text-center">
 								<h3>{{ league.number_players }} <br>players</h3>
 							</div>
                             <div class="col-xs-10 col-sm-10 col-md-10 col-lg-10">
                                 <a class="card-link" href="{% url 'league_display_view' league.id %}">
-                                    <span class="card-title h5"> {{ league.name }} </span><span class="text-muted h7 mb-2"> <i class="fa fa-clock-o"></i>&nbsp;created {{ league.time_since_created }}</span></span>
+                                    <span class="card-title h5" data-role="filter-text"> {{ league.name }} </span><span class="text-muted h7 mb-2"> <i class="fa fa-clock-o"></i>&nbsp;created {{ league.time_since_created }}</span>
                                 </a>
                                 <br/>
-                                <span class="card-text h7">
+                                <span class="card-text h7" data-role="filter-text">
                                     {{ league.description }}
                                 </span>
                                 <div>
@@ -102,7 +108,7 @@
 									{% endif %}
                                     <span class="badge badge-primary">Players Per Team: {{ league.players_per_team }}</span>
                                     <span class="badge badge-primary">Pace:&nbsp;{{ league.multi_day_str }}</span>
-                                    <span class="badge badge-warning">Type: {{ league.type }}</span>
+                                    <span class="badge badge-warning">Type: <span data-role="filter-text">{{ league.type }}</span></span>
                                 </div>
                                 {% if league.player_invited %}
                                 <div>
@@ -117,9 +123,6 @@
 				{% endif %}
 			</div>
 		</div>
-
-
-
 	</div>
 </div>
 {% endblock %}

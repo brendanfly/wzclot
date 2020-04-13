@@ -1299,22 +1299,101 @@ function update_pause_resume_bindings()
             });
     });
 
-
-
     // DOCUMENTREADY
     $(".time_to_game").each(function ()
     {
         handle_game_countdown(jQuery(this));
     });
 
-    //$("#template_table").DataTable();
-    $('#player_bot_token').click(function ()
-    {
-        alert("Generating new player bot token");
-    });
-
     $("#refresh_tournament").trigger('click');
     $('#game_log_data_table').DataTable();
+
+    $("#tournament-filter").on("keyup", function() {
+        handle_tournament_filter($(this));
+    });
+
+    $("#tournament-filter").on("onfocus", function() {
+        handle_tournament_filter($(this));
+    });
+
+    $('div[data-role="tournament"]').each(function() {
+        var text = $(this).find('input[data-role="finished-text"]').val();
+        //console.log("Finished Text: " + text);
+        if (text == "True")
+        {
+            $(this).hide();
+        }
+    });
+
+    $("#finished-filter").on("click", function() {
+        if ($("#finished-filter").is(':checked'))
+        {
+            // Show all tournament divs
+            $('div[data-role="tournament"]').filter(function() {
+                $(this).show();
+            });
+        }
+        else
+        {
+            $('div[data-role="tournament"]').each(function() {
+                var text = $(this).find('input[data-role="finished-text"]').val();
+                if (text == "True")
+                {
+                    $(this).hide();
+                }
+            });
+        }
+    });
+}
+
+function handle_rtl_updates()
+{
+    // refresh everything
+    $("#refresh_tournament").trigger('click');
+    $('#game_log_data_table').DataTable();
+}
+
+function passive_toggle_item(obj, found, showFinished)
+{
+    var name = obj.find('span[data-role="filter-text"]').html();
+    var finished = obj.find('input[data-role="finished-text"]').val() == "True";
+    if (obj.is(":visible") && !found)
+    {
+        //console.log("Name: " + name + " Found:" + found + " Finished: " + finished + " show finished?" + showFinished + " action:hide");
+        obj.hide();
+    }
+    else if (obj.is(":hidden") && found)
+    {
+        if (finished && !showFinished)
+        {
+            return;
+        }
+        //console.log("Name: " + name + " Found:" + found + " Finished: " + finished + " show finished?" + showFinished + " action:show");
+        obj.show();
+    }
+}
+
+function handle_tournament_filter(obj)
+{
+    var value = obj.val().toLowerCase();
+    $('div[data-role="tournament"]').each(function() {
+        var showFinished = $("#finished-filter").is(':checked');
+        var found = false;
+        $(this).find('span[data-role="filter-text"]').each(function() {
+            var text = $(this).html().toLowerCase();
+            var indexOf = text.indexOf(value);
+            if ((text.length > 0) && (indexOf > -1))
+            {
+                //console.log("Text: "+text+" indexOf:"+indexOf);
+                found = true;
+            }
+        });
+        if (value.length == 0)
+        {
+            found = true;
+        }
+        passive_toggle_item($(this), found, showFinished);
+    });
 }
 
 function toggle_div(divId)

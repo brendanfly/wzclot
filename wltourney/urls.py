@@ -23,6 +23,7 @@ urlpatterns = [
     path('about/', wlct.views.about_view, name='about_view'),
     path('games/', wlct.views.mygames_view, name='mygames_view'),
     path('me/', wlct.views.settings_view, name='settings_view'),
+    path('me/generate/', wlct.views.settings_generate_clot_token_view, name='settings_generate_clot_token_view'),
 
     # tournament related urls
     path('tournaments/create/', wlct.views.create_new_view, name='create_new_tourney_view'),

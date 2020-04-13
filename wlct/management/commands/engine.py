@@ -46,7 +46,7 @@ class Command(BaseCommand):
                 scheduler.start()
         except ConflictingIdError:
             pass
-        
+
 
 def process_team_vacations():
     try:
