@@ -2501,6 +2501,7 @@ class TournamentTeam(models.Model):
     joined_time = models.DateTimeField(default=datetime.datetime.now)
     leave_after_game = models.BooleanField(default=False, blank=True, null=True)
     last_boot_time = models.DateTimeField(blank=True, null=True)
+    on_vacation = models.BooleanField(default=False)
 
     def update_max_games_at_once(self, games):
         print("Updating max games to {}".format(games))
@@ -3042,7 +3043,7 @@ class MonthlyTemplateRotation(Tournament):
                     # if 10 or more, then display their rating
                     games_completed_3_months = get_games_finished_for_team_since(team.id, self,
                                                                                  90)  # all games completed within last 90 days
-                    if games_completed_3_months >= 12 and not self.is_team_on_vacation(team):
+                    if games_completed_3_months >= 12 and not team.on_vacation:
                         team_data_internal = '<tr><td>#{}</td><td>'.format(team_index)
                         team_index += 1
                         ranked = True

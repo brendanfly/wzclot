@@ -39,9 +39,31 @@ class Command(BaseCommand):
                                   max_instances=1, coalesce=False)
                 scheduler.add_job(tournament_caching, 'interval', seconds=(get_run_time()/2)*5, id='tournament_caching',
                                   max_instances=1, coalesce=False)
+                scheduler.add_job(process_team_vacations, 'interval', seconds=(get_run_time()*20), id='process_team_vacations',
+                                  max_instances=1, coalesce=False)
+                scheduler.add_job(parse_and_update_clan_logo, 'interval', seconds=(get_run_time()*25), id='parse_and_update_clan_logo',
+                                  max_instances=1, coalesce=False)
                 scheduler.start()
         except ConflictingIdError:
             pass
+        
+
+def process_team_vacations():
+    try:
+        start_time = datetime.datetime.utcnow()
+        log("Starting process team vacation: {}".format(start_time), LogLevel.engine)
+        tournaments = Tournament.objects.filter(is_finished=False, has_started=True)
+        for t in tournaments:
+            t = find_tournament_by_id(t.id, True)
+            teams = TournamentTeam.objects.filter(tournament=t)
+            for team in teams:
+                team.on_vacation = t.is_team_on_vacation(team)
+                team.save()
+        end_time = datetime.datetime.utcnow()
+        log("End process team vacations. Total Time: {}".format((end_time-start_time).total_seconds()), LogLevel.engine)
+    except Exception:
+        log_exception()
+
 
 def parse_and_update_clan_logo():
     try:
@@ -152,10 +174,6 @@ def cleanup_logs():
                 LogManager(value, timestamp__lt=enddate, level=value).prune()
         gc.collect()
 
-# globals to get executed on every load of the web server
-slow_update_threshold = 25
-current_clan_update = 1
-
 def tournament_caching():
     try:
         cleanup_logs()
@@ -168,15 +186,6 @@ def tournament_caching():
 
 def tournament_engine():
     try:
-        global slow_update_threshold
-        global current_clan_update
-
-        if (current_clan_update % slow_update_threshold) == 0:
-            parse_and_update_clan_logo()
-            current_clan_update = 1
-        else:
-            current_clan_update += 1
-
         engine = Engine.objects.all()
         if engine and engine.count() == 0:
             # create the engine object!
