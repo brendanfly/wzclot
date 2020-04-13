@@ -2406,7 +2406,8 @@ class RoundRobinTournament(Tournament):
             players = TournamentPlayer.objects.filter(tournament=self)
             self.number_players = players.count()
             self.save()
-        game_log = '<table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table"><thead><tr><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
+        game_log = '<table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table">'
+        game_log += '<thead><tr><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
         game_log += '<tbody>'
         games = TournamentGame.objects.filter(tournament=self)
         for game in games:
@@ -2499,6 +2500,7 @@ class TournamentTeam(models.Model):
     has_had_bye = models.BooleanField(default=False)
     joined_time = models.DateTimeField(default=datetime.datetime.now)
     leave_after_game = models.BooleanField(default=False, blank=True, null=True)
+    last_boot_time = models.DateTimeField(blank=True, null=True)
 
     def update_max_games_at_once(self, games):
         print("Updating max games to {}".format(games))
@@ -2760,6 +2762,26 @@ class MonthlyTemplateRotation(Tournament):
     def league_editor_button_text(self):
         return "Open {} editor".format(self.type)
 
+    def handle_finish_game_with_info(self, game_info):
+        # handle the game info here
+        log_tournament("[MTC] {}: Finished game_info: {}".format(self.name, game_info), self)
+        if 'players' in game_info:
+            players_data = game_info['players']
+            for data in players_data:
+                if 'state' in data and (data['state'] == 'Invited' or data['state'] == 'Booted' or data['state'] == 'Declined'):
+                    if 'id' in data:
+                        token = data['id']
+                        player = TournamentPlayer.objects.filter(player__token=token)
+                        if player:
+                            # did we boot this past week?
+                            if player[0].team.last_boot_time is not None:
+                                if player[0].team.last_boot_time > (datetime.datetime.utcnow() - datetime.timedelta(days=7)):
+                                    # last boot time was in this past week..remove player
+                                    log_tournament("Removing player {} ({}) from MTC {}".format(player[0].player.name, player[0].player.token, self.name), self)
+                                    player[0].team.active = False
+                            # regardless we need to log the current time
+                            player[0].team.last_boot_time = datetime.datetime.utcnow()
+                            player[0].team.save()
 
     def update_league_editing(self, data):
         # data is a dict of the values we must save
@@ -3020,6 +3042,8 @@ class MonthlyTemplateRotation(Tournament):
                     # if 10 or more, then display their rating
                     games_completed_3_months = get_games_finished_for_team_since(team.id, self,
                                                                                  90)  # all games completed within last 90 days
+
+
                     if games_completed_3_months >= 12:
                         team_data_internal = '<tr><td>#{}</td><td>'.format(team_index)
                         team_index += 1
@@ -3161,8 +3185,11 @@ class MonthlyTemplateRotation(Tournament):
 
     def update_game_log(self):
         game_log = '<div class="row"><div class="container">'
-        game_log += '<table class="table table-hover table_condensed clot_table compact stripe cell-border" id="game_log_data_table"><thead><tr>'
-        game_log += '<th>Link</th><th>Matchup</th><th>Winner</th></tr></thead><tbody>'
+        game_log += '<table class="table table-hover table_condensed clot_table compact stripe cell-border" id="game_log_data_table">'
+        game_log += '<thead><tr>'
+        game_log += '<th>Template</th><th>Match-up</th><th>Link</th><th>State</th><th>Winner</th><th>End-Time</th>'
+        game_log += '</tr></thead>'
+        game_log += '<tbody>'
 
         games_output = []
         tournament_game_entries = TournamentGameEntry.objects.filter(tournament=self).order_by('-created_date')
@@ -3172,10 +3199,26 @@ class MonthlyTemplateRotation(Tournament):
 
             game_log += '<tr>'
 
-            # link to the game
-            game_log += '<td><a href="{}" target="_blank">Game Link</a></td>'.format(entry.game.game_link)
+            # template link
+            start_time = entry.game.game_start_time
+            month = start_time.month
+            year = start_time.year
+            game_log += '<td><a href = "https://warzone.com/MultiPlayer?TemplateID={}" target="_blank" class="badge badge-primary">{}, {} Template</a>'.format(self.get_current_template_id, self.month_str[month], year)
+
+            # Match-Up
             game_log += '<td>{} vs. {}</td>'.format(get_team_data_sameline(entry.team), get_team_data_sameline(entry.team_opp))
 
+            # link to the game
+            game_log += '<td><a href="{}" target="_blank">Game Link</a></td>'.format(entry.game.game_link)
+
+            # Game State
+            if entry.game.is_finished:
+                finished_text = '<span class="text-success"><b>Finished</b></span>'
+            else:
+                finished_text = '<span class="text-info">{}</span>'.format(entry.game.current_state)
+            game_log += '<td>{}</td>'.format(finished_text)
+
+            # Winner
             winner = ""
             if entry.game.winning_team is not None:
                 if entry.team.id == entry.game.winning_team.id:
@@ -3183,6 +3226,13 @@ class MonthlyTemplateRotation(Tournament):
                 else:
                     winner = get_team_data(entry.team_opp)
             game_log += '<td>{}</td>'.format(winner)
+
+            # End-Time
+            # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
+            end_time = entry.game.game_finished_time.strftime(
+                "%b %d, %Y %H:%M:%S %p") if entry.game.is_finished and entry.game.game_finished_time else 'N/A'
+            game_log += '<td>{}</td>'.format(end_time)
+
             game_log += '</tr>'
 
             games_output.append(entry.game.id)
