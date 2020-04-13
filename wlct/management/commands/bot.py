@@ -9,6 +9,10 @@ from wlct.logging import log_exception
 import asyncio
 import discord
 import os
+import logging
+
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -80,7 +84,7 @@ class WZBot(commands.AutoShardedBot):
         return emb
 
     def get_default_embed(self):
-        return self.embed(self)
+        return self.get_embed(self)
 
     async def on_ready(self):
         try:
