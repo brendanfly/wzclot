@@ -3042,9 +3042,7 @@ class MonthlyTemplateRotation(Tournament):
                     # if 10 or more, then display their rating
                     games_completed_3_months = get_games_finished_for_team_since(team.id, self,
                                                                                  90)  # all games completed within last 90 days
-
-
-                    if games_completed_3_months >= 12:
+                    if games_completed_3_months >= 12 and not self.is_team_on_vacation(team):
                         team_data_internal = '<tr><td>#{}</td><td>'.format(team_index)
                         team_index += 1
                         ranked = True
