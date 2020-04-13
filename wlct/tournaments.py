@@ -2780,7 +2780,7 @@ class MonthlyTemplateRotation(Tournament):
                         if player:
                             # did we boot this past week?
                             if player[0].team.last_boot_time is not None:
-                                if player[0].team.last_boot_time > (datetime.datetime.utcnow() - datetime.timedelta(days=7)):
+                                if player[0].team.last_boot_time.replace(tzinfo=pytz.UTC) > (datetime.datetime.utcnow() - datetime.timedelta(days=7)):
                                     # last boot time was in this past week..remove player
                                     log_tournament("Removing player {} ({}) from MTC {}".format(player[0].player.name, player[0].player.token, self.name), self)
                                     player[0].team.active = False
