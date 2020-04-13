@@ -78,10 +78,28 @@ class TournamentGameStatusLogAdmin(admin.ModelAdmin):
 admin.site.register(TournamentGameStatusLog, TournamentGameStatusLogAdmin)
 
 
+class TournamentFilter(SimpleListFilter):
+    title = 'Filter' # a label for our filter
+    parameter_name = 'query_filter' # you can put anything here
+
+    def lookups(self, request, model_admin):
+      # This is where you create filter options; we have two:
+      # also loop through all tournaments and display those IDs here
+        return [
+            ('multi-day', 'Multi-Day'),
+            ('real-time', 'Real-Time')
+        ]
+
+    def queryset(self, request, queryset):
+        if self.value() == 'multi-day':
+            return queryset.distinct().filter(multi_day=True)
+        if self.value() == 'real-time':
+            return queryset.distinct().filter(multi_day=False)
+
 # Register admin models here
 class TournamentAdmin(admin.ModelAdmin):
     raw_id_fields = ['created_by', 'winning_team']
-
+    list_filter = (TournamentFilter, )
 
 admin.site.register(Tournament, TournamentAdmin)
 
