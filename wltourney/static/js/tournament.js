@@ -701,7 +701,7 @@ $(function () {
                         }
                         else
                         {
-                            $("#gamestab").html(data.bracket_game_data);
+                            $("#gamestab").html(data.bracket_game_databracket_game_data);
                         }
 
                         if (data.can_start_tourney)

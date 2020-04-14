@@ -4452,8 +4452,8 @@ class RealTimeLadder(Tournament):
         if tournamentteams:
             # calculate the ranked versus unranked teams and then combine them for the list view
             for t in tournamentteams:
-                if get_games_finished_for_team_since(t.id, self, 2) > 0:
-                    ranked_teams.append()
+                if get_games_finished_for_team_since(t.id, self, 5) > 0:
+                    ranked_teams.append(t)
                     if not t.ranked:
                         t.ranked = True
                         t.save()
