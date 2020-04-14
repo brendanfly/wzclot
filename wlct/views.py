@@ -327,7 +327,6 @@ def league_display_view(request, id):
                 # allowed to join if we've been invited by the host
                 invites = TournamentInvite.objects.filter(tournament=league, player=player, joined=False)
                 if not invites and player.id != league.created_by.id:
-                    print("Player {} is not allowed to join.".format(player.name))
                     allowed_join = False
 
             context.update(
@@ -339,7 +338,10 @@ def league_display_view(request, id):
             context.update({'bracket_game_data': league.get_bracket_game_data()})
             context.update({'template_settings': league.get_template_settings_table()})
             context.update({'game_log': league.get_game_log()})
-            return render(request, 'league.html', context)
+            if isinstance(league, RealTimeLadder):
+                return render(request, "rtl.html", context)
+            else:
+                return render(request, 'league.html', context)
         else:
             return HttpResponseRedirect('/index/')
     except Exception:
@@ -547,7 +549,7 @@ def tournament_display_view(request, id):
 
                 # get the api to check to see if we can display join buttons
                 apirequestJson = {}
-                allowed_join = is_player_allowed_join(player, tournament.template)
+                allowed_join = tournament.is_player_allowed_join(player)
                 if allowed_join and tournament.private:
                     # if the template works and this tournament is private we are only
                     # allowed to join if we've been invited by the host
@@ -562,11 +564,7 @@ def tournament_display_view(request, id):
             context.update({'template_settings': tournament.get_template_settings_table()})
             context.update({'game_log' : tournament.get_game_log()})
 
-            if isinstance(tournament, RealTimeLadder):
-                context.update({'join_leave_buttons': tournament.get_join_leave(allowed_join, is_player_token_valid(request), player)})
-                return render(request, "rtl.html", context)
-            else:
-                return render(request, 'tournament.html', context)
+            return render(request, 'tournament.html', context)
         else:
             log("Tournament could not be found!", LogLevel.informational)
             return HttpResponseRedirect('/index/')
@@ -622,7 +620,7 @@ def tournament_player_status_change(request):
             tournamentid = request.POST['tournamentid']
             buttonid = request.POST['buttonid']
 
-            if templateid.isnumeric() and tournamentid.isnumeric():
+            if tournamentid.isnumeric():
                 # validate them
                 tournament = find_tournament_by_id(tournamentid, True)
                 if tournament is not None:
@@ -644,10 +642,7 @@ def tournament_player_status_change(request):
                                     tournament.decline_tournament(request.session['token'])
 
                             # now refresh the list of players
-                            if isinstance(tournament, RealTimeLadder):
-                                allowed_join = True
-                            else:
-                                allowed_join = is_player_allowed_join(player[0], tournament.template)
+                            allowed_join = tournament.is_player_allowed_join(player[0])
                             context.update({'team_table': tournament.get_team_table(allowed_join,
                                                                                        is_player_token_valid(
                                                                                            request), player[0])})
@@ -660,7 +655,6 @@ def tournament_player_status_change(request):
                         else:
                             log("Player not found for token {} ".format(request.session['token']), LogLevel.critical)
                             context.update({'error': 'Player not found for token.'})
-
                     except Exception as e:
                         log_exception()
                         context.update({'error': str(e)})
@@ -748,7 +742,6 @@ def mytourneys_view(request):
                 for tourney in group_stage_tournaments:
                     if tourney.id not in tournaments_found:
                         result_list.append(tourney)
-                        print("Tournament: {}".format(tourney))
                         tournaments_found.append(tourney.id)
 
 

@@ -115,7 +115,7 @@ def cache_games(**kwargs):
     tournaments = Tournament.objects.filter(**kwargs)
     for tournament in tournaments:
         child_tournament = find_tournament_by_id(tournament.id, True)
-        if child_tournament and child_tournament.should_process_in_engine():
+        if child_tournament:
             log("[CACHE]: Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
             try:
                 child_tournament.cache_data()

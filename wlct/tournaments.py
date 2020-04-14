@@ -254,6 +254,11 @@ def find_league_by_id(id):
         child_league = ClanLeague.objects.filter(pk=id)
         if child_league:
             return child_league[0]
+
+        child_league = RealTimeLadder.objects.filter(pk=id)
+        if child_league:
+            return child_league[0]
+
     except:
         # league wasn't found
         log_exception()
@@ -296,10 +301,6 @@ def find_tournament_by_id(id, query_all=False):
             return child_tourney[0]
 
         child_tourney = RoundRobinTournament.objects.filter(pk=id)
-        if child_tourney:
-            return child_tourney[0]
-
-        child_tourney = RealTimeLadder.objects.filter(pk=id)
         if child_tourney:
             return child_tourney[0]
 
@@ -364,6 +365,9 @@ class Tournament(models.Model):
     tournament_logs = models.TextField(blank=True, null=True, default="")
     is_official = models.BooleanField(default=False)
     vacation_force_interval = 20
+
+    def is_player_allowed_join(self, player):
+        return is_player_allowed_join(player, self.template)
 
     def get_full_public_link(self):
         if self.is_league:
@@ -2506,6 +2510,7 @@ class TournamentTeam(models.Model):
     leave_after_game = models.BooleanField(default=False, blank=True, null=True)
     last_boot_time = models.DateTimeField(blank=True, null=True)
     on_vacation = models.BooleanField(default=False)
+    ranked = models.BooleanField(default=False)
 
     def update_max_games_at_once(self, games):
         print("Updating max games to {}".format(games))
@@ -4403,14 +4408,13 @@ class RealTimeLadder(Tournament):
     direct_seconds_per_turn = models.IntegerField(default=180, blank=True, null=True)
     auto_boot_seconds = models.IntegerField(default=180, blank=True, null=True)
     seconds_banked = models.IntegerField(default=300, blank=True, null=True)
-
-    @property
-    def spots_left(self):
-        # how many players are currently in the tournament
-        return "<h3>{}</h3><h5>currently playing</h5>".format(self.get_active_team_count())
+    type = models.CharField(max_length=255, default="Real-Time Ladder")
 
     def get_active_team_count(self):
         return TournamentTeam.objects.filter(tournament=self, active=True).count()
+
+    def get_active_teams(self):
+        return TournamentTeam.objects.filter(tournament=self, active=True)
 
     def should_process_in_engine(self):
         return False
@@ -4419,10 +4423,14 @@ class RealTimeLadder(Tournament):
         return True
 
     def join_tournament(self, token, buttonid):
-        return ""
+        player = Player.objects.filter(token=token)
+        if player:
+            return self.join_leave_player(player[0], True, False)
 
     def decline_tournament(self, token):
-        return ""
+        player = Player.objects.filter(token=token)
+        if player:
+            return self.join_leave_player(player[0], False, False)
 
     def get_join_leave(self, allow_buttons, logged_in, request_player):
         # get's the join/leave buttons based on the player wanting to join
@@ -4438,32 +4446,52 @@ class RealTimeLadder(Tournament):
                 join += '<button type="button" class="btn btn-info" name="slot" id="join">Join Ladder</button>&nbsp;<button type="button" class="btn btn-info" name="slot" id="decline" disabled="disabled">Leave Ladder</button>'
         return join
 
-    def get_team_table(self, allow_buttons, logged_in, request_player):
-        table = ''
-
-        # a few overrides on the pass in values
-        if logged_in:
-            allow_buttons = True
-
-        in_tournament = False
-        tournament_player = TournamentPlayer.objects.filter(player=request_player, tournament=self.id)
-        if tournament_player:
-            in_tournament = True
-
+    def get_ranked_teams(self):
+        ranked_teams = []
         tournamentteams = TournamentTeam.objects.filter(tournament=self.id).order_by('-active', '-rating', 'team_index')
         if tournamentteams:
-            table += '<table class="table table-hover">'
-            if self.has_started:
-                table += '<tr><th>Team</th><th>Record</th></tr>'
-            for team in tournamentteams:
-                if self.players_per_team > 1:
-                    table += "<tr><td><b>Team {} </b></td></tr>".format(team.team_index)
+            # calculate the ranked versus unranked teams and then combine them for the list view
+            for t in tournamentteams:
+                if get_games_finished_for_team_since(t.id, self, 2) > 0:
+                    ranked_teams.append()
+                    if not t.ranked:
+                        t.ranked = True
+                        t.save()
+        return ranked_teams
+
+    def get_unranked_teams(self):
+        unranked_teams = []
+        tournamentteams = TournamentTeam.objects.filter(tournament=self.id).order_by('-active', '-rating', 'team_index')
+        if tournamentteams:
+            # calculate the ranked versus unranked teams and then combine them for the list view
+            for t in tournamentteams:
+                if get_games_finished_for_team_since(t.id, self, 5) == 0:
+                    unranked_teams.append(t)
+                    if t.ranked:
+                        t.ranked = False
+                        t.save()
+        return unranked_teams
+
+    def get_team_table_impl(self, team_list):
+        table = ''
+        if self.has_started:
+            table += '<table class="table table-condensed">'
+            table += '<tr><th>Rank</th><th>Team</th><th>Rating</th><th>Record</th></tr>'
+            current_team = 1
+            for team in team_list:
+                table += '<tr>'
+                if team.ranked:
+                    table += '<td>{}</td>'.format(current_team)
+                    current_team += 1
+                else:
+                    table += '<td>{}</td>'.format("Unranked")
 
                 total_players = 0
                 team_players = TournamentPlayer.objects.filter(team=team)
-                if team_players:
+                table += '<td>'
+                if team_players and team_players.count() > 1:
                     for player in team_players:
-                        table += '<tr><td>'
+                        table += '<table class="table table-borderless"><tr><td>'
                         if player.player.clan is not None:
                             table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                                 player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
@@ -4472,20 +4500,25 @@ class RealTimeLadder(Tournament):
                             player.player.token, player.player.name)
 
                         table += '</td>'
-                        table += '<td>{}-{}</td>'.format(team.wins, team.losses)
-                        table += '</tr>'
+                        table += '</tr></table>'
 
                         total_players += 1
+                elif team_players:
+                    table += get_player_data(team_players[0].player)
 
-                # if we get here, we need to add an open slot
-                while total_players < self.players_per_team:
-                    table += add_open_slot(team.team_index, total_players + 1, self.players_per_team, allow_buttons,
-                                           logged_in, in_tournament)
-                    total_players += 1
-
+                table += '</td>'
+                table += '<td>{}</td>'.format(team.rating)
+                table += '<td>{}-{}</td>'.format(team.wins, team.losses)
+                table += '</tr>'
             table += "</table>"
 
         return table
+
+    def get_team_table(self, allowed_join, logged_in, player):
+        return self.get_team_table_impl(self.get_active_teams())
+
+    def get_bracket_game_data(self):
+        return self.bracket_game_data
 
     def get_player_from_teamid(self, team):
         tplayer = TournamentPlayer.objects.filter(team=int(team))
@@ -4574,11 +4607,8 @@ class RealTimeLadder(Tournament):
         self.game_log = game_log
         self.save()
 
-    def get_bracket_game_data(self):
-        return ""
-
     def update_bracket_game_data(self):
-        self.bracket_game_data = ""
+        self.bracket_game_data = self.get_team_table_impl(self.get_ranked_teams() + self.get_unranked_teams())
         self.save()
 
     def process_new_games(self):
@@ -4714,37 +4744,46 @@ class RealTimeLadder(Tournament):
                             player[0].team.active = False
                             player[0].team.save()
 
-    def join_leave_impl(self, discord_id, join, leave_after_game):
+    def join_leave_player(self, player, join, leave_after_game):
+        tplayer = TournamentPlayer.objects.filter(player=player, tournament=self)
+        if tplayer:
+            tplayer = tplayer[0]
+            # TODO for team ladder all players will have to be active
+            if tplayer.team.active and join:
+                return "You're already on the ladder!"
+            elif not tplayer.team.active and join:
+                # TODO check template validity first....
+                tplayer.team.active = True
+                tplayer.team.joined_time = timezone.now()
+                tplayer.team.leave_after_game = leave_after_game
+                tplayer.team.save()
+                self.number_players += 1
+                self.save()
+                log_tournament(
+                    "Team {} joined the ladder, leave after game: {}".format(tplayer.team.id, leave_after_game), self)
+                return "You've joined the ladder!"
+            elif tplayer.team.active and not join:
+                tplayer.team.active = False
+                tplayer.team.leave_after_game = False
+                tplayer.team.save()
+                self.number_players -= 1
+                if self.number_players < 0:
+                    self.number_players = 0
+                self.save()
+                return "You've left the ladder. Come back again soon."
+            elif not tplayer.team.active and not join:
+                return "You're currently not on the ladder."
+        else:
+            team = TournamentTeam(tournament=self, players=self.players_per_team, active=True, max_games_at_once=1)
+            team.save()
+            tplayer = TournamentPlayer(player=player, tournament=self, team=team)
+            tplayer.save()
+            return "Looks like you're new to the **{}**. Welcome, and best of luck!".format(self.name)
+
+    def join_leave_discord(self, discord_id, join, leave_after_game):
         try:
             player = Player.objects.get(discord_member__memberid=discord_id)
-            tplayer = TournamentPlayer.objects.filter(player=player, tournament=self)
-            if tplayer:
-                tplayer = tplayer[0]
-                # TODO for team ladder all players will have to be active
-                if tplayer.team.active and join:
-                    return "You're already on the ladder!"
-                elif not tplayer.team.active and join:
-                    # TODO check template validity first....
-                    tplayer.team.active = True
-                    tplayer.team.joined_time = timezone.now()
-                    tplayer.team.leave_after_game = leave_after_game
-                    tplayer.team.save()
-                    log_tournament("Team {} joined the ladder, leave after game: {}".format(tplayer.team.id, leave_after_game), self)
-                    return "You've joined the ladder!"
-                elif tplayer.team.active and not join:
-                    tplayer.team.active = False
-                    tplayer.team.leave_after_game = False
-                    tplayer.team.save()
-                    return "You've left the ladder. Come back again soon."
-                elif not tplayer.team.active and not join:
-                    return "You're currently not on the ladder."
-            else:
-                team = TournamentTeam(tournament=self, players=self.players_per_team, active=True, max_games_at_once=1)
-                team.save()
-                tplayer = TournamentPlayer(player=player, tournament=self, team=team)
-                tplayer.save()
-                return "Looks like you're new to the **{}**. Welcome, and best of luck!".format(self.name)
-
+            return self.join_leave_player(player, join, leave_after_game)
         except ObjectDoesNotExist:
             return "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions."
 
@@ -4765,6 +4804,17 @@ class RealTimeLadder(Tournament):
                 return "You're a very diverse player, you have not vetoed any templates yet."
         except ObjectDoesNotExist:
             return "You haven't joined the ladder yet. You must join the ladder in order to veto a template."
+
+    def is_player_allowed_join(self, player):
+        # loop through all the templates and see if the player is allowed to join
+        allowed_join = False
+        templates = RealTimeLadderTemplate.objects.filter(ladder=self)
+        for t in templates:
+            allowed_join = is_player_allowed_join_by_token(player.token, t.template)
+            # we only need a single template valid to be able to play...
+            if allowed_join:
+                return True
+        return False
 
     def is_template_allowed(self, templateid, team):
         veto = RealTimeLadderVeto.objects.filter(team=team, ladder=self)
@@ -4806,10 +4856,10 @@ class RealTimeLadder(Tournament):
             return "Please enter a valid template id."
 
     def join_ladder(self, discord_id, leave_after_game):
-        return self.join_leave_impl(discord_id, True, leave_after_game)
+        return self.join_leave_discord(discord_id, True, leave_after_game)
 
     def leave_ladder(self, discord_id):
-        return self.join_leave_impl(discord_id, False, False)
+        return self.join_leave_discord(discord_id, False, False)
 
     def get_game_data(self, game_list):
         data = ""
@@ -4893,12 +4943,14 @@ class RealTimeLadderTemplate(models.Model):
     ladder = models.ForeignKey('RealTimeLadder', blank=True, null=True, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, default="My Template Name", blank=True, null=True)
 
+    def __str__(self):
+        return "{} | {}".format(self.template, self.name)
+
 
 class RealTimeLadderVeto(models.Model):
     template = models.ForeignKey('RealTimeLadderTemplate', blank=True, null=True, on_delete=models.CASCADE)
     team = models.ForeignKey('TournamentTeam', blank=True, null=True, on_delete=models.CASCADE)
     ladder = models.ForeignKey('RealTimeLadder', blank=True, null=True, on_delete=models.CASCADE)
-
 
 class DummyTournament(Tournament):
     def get_bracket_game_data(self):

@@ -51,17 +51,18 @@
                             <a class="nav-link active" id="lobby-tab" href="#lobbytab" data-toggle="tab">Real-Time Ladder Lobby</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="games-tab" href="#gamestab" data-toggle="tab">Bracket/Games</a>
+                            <a class="nav-link" id="games-tab" href="#gamestab" data-toggle="tab">Rankings</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="log-tab" href="#logtab" data-toggle="tab">Tournament Game Log</a>
+                            <a class="nav-link" id="log-tab" href="#logtab" data-toggle="tab">Ladder Game Log</a>
                         </li>
                     </ul>
                     <div class="tab-content">
-                        <div class="tab-pane show active" id="lobbytab">{{ team_table|safe }}
+                        <div class="tab-pane show active" id="lobbytab">
+                            {{ team_table|safe}}
                         </div>
                         <div class="tab-pane" id="gamestab">
-                                {{ bracket_game_data|safe }}
+                            {{ bracket_game_data|safe }}
                         </div>
                         <div class="tab-pane" id="logtab">
                             <div id="gamelogtab-inner">
