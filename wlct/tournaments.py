@@ -4435,6 +4435,7 @@ class RealTimeLadder(Tournament):
     def get_join_leave(self, allow_buttons, logged_in, request_player):
         # get's the join/leave buttons based on the player wanting to join
         join = ''
+        log_tournament("[get_join_leave]: allow_buttons: {}, logged_in: {}, player: {}".format(allow_buttons, logged_in, request_player.name), self)
         if logged_in:
             # is the player currently active in the tournament?
             tournament_player = TournamentPlayer.objects.filter(player=request_player, tournament=self)
@@ -4555,6 +4556,11 @@ class RealTimeLadder(Tournament):
             return "Template added successfully."
         else:
             return "The template you have entered is invalid."
+
+
+    @property
+    def can_start_tourney(self):
+        False
 
     def update_game_log(self):
         game_log = '<div class="row"><div class="container">'
