@@ -33,6 +33,7 @@ def is_player_allowed_join_by_token(token, templateid):
         return False
 
     # now we need to look at the template status here, the key is templateXXXXXX
+    print("is_player_allowed_join_by_token: {}".format(apirequestJson))
     template_key = "template{}".format(templateid)
 
     if template_key in apirequestJson:
@@ -4447,9 +4448,10 @@ class RealTimeLadder(Tournament):
                 join += '<button type="button" class="btn btn-info" name="slot" id="join">Join Ladder</button>&nbsp;<button type="button" class="btn btn-info" name="slot" id="decline" disabled="disabled">Leave Ladder</button>'
         return join
 
-    def get_ranked_teams(self):
+    def get_ranked_unranked_teams(self):
         ranked_teams = []
-        tournamentteams = TournamentTeam.objects.filter(tournament=self.id).order_by('-active', '-rating', 'team_index')
+        unranked_teams = []
+        tournamentteams = TournamentTeam.objects.filter(tournament=self.id).order_by('-rating')
         if tournamentteams:
             # calculate the ranked versus unranked teams and then combine them for the list view
             for t in tournamentteams:
@@ -4458,35 +4460,19 @@ class RealTimeLadder(Tournament):
                     if not t.ranked:
                         t.ranked = True
                         t.save()
-        return ranked_teams
-
-    def get_unranked_teams(self):
-        unranked_teams = []
-        tournamentteams = TournamentTeam.objects.filter(tournament=self.id).order_by('-active', '-rating', 'team_index')
-        if tournamentteams:
-            # calculate the ranked versus unranked teams and then combine them for the list view
-            for t in tournamentteams:
-                if get_games_finished_for_team_since(t.id, self, 5) == 0:
+                else:
                     unranked_teams.append(t)
-                    if t.ranked:
-                        t.ranked = False
-                        t.save()
-        return unranked_teams
+        return ranked_teams, unranked_teams
 
-    def get_team_table_impl(self, team_list):
+    def get_team_table(self, allowed_join, logged_in, player):
+        team_list = self.get_active_teams()
         table = ''
         if self.has_started:
             table += '<table class="table table-condensed">'
-            table += '<tr><th>Rank</th><th>Team</th><th>Rating</th><th>Record</th></tr>'
+            table += '<tr><th>Team</th><th>Rating</th><th>Record</th></tr>'
             current_team = 1
             for team in team_list:
                 table += '<tr>'
-                if team.ranked:
-                    table += '<td>{}</td>'.format(current_team)
-                    current_team += 1
-                else:
-                    table += '<td>{}</td>'.format("Unranked")
-
                 total_players = 0
                 team_players = TournamentPlayer.objects.filter(team=team)
                 table += '<td>'
@@ -4514,9 +4500,6 @@ class RealTimeLadder(Tournament):
             table += "</table>"
 
         return table
-
-    def get_team_table(self, allowed_join, logged_in, player):
-        return self.get_team_table_impl(self.get_active_teams())
 
     def get_bracket_game_data(self):
         return self.bracket_game_data
@@ -4571,7 +4554,7 @@ class RealTimeLadder(Tournament):
         game_log += '<tbody>'
 
         games_output = []
-        tournament_game_entries = TournamentGameEntry.objects.filter(tournament=self).order_by('-created_date')
+        tournament_game_entries = TournamentGameEntry.objects.filter(tournament=self).order_by('-pk')
         for entry in tournament_game_entries:
             if entry.game.id in games_output:
                 continue
@@ -4614,7 +4597,48 @@ class RealTimeLadder(Tournament):
         self.save()
 
     def update_bracket_game_data(self):
-        self.bracket_game_data = self.get_team_table_impl(self.get_ranked_teams() + self.get_unranked_teams())
+        ranked_unranked = self.get_ranked_unranked_teams()
+        team_list = ranked_unranked[0] + ranked_unranked[1]
+        table = ''
+        if self.has_started:
+            table += '<table class="table table-condensed">'
+            table += '<tr><th>Rank</th><th>Team</th><th>Rating</th><th>Record</th></tr>'
+            current_team = 1
+            for team in team_list:
+                table += '<tr>'
+                if team.ranked:
+                    table += '<td>{}</td>'.format(current_team)
+                    current_team += 1
+                else:
+                    table += '<td>{}</td>'.format("Unranked")
+
+                total_players = 0
+                team_players = TournamentPlayer.objects.filter(team=team)
+                table += '<td>'
+                if team_players and team_players.count() > 1:
+                    for player in team_players:
+                        table += '<table class="table table-borderless"><tr><td>'
+                        if player.player.clan is not None:
+                            table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
+                                player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
+
+                        table += '<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+                            player.player.token, player.player.name)
+
+                        table += '</td>'
+                        table += '</tr></table>'
+
+                        total_players += 1
+                elif team_players:
+                    table += get_player_data(team_players[0].player)
+
+                table += '</td>'
+                table += '<td>{}</td>'.format(team.rating)
+                table += '<td>{}-{}</td>'.format(team.wins, team.losses)
+                table += '</tr>'
+            table += "</table>"
+
+        self.bracket_game_data = table
         self.save()
 
     def process_new_games(self):
