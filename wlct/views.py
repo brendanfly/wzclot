@@ -305,11 +305,7 @@ def league_display_view(request, id):
                     return HttpResponseRedirect('/index/')
 
                 # get the api to check to see if we can display join buttons
-                apirequestJson = {}
-                if hasattr(league, 'current_template'):
-                    allowed_join = is_player_allowed_join(player, league.current_template)
-                else:
-                    allowed_join = is_player_allowed_join(player, league.template)
+                allowed_join = league.is_player_allowed_join(player)
 
             # clan-league is a special case, as it contains many sub-leagues underneath it
             # with the right requirements...if the league type is of clan league

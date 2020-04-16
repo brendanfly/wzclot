@@ -2798,6 +2798,9 @@ class MonthlyTemplateRotation(Tournament):
                             player[0].team.last_boot_time = datetime.datetime.utcnow()
                             player[0].team.save()
 
+    def is_player_allowed_join(self, player):
+        return is_player_allowed_join(player, self.current_template)
+
     def update_league_editing(self, data):
         # data is a dict of the values we must save
         # parse that and save to the DB
