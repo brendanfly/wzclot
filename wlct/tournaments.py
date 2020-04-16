@@ -33,7 +33,6 @@ def is_player_allowed_join_by_token(token, templateid):
         return False
 
     # now we need to look at the template status here, the key is templateXXXXXX
-    print("is_player_allowed_join_by_token: {}".format(apirequestJson))
     template_key = "template{}".format(templateid)
 
     if template_key in apirequestJson:
