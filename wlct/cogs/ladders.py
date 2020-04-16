@@ -52,7 +52,7 @@ class Ladders(commands.Cog, name="ladders"):
             emb.title = "Current Templates - Ladder {}".format(ladder.name)
             emb.add_field(name="Templates", value=retStr)
         elif cmd == "-r":
-            retStr = ladder.get_current_rankings()
+            retStr = ladder.get_current_rankings(option)
         elif cmd == "-g":
             do_embed = True
             retStr = ladder.get_current_games()

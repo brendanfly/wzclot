@@ -4840,6 +4840,7 @@ class RealTimeLadder(Tournament):
         allowed_join = False
         templates = RealTimeLadderTemplate.objects.filter(ladder=self)
         for t in templates:
+            print("Checking if {} is allowed to join template: {}".format(player.name, t.template))
             allowed_join = is_player_allowed_join_by_token(player.token, t.template)
             # we only need a single template valid to be able to play...
             if allowed_join:
@@ -4931,15 +4932,27 @@ class RealTimeLadder(Tournament):
             data += "There are no players currently on the ladder."
         return data
 
-    def get_current_rankings(self):
+    def get_current_rankings(self, page):
         data = "__**Ladder Rankings**__\n"
-        teams = TournamentTeam.objects.filter(tournament=self).order_by('-rating')
-        current_rank = 1
+        ranked_unranked = self.get_ranked_unranked()
+        teams = ranked_unranked[0] + ranked_unranked[1]
+
+        # slice the list based on the page
+        if page.isnumeric():
+            page = int(page)
+            # page == 1 is the first page, page == 2 is the second
+            start = 10 * (page - 1)
+            end = 10*page
+
+        teams = teams[start:end]
+        current_team = start
         for team in teams:
-            if current_rank > 10:
-                break
-            data += "{}) {} | {}\n".format(current_rank, team.rating, get_team_data_no_clan(team))
-            current_rank += 1
+            if team.ranked:
+                ranked_text = "{}".format(current_team)
+            else:
+                ranked_text = "Unranked"
+            data += "{} | {} | {}\n".format(ranked_text, team.rating, get_team_data_no_clan(team))
+            current_team += 1
         return data
 
     def get_current_templates(self):
