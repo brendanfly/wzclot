@@ -4944,6 +4944,8 @@ class RealTimeLadder(Tournament):
 
         teams = teams[start:end]
         current_team = start
+        if current_team == 0:
+            current_team = 1
         for team in teams:
             if team.ranked:
                 ranked_text = "{}".format(current_team)
