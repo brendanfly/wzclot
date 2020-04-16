@@ -196,7 +196,7 @@ def refresh_tournament(request):
                         request.session['token']), LogLevel.warning)
                     return HttpResponseRedirect('/index/')
 
-            allowed_join = is_player_allowed_join(player, tournament.template)
+            allowed_join = tournament.is_player_allowed_join(player)
             context.update({'team_table': tournament.get_team_table(allowed_join, is_player_token_valid(request), player)})
             context.update({'can_start_tourney': tournament.can_start_tourney})
             context.update({'bracket_game_data': tournament.get_bracket_game_data()})
