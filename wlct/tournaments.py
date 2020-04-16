@@ -4836,7 +4836,6 @@ class RealTimeLadder(Tournament):
 
     def is_player_allowed_join(self, player):
         # loop through all the templates and see if the player is allowed to join
-        allowed_join = False
         templates = RealTimeLadderTemplate.objects.filter(ladder=self)
         for t in templates:
             print("Checking if {} is allowed to join template: {}".format(player.name, t.template))
@@ -4933,7 +4932,7 @@ class RealTimeLadder(Tournament):
 
     def get_current_rankings(self, page):
         data = "__**Ladder Rankings**__\n"
-        ranked_unranked = self.get_ranked_unranked()
+        ranked_unranked = self.get_ranked_unranked_teams()
         teams = ranked_unranked[0] + ranked_unranked[1]
 
         # slice the list based on the page
