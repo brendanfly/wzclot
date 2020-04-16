@@ -4931,7 +4931,6 @@ class RealTimeLadder(Tournament):
         return data
 
     def get_current_rankings(self, page):
-        data = "__**Ladder Rankings**__\n"
         ranked_unranked = self.get_ranked_unranked_teams()
         teams = ranked_unranked[0] + ranked_unranked[1]
 
@@ -4946,14 +4945,19 @@ class RealTimeLadder(Tournament):
         current_team = start
         if current_team == 0:
             current_team = 1
-        for team in teams:
-            if team.ranked:
-                ranked_text = "{}".format(current_team)
-            else:
-                ranked_text = "Unranked"
-            data += "{} | {} | {}\n".format(ranked_text, team.rating, get_team_data_no_clan(team))
-            current_team += 1
-        return data
+
+        data = "__**Ladder Rankings**__ - Viewing Rankings {}-{}\n".format(current_team, end)
+        if len(teams) > 0:
+            for team in teams:
+                if team.ranked:
+                    ranked_text = "{}".format(current_team)
+                else:
+                    ranked_text = "Unranked"
+                data += "{} | {} | {}\n".format(ranked_text, team.rating, get_team_data_no_clan(team))
+                current_team += 1
+            return data
+        else:
+            return data + "There are no players/rankings to view."
 
     def get_current_templates(self):
         data = "__**Ladder Templates**__\n"
@@ -4994,6 +4998,7 @@ class RealTimeLadderVeto(models.Model):
     template = models.ForeignKey('RealTimeLadderTemplate', blank=True, null=True, on_delete=models.CASCADE)
     team = models.ForeignKey('TournamentTeam', blank=True, null=True, on_delete=models.CASCADE)
     ladder = models.ForeignKey('RealTimeLadder', blank=True, null=True, on_delete=models.CASCADE)
+
 
 class DummyTournament(Tournament):
     def get_bracket_game_data(self):
