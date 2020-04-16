@@ -45,7 +45,7 @@
                             {% endif %}
                             </div>
                             <div class="col-xs-10 col-sm-10 col-md-10 col-lg-10">
-                                <a class="card-link" href="{% url 'tournament_display_view' t.id %}">
+                                <a class="card-link" href="{{ t.get_url }}">
                                     <span class="card-title h5" data-role="filter-text"> {{ t.name }} </span><span class="text-muted h7 mb-2"> <i class="fa fa-clock-o"></i>&nbsp;created {{ t.time_since_created }}</span>
                                 </a>
                                 <br/>
@@ -88,7 +88,7 @@
 								<h3>{{ league.number_players }} <br>players</h3>
 							</div>
                             <div class="col-xs-10 col-sm-10 col-md-10 col-lg-10">
-                                <a class="card-link" href="{% url 'league_display_view' league.id %}">
+                                <a class="card-link" href="{{ league.get_url }}">
                                     <span class="card-title h5" data-role="filter-text"> {{ league.name }} </span><span class="text-muted h7 mb-2"> <i class="fa fa-clock-o"></i>&nbsp;created {{ league.time_since_created }}</span>
                                 </a>
                                 <br/>

@@ -725,6 +725,11 @@ class Tournament(models.Model):
 
         return False
 
+    def get_url(self):
+        if self.is_league:
+            return "/leagues/{}/".format(self.id)
+        return "/tournaments/{}/".format(self.id)
+
     def are_vacations_supported(self):
         settings_dict = self.get_template_settings_dict()
         if settings_dict is not None:
@@ -4838,9 +4843,9 @@ class RealTimeLadder(Tournament):
         # loop through all the templates and see if the player is allowed to join
         templates = RealTimeLadderTemplate.objects.filter(ladder=self)
         for t in templates:
-            print("Checking if {} is allowed to join template: {}".format(player.name, t.template))
             allowed_join = is_player_allowed_join_by_token(player.token, t.template)
             # we only need a single template valid to be able to play...
+            print("{} is {} allowed to play template {}".format(player.name, allowed_join, t.template))
             if allowed_join:
                 return True
         return False
@@ -4998,6 +5003,12 @@ class RealTimeLadderVeto(models.Model):
     template = models.ForeignKey('RealTimeLadderTemplate', blank=True, null=True, on_delete=models.CASCADE)
     team = models.ForeignKey('TournamentTeam', blank=True, null=True, on_delete=models.CASCADE)
     ladder = models.ForeignKey('RealTimeLadder', blank=True, null=True, on_delete=models.CASCADE)
+
+class MultiDayLadder(Tournament):
+    type = "MDL"
+
+    def get_url(self):
+        return "http://md-ladder.cloudapp.net/"
 
 
 class DummyTournament(Tournament):
