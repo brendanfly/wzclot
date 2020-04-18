@@ -4743,6 +4743,7 @@ class RealTimeLadder(Tournament):
                                         team2.active = False
                                         self.number_players -= 1
 
+                                    self.save()
                                     team1.leave_after_game = False
                                     team2.leave_after_game = False
                                     team1.save()
