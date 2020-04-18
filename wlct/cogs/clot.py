@@ -208,7 +208,7 @@ class Clot(commands.Cog, name="clot"):
                 elif cmd == "rtl":
                     rtl = RealTimeLadder.objects.filter(id=109)[0]
                     if option == "-p":
-                        tplayers = TournamentPlayer.objects.filter(tournament=rtl, active=True)
+                        tplayers = TournamentPlayer.objects.filter(tournament=rtl, team__active=True)
                         if tplayers:
                             player_data = "Current Players on the RTL:\n"
                             for tplayer in tplayers:
