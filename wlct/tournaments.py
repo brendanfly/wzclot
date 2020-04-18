@@ -4738,8 +4738,10 @@ class RealTimeLadder(Tournament):
 
                                     if team1.leave_after_game:
                                         team1.active = False
+                                        self.number_players -= 1
                                     if team2.leave_after_game:
                                         team2.active = False
+                                        self.number_players -= 1
 
                                     team1.leave_after_game = False
                                     team2.leave_after_game = False
