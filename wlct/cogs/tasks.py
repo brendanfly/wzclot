@@ -205,8 +205,7 @@ class Tasks(commands.Cog, name="tasks"):
         except Exception as e:
             return
 
-        return
-        ladder = get_multi_day_ladder(2)
+        ladder = get_multi_day_ladder(168)
         round = TournamentRound.objects.filter(tournament=ladder, round_number=1)
         if not round:
             round = TournamentRound(tournament=ladder, round_number=1)

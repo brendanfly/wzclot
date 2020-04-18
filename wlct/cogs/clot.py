@@ -24,6 +24,7 @@ class Clot(commands.Cog, name="clot"):
         # return a tuple of all the player stats
         # this tuple will be (Success, Wins, Losses, Tournaments Played In, Games Played In, Win %)
         # first, grab the player
+        print("Looking up player stats for: {}".format(token))
         if token == 0:
             return False, None
         player = Player.objects.filter(token=token)
@@ -78,6 +79,7 @@ class Clot(commands.Cog, name="clot"):
                         token = player[0].token
                 elif option.isnumeric():
                     # try to lookup the player by token
+                    print("Option is numeric, using it as the token")
                     token = option
                 else:
                     await ctx.send("bb!stats <player name> is currently under construction")
