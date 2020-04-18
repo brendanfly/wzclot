@@ -24,11 +24,13 @@ class Clot(commands.Cog, name="clot"):
         # return a tuple of all the player stats
         # this tuple will be (Success, Wins, Losses, Tournaments Played In, Games Played In, Win %)
         # first, grab the player
-        print("Looking up player stats for: {}".format(token))
         if token == 0:
+            print("1 Looking up player stats for: {}".format(token))
             return False, None
         player = Player.objects.filter(token=token)
+        print("2 Looking up player stats for: {}".format(token))
         if player:
+            print("3 Looking up player stats for: {}".format(token))
             player = player[0]
             wins = 0
             losses = 0
