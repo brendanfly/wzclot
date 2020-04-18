@@ -20,13 +20,13 @@ class Clot(commands.Cog, name="clot"):
     def __init__(self, bot):
         self.bot = bot
 
-    def get_player_stats(self, discord_id):
+    def get_player_stats(self, token):
         # return a tuple of all the player stats
         # this tuple will be (Success, Wins, Losses, Tournaments Played In, Games Played In, Win %)
         # first, grab the player
-        if discord_id == 0:
+        if token == 0:
             return False, None
-        player = Player.objects.filter(discord_member__memberid=discord_id)
+        player = Player.objects.filter(token=token)
         if player:
             player = player[0]
             wins = 0
@@ -69,16 +69,16 @@ class Clot(commands.Cog, name="clot"):
                 emb.add_field(name="# of Games Played", value="{}".format(g.count()))
                 await ctx.send(embed=emb)
             elif option == "me" or option.isnumeric() or option != "":
-                discord_user_id = 0
+                token = 0
                 if option == "me":
                     discord_user = ctx.message.author
                     discord_user_id = discord_user.id
+                    player = Player.objects.filter(discord_member__memberid=discord_user_id)
+                    if player:
+                        token = player[0].token
                 elif option.isnumeric():
                     # try to lookup the player by token
-                    player = Player.objects.filter(token=option)
-                    if player and player[0].discord_member is not None:
-                        discord_user = self.bot.get_user(player[0].discord_member.memberid)
-                        discord_user_id = discord_user.id
+                    token = option
                 else:
                     await ctx.send("bb!stats <player name> is currently under construction")
                     return
@@ -102,11 +102,14 @@ class Clot(commands.Cog, name="clot"):
                     await self.bot.update_progress(message, original_text, 100.0)'''
 
 
-                stats = self.get_player_stats(discord_user_id)
+                stats = self.get_player_stats(token)
                 if stats[0]:
                     # success
                     pstats = stats[1]
-                    emb = self.bot.get_embed(discord_user)
+                    if discord_user:
+                        emb = self.bot.get_embed(discord_user)
+                    else:
+                        emb = self.bot.get_default_embed()
                     emb.add_field(name="Overall Record", value="{}-{}".format(pstats.wins, pstats.losses))
                     emb.add_field(name="Winning %", value="{}".format(pstats.win_pct))
                     emb.add_field(name="Tournaments Played In", value="{}".format(pstats.tournaments))

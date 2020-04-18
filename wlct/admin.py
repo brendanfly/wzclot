@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import ModelAdmin, SimpleListFilter
 from wlct.logging import LogLevel, Logger, TournamentGameLog, TournamentGameStatusLog, TournamentLog, ProcessGameLog, ProcessNewGamesLog
-from wlct.tournaments import Tournament, SwissTournament, GroupStageTournament, GroupStageTournamentGroup, RoundRobinTournament, SeededTournament, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TournamentGame, TournamentTeam, TournamentGameEntry, TournamentRound, TournamentInvite, TournamentPlayer, PromotionalRelegationLeague, PromotionalRelegationLeagueSeason, ClanLeague, ClanLeagueDivision, ClanLeagueTournament, ClanLeagueDivisionClan, ClanLeagueTemplate, RealTimeLadderTemplate, RealTimeLadder, PromotionalRelegationLeagueTournament, RealTimeLadderVeto
+from wlct.tournaments import Tournament, SwissTournament, GroupStageTournament, GroupStageTournamentGroup, RoundRobinTournament, SeededTournament, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TournamentGame, TournamentTeam, TournamentGameEntry, TournamentRound, TournamentInvite, TournamentPlayer, PromotionalRelegationLeague, PromotionalRelegationLeagueSeason, ClanLeague, ClanLeagueDivision, ClanLeagueTournament, ClanLeagueDivisionClan, ClanLeagueTemplate, RealTimeLadderTemplate, RealTimeLadder, PromotionalRelegationLeagueTournament, RealTimeLadderVeto, MultiDayLadder
 
 class LogFilter(SimpleListFilter):
     title = 'Log Level' # a label for our filter
@@ -242,3 +242,8 @@ class RealTimeLadderVetoAdmin(admin.ModelAdmin):
     raw_id_fields = ['team']
 
 admin.site.register(RealTimeLadderVeto, RealTimeLadderVetoAdmin)
+
+class MultiDayLadderAdmin(admin.ModelAdmin):
+    raw_id_fields = ['created_by', 'winning_team']
+
+admin.site.register(MultiDayLadder, MultiDayLadderAdmin)

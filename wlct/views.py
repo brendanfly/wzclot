@@ -926,7 +926,7 @@ def login_view(request):
                         player.name = apirequestJson['name']
                     except ObjectDoesNotExist:
                         if 'clan' in apirequestJson:
-                            player = Player(token=token,clan_text=apirequestJson['clan'],name=apirequestJson['name'])
+                            player = Player(token=token, clan_text=apirequestJson['clan'], name=apirequestJson['name'])
 
                             # lookup the clan
                             clan = Clan.objects.filter(name=apirequestJson['clan'])

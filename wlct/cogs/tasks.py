@@ -1,6 +1,6 @@
 import discord
 from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink
-from wlct.tournaments import Tournament, TournamentTeam, TournamentGame, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame, ClanLeagueTournament
+from wlct.tournaments import Tournament, TournamentTeam, TournamentGame, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame, ClanLeagueTournament, get_multi_day_ladder, TournamentGameEntry, TournamentRound
 from discord.ext import commands, tasks
 from wlct.cogs.common import is_admin
 from django.utils import timezone
@@ -10,6 +10,8 @@ from wlct.api import API
 import gc
 import datetime
 import pytz
+import urllib.request
+import json
 
 class Tasks(commands.Cog, name="tasks"):
     def __init__(self, bot):
@@ -70,6 +72,7 @@ class Tasks(commands.Cog, name="tasks"):
                 game_log_text = ""
                 if hasattr(self.bot, 'uptime'):
                     games = TournamentGame.objects.filter(is_finished=True, tournament=cl.tournament, game_finished_time__gt=(self.bot.uptime-datetime.timedelta(days=3)), game_log_sent=False)
+                    log_bot_msg("Found {} games to log in channel {}".format(games.count(), channel.name))
                     for game in games:
                         if game.game_finished_time is None and game.winning_team or not game.winning_team:
                             continue  # ignore games with no finished time (which might be 0 and returned in this query)
@@ -194,6 +197,88 @@ class Tasks(commands.Cog, name="tasks"):
                 t.cache_data()
                 self.bot.cache_queue.pop(i)
 
+    async def handle_stash_deadman_mdl_games(self):
+        mdl_url = "http://md-ladder.cloudapp.net/api/v1.0/games?topk=10"
+
+        try:
+            content = urllib.request.urlopen(mdl_url).read()
+        except Exception as e:
+            return
+
+        return
+        ladder = get_multi_day_ladder(2)
+        round = TournamentRound.objects.filter(tournament=ladder, round_number=1)
+        if not round:
+            round = TournamentRound(tournament=ladder, round_number=1)
+            round.save()
+        else:
+            round = round[0]
+
+        data = json.loads(content)
+        for index, game_data in enumerate(data['games']):
+            # first check to see if the game has already been processed
+            game = TournamentGame.objects.filter(tournament=ladder, gameid=game_data['game_id'])
+            if not game:
+                game_id = game_data['game_id']
+                # need to find the two players here and create the corresponding game entry
+                players = game_data['players']
+                tplayers = []
+                for player in players:
+                    # do we know about this player?
+                    token = player['player_id']
+                    name = player['player_name']
+
+                    player = Player.objects.filter(token=token)
+                    if not player:
+                        clan = None
+                        if 'clan' in player:
+                            clan_name = player['clan']
+                            # first, lookup the clan object
+                            clan = Clan.objects.filter(name=clan_name)
+                            if clan:
+                                clan = clan[0]
+
+                        player = Player(name=name, token=token, clan=clan)
+                        player.save()
+                    else:
+                        player = player[0]
+
+                    # we have the player, next check for the tournament player
+                    tplayer = TournamentPlayer.objects.filter(player=player, tournament=ladder)
+                    if tplayer:
+                        tplayer = tplayer[0]
+                        tplayers.append(tplayer)
+                    else:
+                        # create the new team first
+                        team = TournamentTeam(tournament=ladder)
+                        team.save()
+                        tplayer = TournamentPlayer(player=player, team=team, tournament=ladder)
+                        tplayer.save()
+                        tplayers.append(tplayer)
+
+                if len(tplayers) == 2:
+                    # we have the tournament player objects which have the team objects and player objects
+                    # create both game entries + game objects so that the bot can log them
+                    teams = "{}.{}".format(tplayers[0].team.id, tplayers[1].team.id)
+                    finished = datetime.datetime.strptime(game_data['finish_date'], '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=pytz.UTC)
+                    created = datetime.datetime.strptime(game_data['created_date'], '%Y-%m-%d %H:%M:%S.%f').replace(tzinfo=pytz.UTC)
+                    game_link = 'https://www.warzone.com/MultiPlayer?GameID={}'.format(game_id)
+                    game = TournamentGame(game_link=game_link, gameid=game_id,
+                                         players_per_team=1,
+                                         team_game=False, tournament=ladder, is_finished=True,
+                                         teams=teams, round=round, game_finished_time=finished, game_start_time=created)
+                    game.save()
+                    entry = TournamentGameEntry(team=tplayers[0].team, team_opp=tplayers[1].team, game=game, tournament=ladder)
+                    entry.save()
+                    entry = TournamentGameEntry(team=tplayers[1].team, team_opp=tplayers[0].team, game=game, tournament=ladder)
+                    entry.save()
+                    winning_token = game_data['winner_id']
+                    if str(winning_token) == str(tplayers[0].player.token):
+                        game.winning_team = tplayers[0].team
+                    else:
+                        game.winning_team = tplayers[1].team
+                    game.save()
+
     async def handle_critical_errors(self):
         logs = Logger.objects.filter(level=LogLevel.critical, bot_seen=False)
         if logs:
@@ -234,6 +319,7 @@ class Tasks(commands.Cog, name="tasks"):
             log_exception()
 
     async def handle_always_tasks(self):
+        await self.handle_stash_deadman_mdl_games()
         await self.handle_critical_errors()
         await self.handle_game_logs()
         await self.handle_cache_queue()

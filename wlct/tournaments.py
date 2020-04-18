@@ -21,6 +21,7 @@ from django.utils import timezone
 import pytz
 from django.core.exceptions import ObjectDoesNotExist
 import traceback
+import urllib.request
 
 def is_player_allowed_join_by_token(token, templateid):
     allowed_join = False
@@ -256,6 +257,10 @@ def find_league_by_id(id):
             return child_league[0]
 
         child_league = RealTimeLadder.objects.filter(pk=id)
+        if child_league:
+            return child_league[0]
+
+        child_league = MultiDayLadder.objects.filter(pk=id)
         if child_league:
             return child_league[0]
 
@@ -2511,7 +2516,7 @@ class TournamentTeam(models.Model):
     active = models.BooleanField(default=True)
     max_games_at_once = models.IntegerField(default=2, blank=True, null=True)
     has_had_bye = models.BooleanField(default=False)
-    joined_time = models.DateTimeField(default=datetime.datetime.now)
+    joined_time = models.DateTimeField(default=datetime.datetime.utcnow())
     leave_after_game = models.BooleanField(default=False, blank=True, null=True)
     last_boot_time = models.DateTimeField(blank=True, null=True)
     on_vacation = models.BooleanField(default=False)
@@ -4404,6 +4409,12 @@ class ClanLeague(Tournament):
     def get_invited_players_table(self):
         return ""
 
+def get_multi_day_ladder(ladderId):
+    try:
+        ladder = MultiDayLadder.objects.get(id=int(ladderId))
+        return ladder
+    except ObjectDoesNotExist:
+        return None
 
 def get_real_time_ladder(ladderId):
     try:
@@ -4443,7 +4454,8 @@ class RealTimeLadder(Tournament):
     def get_join_leave(self, allow_buttons, logged_in, request_player):
         # get's the join/leave buttons based on the player wanting to join
         join = ''
-        log_tournament("[get_join_leave]: allow_buttons: {}, logged_in: {}, player: {}".format(allow_buttons, logged_in, request_player.name), self)
+        if request_player:
+            log_tournament("[get_join_leave]: allow_buttons: {}, logged_in: {}, player: {}".format(allow_buttons, logged_in, request_player.name), self)
         if logged_in:
             # is the player currently active in the tournament?
             tournament_player = TournamentPlayer.objects.filter(player=request_player, tournament=self)
@@ -5009,6 +5021,31 @@ class RealTimeLadderVeto(models.Model):
 
 class MultiDayLadder(Tournament):
     type = "MDL"
+
+    def update_game_log(self):
+        mdl_url = "http://md-ladder.cloudapp.net/api/v1.0/players/"
+
+        content = urllib.request.urlopen(mdl_url).read()
+
+        data = json.loads(content)
+        num_players = 0
+        for index, player in enumerate(data['players']):
+            # once we have the players, start printing out each of the top 10
+            if 'rank' in player:
+                num_players += 1
+
+        print("Found {} players on the MDL".format(num_players))
+        self.number_players = num_players
+        self.save()
+
+    def get_game_log(self):
+        pass
+
+    def update_bracket_game_data(self):
+        pass
+
+    def get_bracket_game_data(self):
+        pass
 
     def get_url(self):
         return "http://md-ladder.cloudapp.net/"
