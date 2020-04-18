@@ -5047,6 +5047,9 @@ class MultiDayLadder(Tournament):
     def get_bracket_game_data(self):
         pass
 
+    def process_new_games(self):
+        pass
+
     def get_url(self):
         return "http://md-ladder.cloudapp.net/"
 

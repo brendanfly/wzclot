@@ -25,12 +25,9 @@ class Clot(commands.Cog, name="clot"):
         # this tuple will be (Success, Wins, Losses, Tournaments Played In, Games Played In, Win %)
         # first, grab the player
         if token == 0:
-            print("1 Looking up player stats for: {}".format(token))
             return False, None
         player = Player.objects.filter(token=token)
-        print("2 Looking up player stats for: {}".format(token))
         if player:
-            print("3 Looking up player stats for: {}".format(token))
             player = player[0]
             wins = 0
             losses = 0
@@ -60,7 +57,6 @@ class Clot(commands.Cog, name="clot"):
                       ''')
     async def stats(self, ctx, option=""):
         try:
-            mentions = []  #ctx.message.mentions
             if option == "clot":
                 emb = self.bot.get_default_embed()
                 # grab total tournaments + games + players
@@ -73,6 +69,7 @@ class Clot(commands.Cog, name="clot"):
                 await ctx.send(embed=emb)
             elif option == "me" or option.isnumeric() or option != "":
                 token = 0
+                discord_user = None
                 if option == "me":
                     discord_user = ctx.message.author
                     discord_user_id = discord_user.id
@@ -419,7 +416,7 @@ class Clot(commands.Cog, name="clot"):
                             if hasattr(tournament, 'parent_tournament'):
                                 if tournament.parent_tournament:
                                     print("Tournament Parent ID {}".format(tournament.parent_tournament.id))
-                                if player.id != tournament.created_by.id and (tournament.id != 109) and (tournament.id != 167) and (tournament.parent_tournament and tournament.parent_tournament.id != 51):  # hard code this for clan league
+                                if player.id != tournament.created_by.id and (tournament.id != 168) and (tournament.id != 109) and (tournament.id != 167) and (tournament.parent_tournament and tournament.parent_tournament.id != 51):  # hard code this for clan league
                                     await ctx.send("The creator of the tournament is the only one who can link private tournaments.")
                                     return
                             else:
