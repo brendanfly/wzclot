@@ -71,7 +71,14 @@ class Ladders(commands.Cog, name="ladders"):
                     emb.add_field(name="Last 10 games", value=finished_game_data)
         elif cmd == "-v":
             if option != "invalid_option":
-                retStr = ladder.veto_template(discord_id, option)
+                retStr = ladder.veto_template(discord_id, option, False)
+                log_bot_msg("[Ladder {}]: User {} has vetoed template with id: {}".format(ladder.id, ctx.message.author.name, option))
+            else:
+                # display the users current veto
+                retStr = ladder.get_current_vetoes(discord_id)
+        elif cmd == "-vr":
+            if option != "invalid_option":
+                retStr = ladder.veto_template(discord_id, option, True)
                 log_bot_msg("[Ladder {}]: User {} has vetoed template with id: {}".format(ladder.id, ctx.message.author.name, option))
             else:
                 # display the users current veto
@@ -91,6 +98,18 @@ class Ladders(commands.Cog, name="ladders"):
                     retStr = ladder.remove_template(option)
             else:
                 retStr = invalid_cmd_text
+        elif cmd == "-tv":
+            if option != "invalid_option":
+                if is_tournament_creator(discord_id, ladder):
+                    if option.isnumeric():
+                        vetoes = int(option)
+                        ladder.max_vetoes = vetoes
+                        ladder.save()
+                        retStr = "Updated {} # of vetoes to {} per team.".format(ladder.name, vetoes)
+                    else:
+                        retStr = "Please enter a valid # for updating veto count"
+            else:
+                retStr = "Current total vetoes per team: {}.".format(ladder.max_vetoes)
         elif cmd == "-me":
             # me data returns a tuple of information
             # first is what rank/position you are

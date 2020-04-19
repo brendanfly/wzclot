@@ -2516,7 +2516,7 @@ class TournamentTeam(models.Model):
     active = models.BooleanField(default=True)
     max_games_at_once = models.IntegerField(default=2, blank=True, null=True)
     has_had_bye = models.BooleanField(default=False)
-    joined_time = models.DateTimeField(default=datetime.datetime.utcnow())
+    joined_time = models.DateTimeField(default=timezone.now)
     leave_after_game = models.BooleanField(default=False, blank=True, null=True)
     last_boot_time = models.DateTimeField(blank=True, null=True)
     on_vacation = models.BooleanField(default=False)
@@ -4411,6 +4411,13 @@ class ClanLeague(Tournament):
 
 def get_multi_day_ladder(ladderId):
     try:
+        if settings.DEBUG:
+            # just try to get the first one
+            ladder = RealTimeLadder.objects.all()
+            if ladder:
+                return ladder[0]
+            else:
+                return None
         ladder = MultiDayLadder.objects.get(id=int(ladderId))
         return ladder
     except ObjectDoesNotExist:
@@ -4418,8 +4425,16 @@ def get_multi_day_ladder(ladderId):
 
 def get_real_time_ladder(ladderId):
     try:
-        ladder = RealTimeLadder.objects.get(id=int(ladderId))
-        return ladder
+        if settings.DEBUG:
+            # just try to get the first one
+            ladder = RealTimeLadder.objects.all()
+            if ladder:
+                return ladder[0]
+            else:
+                return None
+        else:
+            ladder = RealTimeLadder.objects.get(id=int(ladderId))
+            return ladder
     except ObjectDoesNotExist:
         return None
 
@@ -4428,6 +4443,7 @@ class RealTimeLadder(Tournament):
     auto_boot_seconds = models.IntegerField(default=180, blank=True, null=True)
     seconds_banked = models.IntegerField(default=300, blank=True, null=True)
     type = models.CharField(max_length=255, default="Real-Time Ladder")
+    max_vetoes = models.IntegerField(default=1)
 
     def get_active_team_count(self):
         return TournamentTeam.objects.filter(tournament=self, active=True).count()
@@ -4546,7 +4562,6 @@ class RealTimeLadder(Tournament):
             api = API()
             ret = api.api_create_fake_game_and_get_settings(templateid)
             # what is the template name?
-            print("Template Settings to add: {}".format(ret))
             if 'success' in ret and ret['success'] == 'true':
                 settings = ret['settings']
             if 'PersonalMessage' in settings:
@@ -4849,8 +4864,9 @@ class RealTimeLadder(Tournament):
             data = ""
             vetoes = RealTimeLadderVeto.objects.filter(ladder=self, team=tp.team)
             if vetoes:
+                data += "{}, your vetoes are:\n".format(player.name)
                 for veto in vetoes:
-                    data += "{}, your current veto is: {}".format(player.name, veto.template.name)
+                    data += "{} | {}\n".format(veto.template.name, veto.template.template)
                 return data
             else:
                 return "You're a very diverse player, you have not vetoed any templates yet."
@@ -4882,7 +4898,7 @@ class RealTimeLadder(Tournament):
                 return is_player_allowed_join_by_token(tplayer.player.token, templateid)
             return False
 
-    def veto_template(self, discord_id, templateid):
+    def veto_template(self, discord_id, templateid, remove):
         # attempt to veto a template, and if they have already vetoed one tell them
         if templateid.isnumeric():
             template = RealTimeLadderTemplate.objects.filter(template=int(templateid))
@@ -4894,14 +4910,25 @@ class RealTimeLadder(Tournament):
                 except ObjectDoesNotExist:
                     return "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions."
 
-                veto = RealTimeLadderVeto.objects.filter(template=template, ladder=self, team=tp.team)
-                if veto:
-                    veto = veto[0]
-                    veto.template = template
+                total_vetoes = RealTimeLadderVeto.objects.filter(ladder=self, team=tp.team)
+                if total_vetoes.count() == self.max_vetoes and not remove:
+                    return "You already have vetoed the max ({}) templates. Please use the **-vr templateid** command on the ladder to remove a veto.".format(self.max_vetoes)
+
+                # are we adding or removing?
+                if remove:
+                    veto = RealTimeLadderVeto.objects.filter(template=template, ladder=self, team=tp.team)
+                    if veto:
+                        veto[0].delete()
+                        return "You've removed your veto for {} | {}".format(template.name, templateid)
+                    else:
+                        return "You do not currently have a veto for {}".format(template.name)
                 else:
+                    veto = RealTimeLadderVeto.objects.filter(template=template, ladder=self, team=tp.team)
+                    if veto:
+                        return "You've already vetoed {}.".format(template.name)
                     veto = RealTimeLadderVeto(template=template, ladder=self, team=tp.team)
-                veto.save()
-                return "Vetoed {} successfully.".format(template.name)
+                    veto.save()
+                    return "Vetoed {} successfully.".format(template.name)
             else:
                 return "Please enter a valid template id."
         else:
@@ -4964,12 +4991,10 @@ class RealTimeLadder(Tournament):
             start = 10 * (page - 1)
             end = 10*page
 
-        teams = teams[start:end]
-        current_team = start
-        if current_team == 0:
-            current_team = 1
+            teams = teams[start:end]
+            current_team = start + 1
 
-        data = "__**Ladder Rankings**__ - Viewing Rankings {}-{}\n".format(current_team, end)
+            data = "__**Ladder Rankings**__ - Viewing Rankings {}-{}\n".format(current_team, end)
         if len(teams) > 0:
             for team in teams:
                 if team.ranked:
@@ -5021,6 +5046,9 @@ class RealTimeLadderVeto(models.Model):
     template = models.ForeignKey('RealTimeLadderTemplate', blank=True, null=True, on_delete=models.CASCADE)
     team = models.ForeignKey('TournamentTeam', blank=True, null=True, on_delete=models.CASCADE)
     ladder = models.ForeignKey('RealTimeLadder', blank=True, null=True, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "[{}]: {} vetoed by {}".format(ladder.name, template.name, team.id)
 
 class MultiDayLadder(Tournament):
     type = "MDL"

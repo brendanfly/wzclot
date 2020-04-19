@@ -146,7 +146,7 @@ class Tasks(commands.Cog, name="tasks"):
         pass
 
     async def handle_hours_tasks(self):
-        pass
+        await self.handle_stash_deadman_mdl_games()
 
     async def handle_day_tasks(self):
         pass
@@ -318,7 +318,6 @@ class Tasks(commands.Cog, name="tasks"):
             log_exception()
 
     async def handle_always_tasks(self):
-        await self.handle_stash_deadman_mdl_games()
         await self.handle_critical_errors()
         await self.handle_game_logs()
         await self.handle_cache_queue()
