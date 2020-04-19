@@ -27,6 +27,12 @@ class DiscordChannelTournamentLink(models.Model):
     channelid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
     discord_user = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.CASCADE)
 
+# class to track text updates the bot will send out a single-time to channels linked to the tournament
+class DiscordTournamentUpdate(models.Model):
+    update_text = models.TextField(default="", blank=True, null=True)
+    tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, blank=True, null=True)
+    bot_send = models.BooleanField(default=False)
+
 class Engine(models.Model):
     last_run_time = models.DateTimeField(default=timezone.now)
     next_run_time = models.DateTimeField(blank=True, null=True)
@@ -92,3 +98,8 @@ class DiscordChannelTournamentLinkAdmin(admin.ModelAdmin):
     pass
 
 admin.site.register(DiscordChannelTournamentLink, DiscordChannelTournamentLinkAdmin)
+
+class DiscordTournamentUpdateAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(DiscordTournamentUpdate, DiscordTournamentUpdateAdmin)

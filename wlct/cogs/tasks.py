@@ -1,5 +1,5 @@
 import discord
-from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink
+from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink, DiscordTournamentUpdate
 from wlct.tournaments import Tournament, TournamentTeam, TournamentGame, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame, ClanLeagueTournament, get_multi_day_ladder, TournamentGameEntry, TournamentRound
 from discord.ext import commands, tasks
 from wlct.cogs.common import is_admin
@@ -290,6 +290,21 @@ class Tasks(commands.Cog, name="tasks"):
                     log.bot_seen = True
                     log.save()
 
+    async def handle_discord_tournament_updates(self):
+        try:
+            updates = DiscordTournamentUpdate.objects.filter(bot_send=False)
+            for u in updates:
+                # look up the tournament, and get all channel links for that tournament
+                channel_links = DiscordChannelTournamentLink.objects.filter(tournament=u.tournament)
+                for c in channel_links:
+                    channel = self.bot.get_channel(c.channelid)
+                    if channel:
+                        await channel.send(u.update_text)
+                u.bot_send = True
+                u.save()
+        except:
+            log_exception()
+
     async def handle_all_tasks(self):
         # calculate the time different here
         # determine if we need hours run or 4 hours run
@@ -321,6 +336,7 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_critical_errors()
         await self.handle_game_logs()
         await self.handle_cache_queue()
+        await self.handle_discord_tournament_updates()
 
     async def process_member_join(self, memid):
         member = self.bot.get_user(memid)
