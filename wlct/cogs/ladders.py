@@ -46,6 +46,8 @@ class Ladders(commands.Cog, name="ladders"):
             current_joined = ladder.get_current_joined()
             log_bot_msg("[Ladder {}]: User {} has left the RTL. New Team count: {}".format(ladder.id, ctx.message.author.name, teams))
             retStr += "\n\n" + current_joined + "\n"
+            if not ladder.get_active_team_count():
+                await self.send_ladder_message(current_joined, ladder, False, ctx.message)
         elif cmd == "-t":
             retStr = ladder.get_current_templates()
             do_embed = True
@@ -208,10 +210,14 @@ class Ladders(commands.Cog, name="ladders"):
             if channel.guild.id == guild_original_msg.guild.id:
                 # skip this one, it came from here
                 continue
-            if is_embed:
-                await channel.send(embed=msg)
-            else:
-                await channel.send(msg)
+            try:
+                if is_embed:
+                    await channel.send(embed=msg)
+                else:
+                    await channel.send(msg)
+            except:
+                log_exception()
+                log_bot_msg("Failed while sending msg to channel: {}".format(channel.name))
 
 def setup(bot):
     bot.add_cog(Ladders(bot))

@@ -4841,7 +4841,7 @@ class RealTimeLadder(Tournament):
             elif not tplayer.team.active and not join:
                 return "You're currently not on the ladder."
         else:
-            team = TournamentTeam(tournament=self, players=self.players_per_team, active=True, max_games_at_once=1)
+            team = TournamentTeam(tournament=self, players=self.players_per_team, active=True, max_games_at_once=1, joined_time=timezone.now(), leave_after_game=leave_after_game)
             team.save()
             tplayer = TournamentPlayer(player=player, tournament=self, team=team)
             tplayer.save()
