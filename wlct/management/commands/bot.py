@@ -130,9 +130,8 @@ class WZBot(commands.AutoShardedBot):
                 embed.add_field(name=field_name, value=data, inline=inline)
                 field_values = []
                 total_chars = 0
-            else:
-                field_values.append(item)
-                total_chars += len(item)
+            field_values.append(item)
+            total_chars += len(item)
         if len(field_values) > 0:
             data = ""
             for i in field_values:
