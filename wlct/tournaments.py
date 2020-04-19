@@ -25,6 +25,7 @@ import urllib.request
 from urllib.error import HTTPError
 from wlct.cogs.common import embed_list_special_delimiter
 from wlct.clotbook import get_clotbook
+import time
 
 def is_player_allowed_join_by_token(token, templateid):
     allowed_join = False
@@ -3613,6 +3614,7 @@ class MonthlyTemplateRotation(Tournament):
                         if player and player.team.id == team_id:
                             # did we boot this past week?
                             if player[0].team.last_boot_time is not None:
+                                log_tournament("Last boot time by {} was {}".format(player[0].player.name, player[0].team.last_boot_time.replace(tzinfo=pytz.UTC)))
                                 if player[0].team.last_boot_time.replace(tzinfo=pytz.UTC) > (datetime.datetime.utcnow().replace(tzinfo=pytz.UTC) - datetime.timedelta(days=7)):
                                     # last boot time was in this past week..remove player
                                     log_tournament("Removing player {} ({}) from MTC {}".format(player[0].player.name, player[0].player.token, self.name), self)
@@ -4080,7 +4082,12 @@ class MonthlyTemplateRotation(Tournament):
             # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
             end_time = entry.game.game_finished_time.strftime(
                 "%b %d, %Y %H:%M:%S %p") if entry.game.is_finished and entry.game.game_finished_time else 'N/A'
-            game_log += '<td>{}</td>'.format(end_time)
+
+            if end_time is not "N/A":
+                unix_time = time.mktime(end_time.timetuple())
+                game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
+            else:
+                game_log += '<td>{}</td>'.format(end_time)
 
             game_log += '</tr>'
 
@@ -5345,7 +5352,12 @@ class ClanLeague(Tournament):
                 end_time = game.game_finished_time.strftime("%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
 
                 game_log += '<td>{}</td>'.format(start_time)
-                game_log += '<td>{}</td>'.format(end_time)
+
+                if end_time is not "N/A":
+                    unix_time = time.mktime(end_time.timetuple())
+                    game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
+                else:
+                    game_log += '<td>{}</td>'.format(end_time)
                 game_log += '</tr>'
 
         game_log += '</tbody></table>'
@@ -5609,8 +5621,12 @@ class RealTimeLadder(Tournament):
             # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
             end_time = entry.game.game_finished_time.strftime(
                 "%b %d, %Y %H:%M:%S %p") if entry.game.is_finished and entry.game.game_finished_time else 'N/A'
-            game_log += '<td>{}</td>'.format(end_time)
 
+            if end_time is not "N/A":
+                unix_time = time.mktime(end_time.timetuple())
+                game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
+            else:
+                game_log += '<td>{}</td>'.format(end_time)
             game_log += '</tr>'
 
             games_output.append(entry.game.id)
