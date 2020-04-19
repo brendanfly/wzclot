@@ -3,7 +3,7 @@ from wlct.models import Clan, Player, DiscordChannelTournamentLink
 from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame
 from wlct.logging import log_bot_msg, log_exception
 from discord.ext import commands, tasks
-from wlct.cogs.common import is_admin, is_tournament_creator
+from wlct.cogs.common import is_admin, is_tournament_creator, embed_list_special_delimiter
 from django.utils import timezone
 from traceback import print_exc
 
@@ -52,7 +52,7 @@ class Ladders(commands.Cog, name="ladders"):
             retStr = ladder.get_current_templates()
             do_embed = True
             emb.title = "Current Templates - Ladder {}".format(ladder.name)
-            emb.add_field(name="Templates", value=retStr)
+            self.bot.embed_list(emb, "Templates", retStr.split(embed_list_special_delimiter()))
         elif cmd == "-r":
             if option == "invalid_option":
                 option = "1"
@@ -91,6 +91,8 @@ class Ladders(commands.Cog, name="ladders"):
                 if is_tournament_creator(ctx.message.author.id, ladder):
                     log_bot_msg("[Ladder {}]: User {} has added template with id: {}".format(ladder.id, ctx.message.author.name, option))
                     retStr = ladder.add_template(option)
+                else:
+                    retStr = "Only the tournament creator can use this command."
             else:
                 retStr = invalid_cmd_text
         elif cmd == "-tr":
@@ -98,6 +100,8 @@ class Ladders(commands.Cog, name="ladders"):
                 # check for access
                 if is_tournament_creator(discord_id, ladder):
                     retStr = ladder.remove_template(option)
+                else:
+                    retStr = "Only the tournament creator can use this command."
             else:
                 retStr = invalid_cmd_text
         elif cmd == "-tv":
@@ -110,6 +114,8 @@ class Ladders(commands.Cog, name="ladders"):
                         retStr = "Updated {} # of vetoes to {} per team.".format(ladder.name, vetoes)
                     else:
                         retStr = "Please enter a valid # for updating veto count"
+                else:
+                    retStr = "Only the tournament creator can use this command."
             else:
                 retStr = "Current total vetoes per team: {}.".format(ladder.max_vetoes)
         elif cmd == "-me":

@@ -12,6 +12,10 @@ from django.utils import timezone
 import datetime
 from django.core.paginator import Paginator
 
+
+def embed_list_special_delimiter():
+    return "$%"
+
 def is_tournament_creator(discord_id, tournament):
     if is_admin(discord_id):
         return True

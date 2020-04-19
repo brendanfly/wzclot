@@ -22,6 +22,7 @@ import pytz
 from django.core.exceptions import ObjectDoesNotExist
 import traceback
 import urllib.request
+from wlct.cogs.common import embed_list_special_delimiter
 
 def is_player_allowed_join_by_token(token, templateid):
     allowed_join = False
@@ -5008,14 +5009,14 @@ class RealTimeLadder(Tournament):
             return data + "There are no players/rankings to view."
 
     def get_current_templates(self):
-        data = "__**Ladder Templates**__\n"
+        data = ""
         templates = RealTimeLadderTemplate.objects.filter(ladder=self)
         if not templates or templates.count() == 0:
             data += "There are currently no templates added"
             return data
 
         for t in templates:
-            data += "{} | {} | [Template Link](https://warzone.com/MultiPlayer?TemplateID={})\n".format(t.name, t.template, t.template)
+            data += "{} | {} | [Template Link](https://warzone.com/MultiPlayer?TemplateID={}){}".format(t.name, t.template, t.template, embed_list_special_delimiter())
         return data
 
     def get_player_data(self, discord_id):

@@ -117,6 +117,29 @@ class WZBot(commands.AutoShardedBot):
         # shows and updates the same message displaying progress for longer running tasks
         await edit_message.edit(content="{}...{} %".format(message_text, pct))
 
+    def embed_list(self, embed, field_name, list, inline=True):
+        total_chars = 0
+        field_values = []
+        for item in list:
+            new_total_chars = total_chars + len(item)
+            if new_total_chars > 1024:
+                # we'd go over, this goes in a new field
+                data = ""
+                for i in field_values:
+                    data += "{}\n".format(i)
+                embed.add_field(name=field_name, value=data, inline=inline)
+                field_values = []
+                total_chars = 0
+            else:
+                field_values.append(item)
+                total_chars += len(item)
+        if len(field_values) > 0:
+            data = ""
+            for i in field_values:
+                data += "{}\n".format(i)
+            embed.add_field(name=field_name, value=data, inline=inline)
+
+
 class Command(BaseCommand):
     help = "Runs the CLOT Bot"
     def handle(self, *args, **options):
