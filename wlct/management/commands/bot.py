@@ -117,14 +117,14 @@ class WZBot(commands.AutoShardedBot):
         # shows and updates the same message displaying progress for longer running tasks
         await edit_message.edit(content="{}...{} %".format(message_text, pct))
 
-    def embed_list(self, embed, field_name, list, inline=True):
+    def embed_list(self, embed, field_name, list, inline=False):
         total_chars = 0
         field_values = []
         for item in list:
             new_total_chars = total_chars + len(item)
-            print("New Total Chars: {}".format(new_total_chars))
-            if new_total_chars > 1000:
-                print("Reached threshold with new item. Adding current list len: {}".format(len(field_values)))
+            #print("New Total Chars: {}".format(new_total_chars))
+            if (new_total_chars + len(field_values)) > 1024:
+                #print("Reached threshold with new item. Adding current list len: {}".format(len(field_values)))
                 # we'd go over, this goes in a new field
                 data = ""
                 for i in field_values:
@@ -134,7 +134,7 @@ class WZBot(commands.AutoShardedBot):
                 total_chars = 0
             field_values.append(item)
             total_chars += len(item)
-            print("Appending item, total_chars: {}".format(total_chars))
+            #print("Appending item, total_chars: {}".format(total_chars))
         if len(field_values) > 0:
             data = ""
             for i in field_values:
