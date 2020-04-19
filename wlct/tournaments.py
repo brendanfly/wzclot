@@ -5048,7 +5048,7 @@ class RealTimeLadderVeto(models.Model):
     ladder = models.ForeignKey('RealTimeLadder', blank=True, null=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        return "[{}]: {} vetoed by {}".format(ladder.name, template.name, team.id)
+        return "[{}]: {} vetoed by {}".format(self.ladder.name, self.template.name, self.team.id)
 
 class MultiDayLadder(Tournament):
     type = "MDL"
