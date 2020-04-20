@@ -306,6 +306,10 @@ def find_tournament_by_id(id, query_all=False):
         if child_tourney:
             return child_tourney[0]
 
+        child_tourney = RoundRobinRandomTeams.objects.filter(pk=id)
+        if child_tourney:
+            return child_tourney[0]
+
         child_tourney = RoundRobinTournament.objects.filter(pk=id)
         if child_tourney:
             return child_tourney[0]
@@ -2047,7 +2051,9 @@ class GroupStageTournament(Tournament):
         for group in groups:
             log_tournament("Updating bracket_game_data for group: {}".format(group.get_name()), self)
             game_data += '<br/><h5>{}</h5>'.format(group.get_name())
-            game_data += group.round_robin_tournament.get_bracket_game_data()
+            child_tournament = find_tournament_by_id(group.round_robin_tournament, True)
+            if child_tournament:
+                game_data += child_tournament.get_bracket_game_data()
             game_data += '<br/><br/>'
         self.bracket_game_data = game_data
         self.save()
@@ -2225,6 +2231,7 @@ class GroupStageTournamentGroup(models.Model):
 
     def get_name(self):
         return "Group {}".format(chr(64+self.group_number))
+
 
 class RoundRobinTournament(Tournament):
     type = models.CharField(max_length=255, default="Round Robin")
@@ -2632,6 +2639,18 @@ class RoundRobinTournament(Tournament):
         game_log += '</tbody></table>'
         self.game_log = game_log
         self.save()
+
+
+class RoundRobinRandomTeams(RoundRobinTournament):
+
+    def process_new_games(self):
+        # custom random team logic
+        # calculate the following before creating new teams/games
+        # 1) Current games played per player
+        # 2) Current teammates so far per player
+        pass
+
+
 
 # Tournament round
 # represents a round in the tournament
