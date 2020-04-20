@@ -1891,7 +1891,51 @@ class SeededTournament(Tournament):
         return self.game_log
 
     def update_game_log(self):
-        self.game_log = ""
+        game_log = '<table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table">'
+        game_log += '<thead><tr><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
+        game_log += '<tbody>'
+        games = TournamentGame.objects.filter(tournament=self)
+        for game in games:
+            game_log += '<tr>'
+            # create the match-up text for the game
+            game_data = game.teams.split('.')
+            team1 = game_data[0]
+            team2 = game_data[1]
+            team_1 = TournamentTeam.objects.filter(id=int(team1))
+            if team_1:
+                team_2 = TournamentTeam.objects.filter(id=int(team2))
+                if team_2:
+                    game_log += '<td data-search="{} {}">{}</td>'.format(get_team_data_no_clan(team_1[0]),
+                                                                         get_team_data_no_clan(team_2[0]),
+                                                                         get_matchup_data(team_1[0],
+                                                                                          team_2[0]))
+            game_log += '<td><a href="{}" target="_blank">Game Link</a></td>'.format(game.game_link)
+            if game.is_finished:
+                finished_text = '<span class="text-success"><b>Finished</b></span>'
+            else:
+                finished_text = '<span class="text-info">{}</span>'.format(game.current_state)
+            game_log += '<td>{}</td>'.format(finished_text)
+
+            if game.is_finished:
+                winning_team = '{}'.format(get_team_data(game.winning_team))
+            else:
+                winning_team = ''
+            game_log += '<td>{}</td>'.format(winning_team)
+            time_to_boot_calculate = 0
+
+            start_time = game.game_start_time.strftime("%b %d, %Y %H:%M:%S %p")
+
+            # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
+            end_time = game.game_finished_time.strftime(
+                "%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
+
+            game_log += '<td>{}</td>'.format(start_time)
+            game_log += '<td>{}</td>'.format(end_time)
+            game_log += '</tr>'
+
+        game_log += '</tbody></table>'
+        self.game_log = game_log
+        self.save()
 
     def get_start_locked_data(self):
         # if we set the tourney (currently always) and we can start (minimum # of full teams, and 0 partial teams)
@@ -1992,8 +2036,17 @@ class GroupStageTournament(Tournament):
         return self.bracket_game_data
 
     def update_bracket_game_data(self):
-        bracket_game_data = ""
-        self.bracket_game_data = ""
+        # update the tournament game log here, which is a collection of all round robin games
+        groups = GroupStageTournamentGroup.objects.filter(tournament=self).order_by('group_number')
+        game_data = ""
+        if self.knockout_tournament is not None and self.knockout_tournament.id > 0:
+            game_data += '<br/><a href="{}" class="btn btn-primary btn-lg" role="button" target="_blank">Knockout Tournament</a><br/>'.format(self.knockout_tournament.get_url())
+        for group in groups:
+            game_data += '<br/><h5>{}</h5>'.format(group.get_name())
+            game_data += group.round_robin_tournament.get_bracket_game_data()
+            game_data += '<br/><br/>'
+        self.bracket_game_data = game_data
+        self.save()
 
 
     def get_start_locked_data(self):
@@ -2046,6 +2099,9 @@ class GroupStageTournament(Tournament):
         if round_robin_tournaments.count() == self.groups:
             log_tournament("Finished with all round robin tournaments, proceeding to create the knockout tournament", self)
 
+            if self.knockout_tournament is not None and self.knockout_tournament.id > 0:
+                return
+
             # seeded data fed into the tournament needs to be in the following format
             # [seed1].[team];[seed2].[team];....
             # teams do not need to have a seed
@@ -2055,18 +2111,106 @@ class GroupStageTournament(Tournament):
 
             # first_place always matches against a second_place in a group in the seeded, but order doesn't necessarily
             # matter here
-            first_place_teams = []
-            second_place_teams = []
-            for tournament in round_robin_tournaments:
-                first_place_teams.append(tournament.first_place)
-                second_place_teams.append(tournament.second_place)
+            first = []
+            second = []
+
+            for t in round_robin_tournaments:
+                teams = TournamentTeam.objects.filter(group=t.get_group()).order_by('place', '-rating')
+                if teams and teams[0] and teams[1]:
+                    first.append(teams[0])
+                    second.append(teams[1])
 
             # now we loop through all the first/second place teams and assign them seeds
             # a first seed always plays a second, and they cannot be from the same group
 
+            # create the seeded tournament
+            tourney_name = "{} Knockout Tournament".format(self.name)
+
+            # num players is num groups * 2
+            num_players =  round_robin_tournaments.count() * 2
+            num_rounds = int(math.log(num_players) / math.log(2))
+            log_tournament("Creating Knockout tournament with {} players and {} rounds".format(num_players, num_rounds), self)
+            seeded_tournament = SeededTournament(name=tourney_name, multi_day=self.multi_day, start_option_when_full=False, private=True, description=self.description, template=self.template, template_settings=self.template_settings, max_players=num_players, teams_per_game=self.teams_per_game, created_by=self.created_by, players_per_team=self.players_per_team, number_rounds=num_rounds, number_players=num_players, host_sets_tourney=True)
+            seeded_tournament.save()
+
+            teams = first + second
+            seed_list = ""
+            team_index = 1
+            for t in teams:
+                players = TournamentPlayer.objects.filter(team=t)
+                t.pk = None
+                t.team_index = team_index
+                t.tournament = seeded_tournament
+                t.wins = 0
+                t.losses = 0
+                t.round_robin_tournament = None
+                t.group = None
+                t.save()
+                for player in players:
+                    player.pk = None
+                    player.tournament = seeded_tournament
+                    player.team = t
+                    player.save()
+                # need to create new tournament players + teams for the seeded tournament
+                # do that here, and store the seed list as well.
+                seed_list += '{}.{};'.format(team_index, t.id)
+                team_index += 1
+
+            log_tournament("Seeded tournament seed_list: {}".format(seed_list), self)
+            seeded_tournament.start(seed_list[:-1])
+            self.knockout_tournament = seeded_tournament
+            self.save()
 
     def update_game_log(self):
-        pass
+        # update the tournament game log here, which is a collection of all round robin games
+        round_robin_tournaments = RoundRobinTournament.objects.filter(parent_tournament=self)
+        game_log = '<br/><table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table">'
+        game_log += '<thead><tr><th>Group</th><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
+        game_log += '<tbody>'
+        for t in round_robin_tournaments:
+            games = TournamentGame.objects.filter(tournament=t)
+            for game in games:
+                game_log += '<tr>'
+                game_log += '<td>{}</td>'.format(t.get_group().get_name())
+                # create the match-up text for the game
+                game_data = game.teams.split('.')
+                team1 = game_data[0]
+                team2 = game_data[1]
+                team_1 = TournamentTeam.objects.filter(id=int(team1))
+                if team_1:
+                    team_2 = TournamentTeam.objects.filter(id=int(team2))
+                    if team_2:
+                        game_log += '<td data-search="{} {}">{}</td>'.format(get_team_data_no_clan(team_1[0]),
+                                                                             get_team_data_no_clan(team_2[0]),
+                                                                             get_matchup_data(team_1[0],
+                                                                                              team_2[0]))
+                game_log += '<td><a href="{}" target="_blank">Game Link</a></td>'.format(game.game_link)
+                if game.is_finished:
+                    finished_text = '<span class="text-success"><b>Finished</b></span>'
+                else:
+                    finished_text = '<span class="text-info">{}</span>'.format(game.current_state)
+                game_log += '<td>{}</td>'.format(finished_text)
+
+                if game.is_finished:
+                    winning_team = '{}'.format(get_team_data(game.winning_team))
+                else:
+                    winning_team = ''
+                game_log += '<td>{}</td>'.format(winning_team)
+                time_to_boot_calculate = 0
+
+                start_time = game.game_start_time.strftime("%b %d, %Y %H:%M:%S %p")
+
+                # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
+                end_time = game.game_finished_time.strftime(
+                    "%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
+
+                game_log += '<td>{}</td>'.format(start_time)
+                game_log += '<td>{}</td>'.format(end_time)
+                game_log += '</tr>'
+
+        game_log += '</tbody></table>'
+        self.game_log = game_log
+        self.save()
 
 class GroupStageTournamentGroup(models.Model):
     tournament = models.ForeignKey('GroupStageTournament', on_delete=models.CASCADE, blank=True, null=True, related_name='group_stage_tournament')
@@ -2075,6 +2219,8 @@ class GroupStageTournamentGroup(models.Model):
     group_number = models.IntegerField(default=0)
     round_robin_tournament = models.ForeignKey('RoundRobinTournament', on_delete=models.CASCADE, blank=True, null=True, related_name='round_robin_tournament')
 
+    def get_name(self):
+        return "Group {}".format(chr(64+self.group_number))
 
 class RoundRobinTournament(Tournament):
     type = models.CharField(max_length=255, default="Round Robin")
@@ -4722,7 +4868,6 @@ class RealTimeLadder(Tournament):
                             log_tournament("# of teams joined but not in a game: {}".format(len(teams_find_games)), self)
                             tid = templates_list[random.randint(0, len(templates_list)-1)]
 
-                            # TODO teams cannot play each other twice in 12 hours
                             game_data = "{}.{}".format(team1.id, team2.id)
 
                             if get_games_against_since_hours(team1, team2, self, 1) == 0:
@@ -4762,15 +4907,19 @@ class RealTimeLadder(Tournament):
                                     self.save()
                                     team1.leave_after_game = False
                                     team2.leave_after_game = False
+
+                                    # need to rest join times
                                     team1.save()
                                     team2.save()
 
                                     for i in range(len(teams_find_games)):
                                         if teams_find_games[i].id == team2.id:
                                             teams_find_games.pop(i)
+                                            break
                                     for i in range(len(teams_find_games_against)):
                                         if teams_find_games_against[i].id == team1.id:
                                             teams_find_games_against.pop(i)
+                                            break
 
                                     # we must bail here so we can try again
                                     # this resets our indexes

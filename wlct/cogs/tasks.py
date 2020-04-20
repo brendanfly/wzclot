@@ -137,6 +137,9 @@ class Tasks(commands.Cog, name="tasks"):
                 g.game_log_sent = True
                 g.save()
 
+    async def handle_server_stats(self):
+        pass
+
     async def handle_hours6_tasks(self):
         #await self.handle_clan_league_next_game()
         pass
@@ -149,7 +152,7 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_stash_deadman_mdl_games()
 
     async def handle_day_tasks(self):
-        pass
+        await self.handle_server_stats()
 
     async def handle_no_winning_team_games(self):
         games = TournamentGame.objects.filter(winning_team__isnull=True, is_finished=True, no_winning_team_log_sent=False)

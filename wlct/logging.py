@@ -140,35 +140,30 @@ class LogManager():
             for obj in iterator:
                 logs = TournamentLog.objects.filter(tournament=obj, **self.kwargs).order_by('-timestamp')
                 if logs:
-                    print("Logs to keep 12 hours ahead: {}".format(logs[0].timestamp.replace(tzinfo=pytz.UTC)))
                     log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
                     self.prune_keep_last_impl(logs, log_end)
         if self.type == LogLevel.game:
             for obj in iterator:
                 logs = TournamentGameLog.objects.filter(game=obj, **self.kwargs).order_by('-timestamp')
                 if logs:
-                    print("Logs to keep 12 hours ahead: {}".format(logs[0].timestamp.replace(tzinfo=pytz.UTC)))
                     log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
                     self.prune_keep_last_impl(logs, log_end)
         if self.type == LogLevel.game_status:
             for obj in iterator:
                 logs = TournamentGameStatusLog.objects.filter(game=obj, **self.kwargs).order_by('-timestamp')
                 if logs:
-                    print("Logs to keep 12 hours ahead: {}".format(logs[0].timestamp.replace(tzinfo=pytz.UTC)))
                     log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
                     self.prune_keep_last_impl(logs, log_end)
         if self.type == LogLevel.process_game:
             for obj in iterator:
                 logs = ProcessGameLog.objects.filter(game=obj, **self.kwargs).order_by('-timestamp')
                 if logs:
-                    print("Logs to keep 12 hours ahead: {}".format(logs[0].timestamp.replace(tzinfo=pytz.UTC)))
                     log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
                     self.prune_keep_last_impl(logs, log_end)
         if self.type == LogLevel.process_new_games:
             for obj in iterator:
                 logs = ProcessNewGamesLog.objects.filter(tournament=obj, **self.kwargs).order_by('-timestamp')
                 if logs:
-                    print("Logs to keep 12 hours ahead: {}".format(logs[0].timestamp.replace(tzinfo=pytz.UTC)))
                     log_end = logs[0].timestamp.replace(tzinfo=pytz.UTC) - datetime.timedelta(**kwargs)
                     self.prune_keep_last_impl(logs, log_end)
         time_spent = datetime.datetime.utcnow() - start

@@ -533,6 +533,8 @@ function refresh_tournament_async()
                            onMatchClick: onclick_seeded_match});
                    }, 100);
                 });
+
+                $("#games-tab").trigger('click');
             }
         }
     });

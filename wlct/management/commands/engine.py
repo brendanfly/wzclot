@@ -158,17 +158,17 @@ def check_games(**kwargs):
 def cleanup_logs():
     # get all the logs older than 2 days
     nowdate = datetime.datetime.utcnow()
-    enddate = nowdate - datetime.timedelta(days=3)
+    enddate = nowdate - datetime.timedelta(days=2)
 
     for log_type, value in vars(LogLevel).items():
         if not log_type.startswith('__'):
             if value == LogLevel.process_game or value == LogLevel.game or value == LogLevel.game_status:
                 games = TournamentGame.objects.filter(is_finished=True)
-                LogManager(value, game__is_finished=True).prune_keep_last(games, hours=12)
+                LogManager(value, game__is_finished=True).prune_keep_last(games, hours=1)
                 LogManager(value, timestamp__lt=enddate, game__is_finished=False).prune()
             elif value == LogLevel.tournament or value == LogLevel.process_new_games:
                 tournaments = Tournament.objects.filter(is_finished=True)
-                LogManager(value, tournament__is_finished=True).prune_keep_last(tournaments, hours=12)
+                LogManager(value, tournament__is_finished=True).prune_keep_last(tournaments, hours=1)
                 LogManager(value, timestamp__lt=enddate, tournament__is_finished=False).prune()
             else:  # generic logging runtime cases
                 LogManager(value, timestamp__lt=enddate, level=value).prune()
