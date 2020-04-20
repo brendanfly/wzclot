@@ -2036,10 +2036,12 @@ class GroupStageTournament(Tournament):
     def update_bracket_game_data(self):
         # update the tournament game log here, which is a collection of all round robin games
         groups = GroupStageTournamentGroup.objects.filter(tournament=self).order_by('group_number')
+        log_tournament("Updating {} bracket_game_data for {} groups.".format(self.name, groups.count()), self)
         game_data = ""
         if self.knockout_tournament is not None and self.knockout_tournament.id > 0:
             game_data += '<br/><a href="{}" class="btn btn-primary btn-lg" role="button" target="_blank">Knockout Tournament</a><br/>'.format(self.knockout_tournament.get_url())
         for group in groups:
+            log_tournament("Updating bracket_game_data for group: {}".format(group.get_name()), self)
             game_data += '<br/><h5>{}</h5>'.format(group.get_name())
             game_data += group.round_robin_tournament.get_bracket_game_data()
             game_data += '<br/><br/>'
