@@ -1259,9 +1259,9 @@ class Tournament(models.Model):
             if tournament_team:
                 # found the team, is there an opening
                 tournament_player = TournamentPlayer.objects.filter(tournament=self.id, team=tournament_team[0])
-                if tournament_player:
+                if tournament_player and tournament_player.count() == self.players_per_team:
                     # there is already a player here
-                    raise Exception("Player slot {} is already filled".format(playernum))
+                    raise Exception("Team {} is already filled.".format(teamnum))
                 else:
                     # create the player and move on
                     player = Player.objects.filter(token=token)
