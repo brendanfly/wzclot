@@ -1792,6 +1792,8 @@ class SeededTournament(Tournament):
         return False
 
     def get_bracket_game_data(self):
+        if self.bracket_game_data == "" or len(self.bracket_game_data) == 0:
+            self.update_bracket_game_data()
         return self.bracket_game_data
 
     def update_bracket_game_data(self):
@@ -2031,6 +2033,8 @@ class GroupStageTournament(Tournament):
             rr_tourney.start()
 
     def get_bracket_game_data(self):
+        if self.bracket_game_data == "" or len(self.bracket_game_data) == 0:
+            self.update_bracket_game_data()
         return self.bracket_game_data
 
     def update_bracket_game_data(self):
