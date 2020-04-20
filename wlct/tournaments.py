@@ -1272,8 +1272,6 @@ class Tournament(models.Model):
                             tournament_invite[0].save()
                     else:
                         raise Exception("Player with token {} not found".format(token))
-            if self.current_filled_teams == self.number_players:
-                self.start()
         else:
             raise Exception("Invalid team or player number")
 
