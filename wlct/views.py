@@ -17,6 +17,8 @@ from django_apscheduler.jobstores import DjangoJobStore
 from wlct.management.commands.engine import tournament_engine, tournament_caching
 import string
 import random
+import math
+from django.core.paginator import Paginator
 
 def schedule_jobs():
     # lookup the main scheduler, if it's not currently scheduled, add it every 5 min
@@ -1090,3 +1092,30 @@ def create_new_form_submit_view(request):
     except:
         log(traceback.format_exc(), LogLevel.critical)
         return render(request, 'mytourneys.html')
+
+@ensure_csrf_cookie
+def stats_view(request, token=None):
+    if token is not None:
+        player = Player.objects.filter(token=token)
+        if player:
+            player = player[0]
+            tplayers = TournamentPlayer.objects.filter(player__token=token)
+            tpi = tplayers.count()
+            gpi = 0
+            for tplayer in tplayers:
+                gpi += TournamentGameEntry.objects.filter(team=tplayer.team).count()
+            context = {'player': player, 'tpi': tpi, 'gpi': gpi}
+            return render(request, "stats.html", context)
+    else:
+        # return the top 100 players on the CLOT by rating, depending by page
+        # total pages is the number of players / 100 rounded up
+        ppp = 50
+        paginator = Paginator(Player.objects.all().order_by('-rating'), ppp)
+        page = 1
+        if request.method == "GET":
+            if 'page' in request.GET:
+                page = int(request.GET.get('page'))
+
+        page_obj = paginator.get_page(page)
+        context = {'page_obj': page_obj}
+        return render(request, 'stats.html', context)

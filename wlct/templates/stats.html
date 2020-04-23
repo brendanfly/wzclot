@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Custom Warzone Tournaments & Leagues{% endblock %}
+
+{% block content %}
+
+	<!-- Tournaments section bg -->
+<div class="row">
+	<div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
+		{% if not player %}
+		<div class="card">
+			<h5 class="card-header">CLOT Statistics</h5>
+			<div class="card-body">
+				<p class="card-text" style="font-size:14px;">
+                    {% if page_obj %}
+                        <nav aria-label="...">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="/stats/?page={{ page_obj.previous_page_number }}">Prev</a>
+                                </li>
+                                {% endif %}
+                                {% for i in page_obj.paginator.page_range %}
+                                <li class="page-item {% if i == page_obj.number %}active{% endif %}">
+                                    <a class="page-link" href="/stats/?page={{ i }}">
+                                        {{ i }}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="/stats/?page={{ page_obj.next_page_number }}">Next</a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav> Viewing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} players
+                        <table class="table table-condensed table-bordered table-hover">
+                            <tr>
+                                <th>
+                                Rating
+                                </th>
+                                <th>
+                                Player
+                                </th>
+                                <th>
+                                Record
+                                </th>
+                            </tr>
+                        {% for player in page_obj.object_list %}
+                            <tr>
+                                <td>{{ player.rating }}</td>
+                                <td>
+                                    {% if player.clan %}
+                                    <a href="https://warzone.com{{ player.clan.icon_link }}" target="_blank">
+                                        <img src="{{ player.clan.image_path }}" alt="{{ player.clan.name }}" />
+                                    </a>&nbsp;
+                                    {% endif %}
+                                    <a href="/stats/{{ player.token }}" target="_blank">
+                                        {{ player.name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {{ player.wins }}-{{ player.losses }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </table>
+                        <br/>
+                        <nav aria-label="...">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="/stats/?page={{ page_obj.previous_page_number }}">Prev</a>
+                                </li>
+                                {% endif %}
+                                {% for i in page_obj.paginator.page_range %}
+                                <li class="page-item {% if i == page_obj.number %}active{% endif %}">
+                                    <a class="page-link" href="/stats/?page={{ i }}">
+                                        {{ i }}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="/stats/?page={{ page_obj.next_page_number }}">Next</a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav> Viewing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} players
+                    {% endif %}
+				</p>
+			</div>
+		</div>
+        {% else %}
+        <div class="card">
+			<h5 class="card-header">
+                {% if player.clan %}
+                    <a href="https://warzone.com{{ player.clan.icon_link }}" target="_blank">
+                        <img src="{{ player.clan.image_path }}" alt="{{ player.clan.name }}" />
+                    </a>&nbsp;
+                {% endif %}
+                {{ player.name }}'s CLOT Profile (<a href="http://warzone.com/Profile?p={{ player.token }}" target="_blank">Warzone Profile</a>)
+            </h5>
+			<div class="card-body">
+				<h6 class="card-title">Rating: {{ player.rating }}</h6>
+		        <h6>Record: {{ player.wins }}-{{ player.losses }}</h6>
+                <h6>Tournaments Played: {{ tpi }}</h6>
+                <h6>Games Played: {{ gpi }}</h6>
+			</div>
+		</div>
+		{% endif %}
+	</div>
+</div>
+{% endblock %}

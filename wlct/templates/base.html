@@ -39,6 +39,7 @@
                 Welcome, {% if request.session.clan_icon_link %}<img src="{{ request.session.clan_image_path }}" />{% endif %}
                     {{ request.session.player_name }}</a>
                 <div class="dropdown-menu">
+                    <a href="/stats/{{ request.session.token }}" class="dropdown-item">CLOT Profile</a>
                     <a href="{% url 'settings_view' %}" class="dropdown-item">Settings</a>
                 </div>
                {% else %}
@@ -53,6 +54,7 @@
                     <a href="{% url 'mygames_view' %}" class="dropdown-item">Game History</a>
                     {% endif %}
                     <a href="{% url 'index' %}" class="dropdown-item">Open Tournaments/Leagues</a>
+                    <a href="/stats/?page=1" class="dropdown-item">CLOT Player Stats</a>
                     <a href="https://github.com/brendanfly/wzclot" target="_blank" class="dropdown-item">Contribute on GitHub</a>
                 </div>
             </li>

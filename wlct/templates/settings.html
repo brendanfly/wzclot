@@ -10,7 +10,13 @@
 	<div class="col-xs-8 col-sm-8 col-md-8 col-lg-8 offset-xs-2 offset-sm-2 offset-md-2 offset-lg-2">
 		{% if player %}
 		<div class="card">
-			<h5 class="card-header">{{ player.name }}'s Settings</h5>
+			<h5 class="card-header">
+				{% if player.clan %}
+                    <a href="https://warzone.com{{ player.clan.icon_link }}" target="_blank">
+                        <img src="{{ player.clan.image_path }}" alt="{{ player.clan.name }}" />
+                    </a>&nbsp;
+                {% endif %}
+				{{ player.name }}'s Settings</h5>
 			<div class="card-body">
 				<h6 class="card-title">Player Bot Token</h6>
 				{% if not player.discord_member %}
