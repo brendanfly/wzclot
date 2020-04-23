@@ -48,8 +48,6 @@ class Command(BaseCommand):
                                   max_instances=1, coalesce=False)
                 scheduler.add_job(process_mdl_games, 'interval', seconds=(get_run_time()*20), id='process_mdl_games',
                                   max_instances=1, coalesce=False)
-                scheduler.add_job(patch_player_list, 'interval', seconds=20, id='patch_player_list',
-                                  max_instances=1, coalesce=False)
                 scheduler.start()
         except ConflictingIdError:
             pass
@@ -210,53 +208,6 @@ def is_correct_player(player_token, player_team):
     except:
         log_exception()
         return False
-
-
-def patch_player_list():
-    try:
-        print("Patch player list")
-        players = Player.objects.all()
-        for p in players:
-            p.wins = 0
-            p.losses = 0
-            p.rating = 1000
-            p.save()
-        print("Done resetting players")
-        games = TournamentGame.objects.all().order_by("pk")
-        for g in games:
-            if g.players is None or len(g.players) == 0:
-                print("Found game with no player_list")
-                # get the players on the teams in the game and set this field for all games
-                team1_id = int(g.teams.split('.')[0])
-                team2_id = int(g.teams.split('.')[1])
-                team1 = TournamentTeam.objects.filter(pk=team1_id)
-                team2 = TournamentTeam.objects.filter(pk=team2_id)
-                tournament_team_tokens = []
-                if team1 and team2:
-                    team1 = team1[0]
-                    team2 = team2[0]
-                    players1 = TournamentPlayer.objects.filter(team=team1)
-                    players2 = TournamentPlayer.objects.filter(team=team2)
-                    if players1 and players2:
-                        player_list = []
-                        for player in players1:
-                            player_list.append(player.player.token)
-                        tournament_team_tokens.append(".".join(player_list))
-                        player2_list = []
-                        for player in players2:
-                            player2_list.append(player.player.token)
-                        tournament_team_tokens.append(".".join(player2_list))
-                player_ids = "-".join(tournament_team_tokens)
-                g.players = player_ids
-                g.save()
-
-            if g.is_finished:
-                g.handle_tournament_player_updates()
-
-        print("Done handling player tournament updates")
-        time.sleep(2000)
-    except:
-        log_exception()
 
 def cache_games(**kwargs):
     tournaments = Tournament.objects.filter(**kwargs)
