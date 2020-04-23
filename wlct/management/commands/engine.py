@@ -214,13 +214,13 @@ def is_correct_player(player_token, player_team):
 def patch_player_list():
     games = TournamentGame.objects.all()
     for g in games:
-        if g.player_list is None or len(g.player_list) == 0:
+        if g.players is None or len(g.players) == 0:
             print("Found game with no player list")
             # get the players on the teams in the game and set this field for all games
-            team1_id = int(g.teams.split('.'))
-            team2_id = int(g.teams.split('.'))
+            team1_id = int(g.teams.split('.')[0])
+            team2_id = int(g.teams.split('.')[1])
             team1 = TournamentTeam.objects.filter(pk=team1_id)
-            team2 = TournamentTeam.objects.filter(pk=team2.id)
+            team2 = TournamentTeam.objects.filter(pk=team2_id)
             tournament_team_tokens = []
             if team1 and team2:
                 team1 = team1[0]
