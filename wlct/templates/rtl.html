@@ -22,7 +22,7 @@
                                 <a href="https://warzone.com{{ tournament.created_by.clan.icon_link }}"
                                    target="_blank"><img src="{{ tournament.created_by.clan.image_path }}"/></a>
                                 {% endif %}
-                                <a href="https://warzone.com/Profile?p={{ tournament.created_by.token }}"
+                                <a href="/stats/{{ tournament.created_by.token }}"
                                    target="_blank">{{ tournament.created_by.name }}</a>
                             </span>
                         </h4>

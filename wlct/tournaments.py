@@ -190,7 +190,7 @@ def get_tournament_player_data(player):
         table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
             player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
 
-    table += '&nbsp;<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+    table += '&nbsp;<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
         player.player.token, player.player.name)
 
     return table
@@ -201,7 +201,7 @@ def get_player_data(player):
         table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
             player.clan.icon_link, player.clan.image_path, player.clan.name)
 
-    table += '&nbsp;<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+    table += '&nbsp;<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
         player.token, player.name)
 
     return table
@@ -460,7 +460,7 @@ class Tournament(models.Model):
                     ret += '&nbsp;<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                         player.clan.icon_link, player.clan.image_path, player.clan.name)
 
-                ret += '&nbsp;<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>'.format(
+                ret += '&nbsp;<a href="/stats/{}" target="_blank">{}</a>'.format(
                     player.token, player.name)
 
         return ret
@@ -591,7 +591,7 @@ class Tournament(models.Model):
                         table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                             player.clan.icon_link, player.clan.image_path, player.clan.name)
 
-                    table += '<a href="https://warzone.com/Profile?p={}" target="_blank"><span class="invite_name">{}</span></a>'.format(
+                    table += '<a href="/stats/{}" target="_blank"><span class="invite_name">{}</span></a>'.format(
                         player.token, player.name)
                     table += '</td>'
                     table += '<td><button class="btn btn-primary" name="slot" id="invite-{}">+</button></td>'.format(
@@ -627,7 +627,7 @@ class Tournament(models.Model):
                     table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                         player.clan.icon_link, player.clan.image_path, player.clan.name)
 
-                table += '<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>'.format(
+                table += '<a href="/stats/{}" target="_blank">{}</a>'.format(
                     player.token, player.name)
 
                 # the player viewing the page is the one in this row, so we need to give the player the option to leave their slot
@@ -710,7 +710,7 @@ class Tournament(models.Model):
                             table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                                 player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
 
-                        table += '<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+                        table += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
                             player.player.token, player.player.name)
 
                         if logged_in and player is not None and player.player.token == request_player.token and not self.has_started and not self.start_locked:
@@ -1493,7 +1493,7 @@ class SwissTournament(Tournament):
                                 bracket_game_data += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a> '.format(
                                     tournament_player.player.clan.icon_link, tournament_player.player.clan.image_path, tournament_player.player.clan.name)
 
-                            bracket_game_data += '<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+                            bracket_game_data += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
                             tournament_player.player.token, tournament_player.player.name)
                             if game.is_finished and game.winning_team is not None:
                                 if team == str(game.winning_team.id):
@@ -1869,7 +1869,7 @@ class SeededTournament(Tournament):
                                     player_data += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                                         player_obj[0].player.clan.icon_link, player_obj[0].player.clan.image_path, player_obj[0].player.clan.name)
 
-                                player_data += '<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a></a>&nbsp;'.format(
+                                player_data += '<a href="/stats/{}" target="_blank">{}</a></a>&nbsp;'.format(
                                     player_obj[0].player.token, player_obj[0].player.name)
 
                                 team_player = "<span class='badge badge-light' style='display:inline-block;width:25px;'>{}</span> {}".format(player_obj[0].team.seed,
@@ -1989,7 +1989,7 @@ class SeededTournament(Tournament):
                                 draggable_data += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                                     player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
 
-                            draggable_data += '<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+                            draggable_data += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
                                 player.player.token, player.player.name)
                         draggable_data += "</span></div>"
                         draggable_data += '</li>'
@@ -2109,7 +2109,7 @@ class GroupStageTournament(Tournament):
                                 draggable_data += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}"/></a>'.format(
                                     player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
 
-                            draggable_data += '<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+                            draggable_data += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
                                 player.player.token, player.player.name)
                         draggable_data += "</span></div>"
                         draggable_data += '</li>'
@@ -2919,7 +2919,7 @@ class RoundRobinRandomTeams(RoundRobinTournament):
                     table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                         player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
 
-                table += '<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+                table += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
                     player.player.token, player.player.name)
 
                 table += '<td>{}-{}</td>'.format(player.wins, player.losses)
@@ -4976,7 +4976,7 @@ class ClanLeague(Tournament):
                 table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                     player.clan.icon_link, player.clan.image_path, player.clan.name)
 
-            table += '<a href="https://warzone.com/Profile?p={}" target="_blank"><span class="invite_name">{}</span></a>'.format(
+            table += '<a href="/stats/{}" target="_blank"><span class="invite_name">{}</span></a>'.format(
                 player.token, player.name)
             table += '</td>'
             table += '<td><button class="btn btn-info btn-sm" id="cl-update-player-{}" name="slot" data-swapid="{}" data-player="{}">Swap</button></td>'.format(
@@ -5102,7 +5102,7 @@ class RealTimeLadder(Tournament):
                             table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                                 player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
 
-                        table += '<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+                        table += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
                             player.player.token, player.player.name)
 
                         table += '</td>'
@@ -5240,7 +5240,7 @@ class RealTimeLadder(Tournament):
                             table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                                 player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
 
-                        table += '<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+                        table += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
                             player.player.token, player.player.name)
 
                         table += '</td>'

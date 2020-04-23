@@ -700,7 +700,7 @@ class Clot(commands.Cog, name="clot"):
                 current_player = 0
                 for player in players:
                     current_player += 1
-                    data += "{} | {} | <https://warzone.com/Profile?p={}>\n".format(player.name, player.token, player.token)
+                    data += "{} | {} | <http://wzclot.com/stats/{}> | <https://warzone.com/Profile?p={}>\n".format(player.name, player.token, player.token, player.token)
                     if current_player % 20 == 0:
                         if data != "" and len(data) > 0:
                             await ctx.send(data)
