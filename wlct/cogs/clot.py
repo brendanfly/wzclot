@@ -8,12 +8,13 @@ from wlct.cogs.common import has_admin_access, is_admin
 
 
 class PlayerStats:
-    def __init__(self, wins, losses, tournaments, games, win_pct):
+    def __init__(self, wins, losses, tournaments, games, win_pct, rating):
         self.wins = wins
         self.losses = losses
         self.tournaments = tournaments
         self.games = games
         self.win_pct = win_pct
+        self.rating = rating
 
 
 class Clot(commands.Cog, name="clot"):
@@ -29,14 +30,13 @@ class Clot(commands.Cog, name="clot"):
         player = Player.objects.filter(token=token)
         if player:
             player = player[0]
-            wins = 0
-            losses = 0
+            wins = player.wins
+            losses = player.losses
+            rating = player.rating
             tpi = 0
             gpi = 0
             tplayer = TournamentPlayer.objects.filter(player=player)
             for p in tplayer:
-                wins += p.team.wins
-                losses += p.team.losses
                 tpi += 1
                 games = TournamentGameEntry.objects.filter(team=p.team)
                 gpi += games.count()
@@ -44,7 +44,7 @@ class Clot(commands.Cog, name="clot"):
             if wins + losses != 0:
                 win_pct = (wins / (wins + losses)) * 100
                 win_pct = round(win_pct, 2)
-            return True, PlayerStats(wins, losses, tpi, gpi, win_pct)
+            return True, PlayerStats(wins, losses, tpi, gpi, win_pct, rating)
         else:
             return False, None
 
@@ -111,6 +111,7 @@ class Clot(commands.Cog, name="clot"):
                         emb = self.bot.get_embed(discord_user)
                     else:
                         emb = self.bot.get_default_embed()
+                    emb.add_field(name="CLOT Rating", value="{}".format(pstats.rating))
                     emb.add_field(name="Overall Record", value="{}-{}".format(pstats.wins, pstats.losses))
                     emb.add_field(name="Winning %", value="{}".format(pstats.win_pct))
                     emb.add_field(name="Tournaments Played In", value="{}".format(pstats.tournaments))

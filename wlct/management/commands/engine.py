@@ -20,6 +20,7 @@ import gc
 from django.utils import timezone
 import urllib.request
 import json
+import time
 
 def get_run_time():
     return 180
@@ -213,9 +214,18 @@ def is_correct_player(player_token, player_team):
 
 def patch_player_list():
     try:
+        print("Patch player list")
+        players = Player.objects.all()
+        for p in players:
+            p.wins = 0
+            p.losses = 0
+            p.rating = 1000
+            p.save()
+        print("Done resetting players")
         games = TournamentGame.objects.all().order_by("pk")
         for g in games:
             if g.players is None or len(g.players) == 0:
+                print("Found game with no player_list")
                 # get the players on the teams in the game and set this field for all games
                 team1_id = int(g.teams.split('.')[0])
                 team2_id = int(g.teams.split('.')[1])
@@ -239,8 +249,12 @@ def patch_player_list():
                 player_ids = "-".join(tournament_team_tokens)
                 g.players = player_ids
                 g.save()
-                
-            g.handle_tournament_player_updates()
+
+            print("Handle Tournament Player Updates")
+            if g.is_finished:
+                g.handle_tournament_player_updates()
+            print("Finished handle tournament player updates")
+            time.sleep(2000)
     except:
         log_exception()
 
