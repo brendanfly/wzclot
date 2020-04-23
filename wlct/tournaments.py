@@ -3185,19 +3185,14 @@ class TournamentGame(models.Model):
         # grab all players on both teams...increase their win/loss counts respectively...but also their rating
         if self.is_finished and self.winning_team is not None:
             winning_team_id = self.winning_team.id
-            print("HTPU: Winning Team: {}".format(winning_team_id))
             if int(self.teams.split('.')[0]) == winning_team_id:
                 losing_team_id = int(self.teams.split('.')[1])
                 losing_players = self.players.split('-')[1].split('.')
-                print("HTPU: Losing Team: {}".format(losing_players))
                 winning_players = self.players.split('-')[0].split('.')
-                print("HTPU: Winning Team: {}".format(winning_players))
             else:
                 losing_team_id = int(self.teams.split('.')[0])
                 losing_players = self.players.split('-')[0].split('.')
-                print("HTPU: Losing Team: {}".format(losing_players))
                 winning_players = self.players.split('-')[1].split('.')
-                print("HTPU: Winning Team: {}".format(winning_players))
 
             log("Team {} won, {} lost. Updating individual TournamentPlayer ratings".format(winning_team_id, losing_team_id), LogLevel.game)
             average_tplayer_win_rating = 0
@@ -3246,7 +3241,7 @@ class TournamentGame(models.Model):
 
                     player.player.losses += 1
                     player.player.rating = calculate_new_elo_rating(False, player.player.rating, average_player_win_rating)
-                    player.save()
+                    player.player.save()
         else:
             log("Skipping game {} as there is no winning team".format(self.id), LogLevel.game)
 
