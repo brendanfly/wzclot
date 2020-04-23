@@ -5,6 +5,7 @@ from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
 from django.conf import settings
 from wlct.cogs.common import has_admin_access, is_admin
+from wlct.clotbook import DiscordChannelCLOTBookLink
 
 
 class PlayerStats:
@@ -47,6 +48,52 @@ class Clot(commands.Cog, name="clot"):
             return True, PlayerStats(wins, losses, tpi, gpi, win_pct, rating)
         else:
             return False, None
+
+    @commands.command(brief="Turn on CLOTBook Updates for this channel",
+                      usage='''
+                          bb!cb on - turns ON CLOTBook updates (a lot of messages) for this channel
+                          bb!cb off - turns OFF CLOTBook updates for this channel
+                          bb!cb stats - displays stats for the CLOTBook
+                      ''')
+    async def cb(self, ctx, option=""):
+        try:
+            if ctx.message.author.guild_permissions.administrator or is_admin(ctx.message.author.id):
+                discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
+                if not discord_user:
+                    discord_user = DiscordUser(memberid=ctx.message.author.id)
+                    discord_user.save()
+                else:
+                    discord_user = discord_user[0]
+
+                if option == "":
+                    await ctx.send("You must specify an option with this command.")
+                    return
+
+                if option == "stats":
+                    await ctx.send("This command is currently under construction.")
+                elif option == "on":
+                    discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id)
+                    if discord_channel_link.count() == 0:
+                        discord_channel_link = DiscordChannelCLOTBookLink(channelid=ctx.message.channel.id, discord_user=discord_user)
+                        discord_channel_link.save()
+                        await ctx.send("The CLOTBook will start using this channel to send live betting updates.")
+                    else:
+                        await ctx.send("This channel is already registered to receive CLOTBook Updates")
+                elif option == "off":
+                    discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(
+                          channelid=ctx.message.channel.id)
+                    if discord_channel_link:
+                        discord_channel_link[0].delete()
+                        await ctx.send("The CLOTBook will no longer use this channel for updates.")
+                    else:
+                        await ctx.send("This channel is not hooked up to receive CLOTBook updates.")
+                else:
+                    await ctx.send("You must specify an option with this command.")
+            else:
+                await ctx.send("You must be a server administrator to use this command.")
+        except:
+            log_exception()
+
 
     @commands.command(brief="View CLOT statistics",
                       usage='''

@@ -38,6 +38,8 @@ class Engine(models.Model):
     next_run_time = models.DateTimeField(blank=True, null=True)
 
 
+
+
 class Clan(models.Model):
     name = models.CharField(max_length=64, default=invalid_clan_string, db_index=True)
     icon_link = models.CharField(max_length=255, default=invalid_clan_string)
