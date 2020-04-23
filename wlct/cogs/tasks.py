@@ -149,7 +149,7 @@ class Tasks(commands.Cog, name="tasks"):
         pass
 
     async def handle_hours_tasks(self):
-        await self.handle_stash_deadman_mdl_games()
+        pass
 
     async def handle_day_tasks(self):
         await self.handle_server_stats()
