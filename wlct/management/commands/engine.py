@@ -48,8 +48,6 @@ class Command(BaseCommand):
                                   max_instances=1, coalesce=False)
                 scheduler.add_job(process_mdl_games, 'interval', seconds=(get_run_time()*20), id='process_mdl_games',
                                   max_instances=1, coalesce=False)
-                scheduler.add_job(patch_player_list, 'interval', seconds=20, id='patch_player_list',
-                                  max_instances=1, coalesce=False)
                 scheduler.start()
         except ConflictingIdError:
             pass
