@@ -144,6 +144,27 @@ def get_team_data_no_clan(team):
         team_data += '{} '.format(tournament_player.player.name)
     return team_data
 
+def get_team_data_no_clan_player_list(list):
+    team_data = ""
+    for player_token in list:
+        tournament_players = TournamentPlayer.objects.filter(player__token=player_token)
+        for tournament_player in tournament_players:
+            team_data += '{} '.format(tournament_player.player.name)
+    return team_data
+
+def get_team_data_player_list(list):
+    team_data = ""
+    for player_token in list:
+        player = TournamentPlayer.objects.filter(player__token=player_token)
+        if player:
+            player = player[0]
+            team_data += get_tournament_player_data(player)
+    return team_data
+
+def get_matchup_data_player_list(players1, players2):
+    data = '<table><tr><td>{}</td><td>{}</td></tr></table>'.format(get_team_data_player_list(players1), get_team_data_player_list(players2))
+    return data
+
 def get_matchup_data(team1, team2):
     data = '<table><tr><td>{}</td><td>{}</td></tr></table>'.format(get_team_data(team1), get_team_data(team2))
     return data
@@ -496,6 +517,7 @@ class Tournament(models.Model):
             team_id += 1
 
         player_ids = "-".join(tournament_team_ids)
+        print("Player Ids for Game: {}".format(player_ids))
         if len(player_names) == 2:
             try:
                 game_name += " {} vs. {}".format(player_names[0], player_names[1])
@@ -1098,6 +1120,7 @@ class Tournament(models.Model):
 
     # really a test method only
     def fill_teams(self):
+        print("Filling teams for {}".format(self.name))
         current_players_used = []
         tournament_teams = TournamentTeam.objects.filter(tournament=self.id)
         if tournament_teams:
@@ -2576,9 +2599,6 @@ class RoundRobinTournament(Tournament):
             self.update_game_log()
         return self.game_log
 
-    def fill_teams(self):
-        pass
-
     def update_game_log(self):
         if self.number_players == 0:
             players = TournamentPlayer.objects.filter(tournament=self)
@@ -2643,13 +2663,328 @@ class RoundRobinTournament(Tournament):
 
 class RoundRobinRandomTeams(RoundRobinTournament):
 
-    def process_new_games(self):
-        # custom random team logic
-        # calculate the following before creating new teams/games
-        # 1) Current games played per player
-        # 2) Current teammates so far per player
-        pass
+    def fill_teams(self):
+        odd_number = False
+        super(RoundRobinRandomTeams, self).fill_teams()
 
+        # delete the first player if odd number
+        if odd_number:
+            player = TournamentPlayer.objects.filter(tournament=self)[0]
+            player.delete()
+
+    def get_game_log(self):
+        if self.game_log == "" or len(self.game_log) == 0:
+            self.update_game_log()
+        return self.game_log
+
+    def process_new_games(self):
+        try:
+
+            round = TournamentRound.objects.filter(tournament=self, round_number=1)
+            if not round:
+                log("Error finding round for RoundRobinRandomTeams...bailing from process_new_games", LogLevel.critical)
+                return
+            round = round[0]
+
+            # custom random team logic
+            # calculate the following before creating new teams/games
+            # 1) Current games played per player
+            # 2) Current teammates so far per player
+
+            # cache all current player pairings
+            player_previous_matchups = {}
+            games = TournamentGame.objects.filter(tournament=self)
+
+            # get the list of player ids
+            players = []
+            tplayers = TournamentPlayer.objects.filter(tournament=self)
+            for p in tplayers:
+                  players.append(p.player.token)
+
+            if games.count() == 0:
+                # tournament start, assign players to teams and delete the extras
+                teams = TournamentTeam.objects.filter(tournament=self)
+                for t in teams:
+                    team_players = TournamentPlayer.objects.filter(team=t)
+                    if not team_players.count():
+                        log_tournament("Removing team {} due to insufficient players.".format(t.id), self)
+                        t.delete()
+                        continue
+                    if team_players.count() == 1:
+                        log_tournament("Player {} gets a bye in the first set of games.".format(player.player.token), self)
+                    elif team_players.count() == 2:
+                        player = team_players[0]
+                        player2 = team_players[1]
+                        log_tournament(
+                            "Players {}, {} are on team {} to start".format(player.player.token, player2.player.token,
+                                                                            t.id), self)
+
+                teams = TournamentTeam.objects.filter(tournament=self)
+                log_tournament("There are {} initial teams to create games for".format(teams.count()), self)
+                game_data = ""
+                for t in teams:
+                    if len(game_data) == 0:
+                        game_data += "{}.".format(t.id)
+                    else:
+                        game_data += str(t.id)
+                        self.create_game(round, game_data)
+                        game_data = ""
+
+            # at this point, player_previous_matchups is the entire list of players who have played with who
+            # we use this to decide how to randomly pair players moving forward
+
+            # to create games, we first see which players need games
+            # this number needs to be more than 4 in order to make games
+            # we create brand new teams, place the players with teammates they have not received so far and create that
+            # game
+            # walk through and place players on the appropriate teams
+            players_need_games = []
+            games = TournamentGame.objects.filter(tournament=self)
+            for game in games:
+                if game.players is not None and len(game.players) > 0:
+                    log_tournament("Players in game {}: ".format(game.players), self)
+                    team1 = game.players.split('-')[0]
+                    team2 = game.players.split('-')[1]
+
+                    if team1.split('.')[0] not in player_previous_matchups:
+                        player_previous_matchups[team1.split('.')[0]] = []
+                    if team1.split('.')[1] not in player_previous_matchups:
+                        player_previous_matchups[team1.split('.')[1]] = []
+                    if team2.split('.')[0] not in player_previous_matchups:
+                        player_previous_matchups[team2.split('.')[0]] = []
+                    if team2.split('.')[1] not in player_previous_matchups:
+                        player_previous_matchups[team2.split('.')[1]] = []
+
+                    player_previous_matchups[team1.split('.')[0]].append(team1.split('.')[1])
+                    player_previous_matchups[team1.split('.')[1]].append(team1.split('.')[0])
+                    player_previous_matchups[team2.split('.')[0]].append(team2.split('.')[1])
+                    player_previous_matchups[team2.split('.')[1]].append(team2.split('.')[0])
+
+            # we need to remove all match-ups from our list that cannot happen again
+            # finished or in progress both count here
+            matchups = list(itertools.combinations(players, 2))
+            possible_matchups = []
+            log_tournament("Match-ups before removing: {}".format(len(matchups)), self)
+            for matchup in matchups:
+                player = matchup[0]
+                player2 = matchup[1]
+                if player2 in player_previous_matchups[str(player)] or player in player_previous_matchups[str(player2)]:
+                    continue
+                possible_matchups.append(matchup)
+
+            log_tournament("Possible match-ups in RR: {}".format(len(possible_matchups)), self)
+
+            # now that we have the possible list of match-ups let's go ahead and run our algorithm
+            # we need at least 4 teams that need games, and there needs to be a valid combination of teams within these 4
+            players_need_games = []
+            unfinished_dict = defaultdict(int)
+            for player in players:
+                tplayers = TournamentPlayer.objects.filter(tournament=self, player__token=player)
+                unfinished_games = 0
+                for player in tplayers:
+                    unfinished_games += get_games_unfinished_for_team(player.team.id, self)
+                if player.id not in unfinished_dict:
+                    unfinished_dict[player.id] = 0
+                unfinished_dict[player.id] = unfinished_games
+                if unfinished_games < self.games_at_once:
+                    players_need_games.append(player)
+
+            # sort by players with the least amount of games so they can try to get a game first
+
+
+            log_tournament("{} players need games.".format(len(players_need_games)), self)
+
+            if len(players_need_games) > (2*self.players_per_team):
+                log_tournament("Enough players to try to create a new game. Running full algorithm.", self)
+
+                players_create_teams = []
+                for p in players_need_games:
+                    for popp in players_need_games:
+                        if p.id != popp.id and p.player.token not in player_previous_matchups[popp.player.token]:
+                            players_create_teams.append((p, popp))
+                            print("Possible team: {}.{}".format(p.player.token, popp.player.token))
+
+                while len(players_create_teams) > 2:
+                    if unfinished_dict[players_create_teams[0][0].id] >= self.games_at_once or unfinished_dict[players_create_teams[0][1].id] >= self.games_at_once:
+                        players_create_teams.pop(0)
+                        continue
+
+                    # if either player in the first tuple is in the second, pop and continue
+                    player1_id = players_create_teams[0][0].id
+                    player2_id = players_create_teams[0][1].id
+                    if player1_id == players_create_teams[1][0].id or player1_id == players_create_teams[1][1].id:
+                        players_create_teams.pop(0)
+                        continue
+                    elif player2_id == players_create_teams[1][0].id or player2_id == players_create_teams[1][1].id:
+                        players_create_teams.pop(0)
+                        continue
+
+                    if unfinished_dict[players_create_teams[1][0].id] >= self.games_at_once or unfinished_dict[players_create_teams[1][1].id] >= self.games_at_once:
+                        players_create_teams.pop(1)
+                        continue
+
+                    log_tournament("Player sets needing games: {}".format(len(players_create_teams)), self)
+                    # get the first two teams
+                    team1 = players_create_teams[0]
+                    team = TournamentTeam(tournament=self, max_games_at_once=self.games_at_once)
+                    team.save()
+                    team1_id = team.id
+                    team1[0].team = team
+                    team1[0].save()
+                    print("Player {} on team1 {}".format(team1[0].player.token, team1[0].team.id))
+                    team1[1].team = team
+                    team1[1].save()
+                    print("Player {} on team1 {}".format(team1[1].player.token, team1[1].team.id))
+
+                    team2 = players_create_teams[1]
+                    team = TournamentTeam(tournament=self, max_games_at_once=self.games_at_once)
+                    team.save()
+                    team2_id = team.id
+                    team2[0].team = team
+                    team2[0].save()
+                    print("Player {} on team2 {}".format(team2[0].player.token, team2[0].team.id))
+                    team2[1].team = team
+                    team2[1].save()
+                    print("Player {} on team2 {}".format(team2[1].player.token, team2[1].team.id))
+
+                    game_data = '{}.{}'.format(team1_id, team2_id)
+                    self.create_game(round, game_data)
+
+                    unfinished_dict[players_create_teams[0][0].id] += 1
+                    unfinished_dict[players_create_teams[0][1].id] += 1
+                    unfinished_dict[players_create_teams[1][0].id] += 1
+                    unfinished_dict[players_create_teams[1][1].id] += 1
+
+                    players_create_teams.pop(0)
+                    players_create_teams.pop(1)
+
+        except:
+            log_exception()
+
+    def start(self, tournament_data):
+        tplayers = TournamentPlayer.objects.filter(tournament=self)
+        self.max_players = tplayers.count()
+        self.save()
+
+        super(RoundRobinRandomTeams, self).start()
+
+
+    def get_bracket_game_data(self):
+        return "There is no bracket or game data for this. Please see the game log tab for a history of the games."
+
+    def get_start_locked_data(self):
+        # returns the html for the tournament
+        if self.current_filled_teams >= self.min_teams:
+            return "<p>Are you sure you want to start this tournament?</p>"
+        else:
+            return "<p>You cannot start this tournament until the minimum number of players have joined</p>"
+
+    @property
+    def max_rounds(self):
+        # based off of number of rounds calculate from max_rounds which will change when we actually
+        # start the tournament, let's try to calculate it on the fly based on the max_players here
+        return self.current_rounds
+
+    @property
+    def current_rounds(self):
+        # based off of number of rounds calculate from max_rounds which will change when we actually
+        # start the tournament, let's try to calculate it on the fly based on the max_players here
+        return (TournamentPlayer.objects.filter(tournament=self).count() - 1)
+
+    @property
+    def current_filled_teams(self):
+        return self.number_teams
+
+    @property
+    def can_start_tourney(self):
+        # can start tourney walks the list of teams calculating how many we need based on
+        # min_teams to start
+
+        # if debugging we can always start it unless there are partial teams
+        if settings.DEBUG:
+            return True
+
+        return (self.current_filled_teams >= self.min_teams)
+
+
+    def get_team_table(self, allow_buttons, logged_in, request_player):
+        if not self.has_started:
+            return super(RoundRobinRandomTeams, self).get_team_table(allow_buttons, logged_in, request_player)
+        else:
+            table = '<table class="table table-hover"><tr><th>Player</th><th>Record</th><th>Rating</th></tr>'
+            team_players = TournamentPlayer.objects.filter(tournament=self).order_by('-wins')
+            for player in team_players:
+                table += '<tr><td>'
+                if player.player.clan is not None:
+                    table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
+                        player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
+
+                table += '<a href="https://warzone.com/Profile?p={}" target="_blank">{}</a>&nbsp;'.format(
+                    player.player.token, player.player.name)
+
+                table += '<td>{}-{}</td>'.format(player.wins, player.losses)
+                table += '<td>{}</td>'.format(player.rating)
+
+                table += '</tr>'
+            table += "</table>"
+            return table
+
+    def update_game_log(self):
+        game_log = '<table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table">'
+        game_log += '<thead><tr><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
+        game_log += '<tbody>'
+        games = TournamentGame.objects.filter(tournament=self)
+        for game in games:
+            game_log += '<tr>'
+            # create the match-up text for the game
+            players = game.players.split('-')
+            players1 = players[0].split('.')
+            players2 = players[1].split('.')
+            game_data = game.teams.split('.')
+            team1 = game_data[0]
+            team2 = game_data[1]
+            winning_team_id = 0
+            if game.winning_team:
+                if game.winning_team.id == int(team1):
+                    winning_team_id = int(team1)
+                    winning_player_list = players1
+                else:
+                    winning_team_id = int(team2)
+                    winning_player_list = players2
+
+            game_log += '<td data-search="{} {}">{}</td>'.format(get_team_data_no_clan_player_list(players1),
+                                                                 get_team_data_no_clan_player_list(players2),
+                                                                 get_matchup_data_player_list(players1,
+                                                                                  players2))
+
+            game_log += '<td><a href="{}" target="_blank">Game Link</a></td>'.format(game.game_link)
+
+            if game.is_finished:
+                finished_text = '<span class="text-success"><b>Finished</b></span>'
+            else:
+                finished_text = '<span class="text-info">{}</span>'.format(game.current_state)
+            game_log += '<td>{}</td>'.format(finished_text)
+
+            if game.is_finished and winning_team_id != 0:
+                winning_team = '{}'.format(get_team_data_player_list(winning_player_list))
+            else:
+                winning_team = ''
+            game_log += '<td>{}</td>'.format(winning_team)
+            time_to_boot_calculate = 0
+
+            start_time = game.game_start_time.strftime("%b %d, %Y %H:%M:%S %p")
+
+            # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
+            end_time = game.game_finished_time.strftime(
+                "%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
+
+            game_log += '<td>{}</td>'.format(start_time)
+            game_log += '<td>{}</td>'.format(end_time)
+            game_log += '</tr>'
+
+        game_log += '</tbody></table>'
+        self.game_log = game_log
+        self.save()
 
 
 # Tournament round
@@ -2813,6 +3148,7 @@ class TournamentGame(models.Model):
 
             self.game_finished_time = timezone.now()
             self.save()
+            self.handle_tournament_player_updates()
         else:
             log_tournament("Could not find tournament teams with ids: {} {} in tournament {}".format(team1, team2, self.tournament.id), self.tournament)
 
@@ -2845,6 +3181,74 @@ class TournamentGame(models.Model):
             else:
                 log("Cannot find teams {} or {} in tournament {}-{}".format(team1, team2, self.tournament.id, self.tournament.name), LogLevel.critical)
 
+    def handle_tournament_player_updates(self):
+        # grab all players on both teams...increase their win/loss counts respectively...but also their rating
+        if self.is_finished and self.winning_team is not None:
+            winning_team_id = self.winning_team.id
+            print("HTPU: Winning Team: {}".format(winning_team_id))
+            if int(self.teams.split('.')[0]) == winning_team_id:
+                losing_team_id = int(self.teams.split('.')[1])
+                losing_players = self.players.split('-')[1].split('.')
+                print("HTPU: Losing Team: {}".format(losing_players))
+                winning_players = self.players.split('-')[0].split('.')
+                print("HTPU: Winning Team: {}".format(winning_players))
+            else:
+                losing_team_id = int(self.teams.split('.')[0])
+                losing_players = self.players.split('-')[0].split('.')
+                print("HTPU: Losing Team: {}".format(losing_players))
+                winning_players = self.players.split('-')[1].split('.')
+                print("HTPU: Winning Team: {}".format(winning_players))
+
+            log("Team {} won, {} lost. Updating individual TournamentPlayer ratings".format(winning_team_id, losing_team_id), LogLevel.game)
+            average_tplayer_win_rating = 0
+            average_tplayer_loss_rating = 0
+
+            average_player_win_rating = 0
+            average_player_loss_rating = 0
+
+            for id in winning_players:
+                tplayer = TournamentPlayer.objects.filter(player__token=int(id))
+                if tplayer:
+                    tplayer = tplayer[0]
+                    average_tplayer_win_rating += tplayer.rating
+                    average_player_win_rating += tplayer.player.rating
+
+            for id in losing_players:
+                tplayer = TournamentPlayer.objects.filter(player__token=int(id))
+                if tplayer:
+                    tplayer = tplayer[0]
+                    average_tplayer_loss_rating += tplayer.rating
+                    average_player_loss_rating += tplayer.player.rating
+
+            average_tplayer_loss_rating /= len(winning_players)
+            average_tplayer_win_rating /= len(winning_players)
+            average_player_win_rating /= len(winning_players)
+            average_player_loss_rating /= len(winning_players)
+
+            for id in winning_players:
+                tplayer = TournamentPlayer.objects.filter(player__token=int(id))
+                if tplayer:
+                    player = tplayer[0]
+                    player.wins += 1
+                    player.rating = calculate_new_elo_rating(True, player.rating, average_tplayer_loss_rating)
+                    player.save()
+
+                    player.player.wins += 1
+                    player.player.rating = calculate_new_elo_rating(True, player.player.rating, average_player_loss_rating)
+                    player.player.save()
+            for id in losing_players:
+                tplayer = TournamentPlayer.objects.filter(player__token=int(id))
+                if tplayer:
+                    player = tplayer[0]
+                    player.rating = calculate_new_elo_rating(False, player.rating, average_tplayer_win_rating)
+                    player.losses += 1
+                    player.save()
+
+                    player.player.losses += 1
+                    player.player.rating = calculate_new_elo_rating(False, player.player.rating, average_player_win_rating)
+                    player.save()
+        else:
+            log("Skipping game {} as there is no winning team".format(self.id), LogLevel.game)
 
 # Object to represent a tournament player
 # A tournament player is a single entity in a tournament team, and included in a team size=1
@@ -2853,6 +3257,9 @@ class TournamentPlayer(models.Model):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
     team = models.ForeignKey('TournamentTeam', on_delete=models.CASCADE)
     player = models.ForeignKey('Player', on_delete=models.DO_NOTHING)
+    rating = models.IntegerField(default=1000)
+    wins = models.IntegerField(default=0)
+    losses = models.IntegerField(default=0)
 
     def __str__(self):
         return "Tournament {}, Team {}, Player {}".format(self.tournament.name, self.team.id, self.player.token)
@@ -3524,6 +3931,14 @@ class PromotionalRelegationLeagueSeason(Tournament):
     games_at_once = models.IntegerField(default=2)
 
     def start(self, tournament_data):
+
+        tournaments = PromotionalRelegationLeagueTournament(parent_tournament=self)
+        if tournaments.count() > 0 or self.has_started:
+            return
+
+        self.has_started = True
+        self.save()
+
         divisions = ClanLeagueDivision.objects.filter(pr_season=self)
         for div in divisions:
             teams = TournamentTeam.objects.filter(clan_league_division=div, tournament=self)
@@ -3535,7 +3950,6 @@ class PromotionalRelegationLeagueSeason(Tournament):
             tournament.start()
 
         self.game_creation_allowed = True
-        self.has_started = True
         self.save()
 
     def get_pause_resume(self, player):
@@ -4109,6 +4523,9 @@ class ClanLeagueTournament(RoundRobinTournament):
 
     def should_create_game(self):
         start_times = self.games_start_times.split(';')
+
+        if settings.DEBUG:
+            return True
 
         # always take the next (first) one
         if len(start_times[0]) >= 8:  # every start time is a day/month/year, and we need at least 8 characters

@@ -5,7 +5,7 @@ from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog, To
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
 from wlct.models import Clan, Engine, Player
-from wlct.tournaments import ClanLeague, ClanLeagueTournament, find_tournament_by_id, Tournament, TournamentGame, TournamentPlayer, TournamentTeam, TournamentGameEntry, MonthlyTemplateRotation, MonthlyTemplateRotationMonth, TestContent
+from wlct.tournaments import ClanLeague, ClanLeagueTournament, find_tournament_by_id, Tournament, TournamentGame, TournamentPlayer, TournamentTeam, TournamentGameEntry, TournamentRound, get_multi_day_ladder
 from django.conf import settings
 from wlct.api import API
 from django import db
@@ -18,6 +18,8 @@ from django_apscheduler.jobstores import DjangoJobStore
 from django.core.management.base import BaseCommand
 import gc
 from django.utils import timezone
+import urllib.request
+import json
 
 def get_run_time():
     return 180
@@ -37,16 +39,114 @@ class Command(BaseCommand):
             if not scheduler.running:
                 scheduler.add_job(tournament_engine, 'interval', seconds=get_run_time(), id='tournament_engine',
                                   max_instances=1, coalesce=False)
-                scheduler.add_job(tournament_caching, 'interval', seconds=(get_run_time()/2)*5, id='tournament_caching',
+                scheduler.add_job(tournament_caching, 'interval', seconds=(get_run_time()*2), id='tournament_caching',
                                   max_instances=1, coalesce=False)
                 scheduler.add_job(process_team_vacations, 'interval', seconds=(get_run_time()*20), id='process_team_vacations',
                                   max_instances=1, coalesce=False)
                 scheduler.add_job(parse_and_update_clan_logo, 'interval', seconds=(get_run_time()*25), id='parse_and_update_clan_logo',
                                   max_instances=1, coalesce=False)
+                scheduler.add_job(process_mdl_games, 'interval', seconds=(get_run_time()*20), id='process_mdl_games',
+                                  max_instances=1, coalesce=False)
+                scheduler.add_job(patch_player_list, 'interval', seconds=20, id='patch_player_list',
+                                  max_instances=1, coalesce=False)
                 scheduler.start()
         except ConflictingIdError:
             pass
 
+def process_mdl_games():
+
+    log("Starting process MDL Games {}".format(datetime.datetime.utcnow()), LogLevel.engine)
+    mdl_url = "http://md-ladder.cloudapp.net/api/v1.0/games?topk=10"
+
+    try:
+        content = urllib.request.urlopen(mdl_url).read()
+    except Exception as e:
+        return
+
+    ladder = get_multi_day_ladder(168)
+    round = TournamentRound.objects.filter(tournament=ladder, round_number=1)
+    if not round:
+        round = TournamentRound(tournament=ladder, round_number=1)
+        round.save()
+    else:
+        round = round[0]
+
+    data = json.loads(content)
+    for index, game_data in enumerate(data['games']):
+        # first check to see if the game has already been processed
+        game = TournamentGame.objects.filter(tournament=ladder, gameid=game_data['game_id'])
+        if not game:
+            game_id = game_data['game_id']
+            # need to find the two players here and create the corresponding game entry
+            players = game_data['players']
+            tplayers = []
+            for player in players:
+                # do we know about this player?
+                token = player['player_id']
+                name = player['player_name']
+
+                player = Player.objects.filter(token=token)
+                if not player:
+                    clan = None
+                    if 'clan' in player:
+                        clan_name = player['clan']
+                        # first, lookup the clan object
+                        clan = Clan.objects.filter(name=clan_name)
+                        if clan:
+                            clan = clan[0]
+
+                    player = Player(name=name, token=token, clan=clan)
+                    player.save()
+                else:
+                    player = player[0]
+
+                # we have the player, next check for the tournament player
+                tplayer = TournamentPlayer.objects.filter(player=player, tournament=ladder)
+                if tplayer:
+                    tplayer = tplayer[0]
+                    tplayers.append(tplayer)
+                else:
+                    # create the new team first
+                    team = TournamentTeam(tournament=ladder)
+                    team.save()
+                    tplayer = TournamentPlayer(player=player, team=team, tournament=ladder)
+                    tplayer.save()
+                    tplayers.append(tplayer)
+
+            if len(tplayers) == 2:
+                # we have the tournament player objects which have the team objects and player objects
+                # create both game entries + game objects so that the bot can log them
+                teams = "{}.{}".format(tplayers[0].team.id, tplayers[1].team.id)
+                finished = datetime.datetime.strptime(game_data['finish_date'], '%Y-%m-%d %H:%M:%S.%f').replace(
+                    tzinfo=pytz.UTC)
+                created = datetime.datetime.strptime(game_data['created_date'], '%Y-%m-%d %H:%M:%S.%f').replace(
+                    tzinfo=pytz.UTC)
+                game_link = 'https://www.warzone.com/MultiPlayer?GameID={}'.format(game_id)
+                game = TournamentGame(game_link=game_link, gameid=game_id,
+                                      players_per_team=1,
+                                      team_game=False, tournament=ladder, is_finished=True,
+                                      teams=teams, round=round, game_finished_time=finished, game_start_time=created)
+                game.save()
+                entry = TournamentGameEntry(team=tplayers[0].team, team_opp=tplayers[1].team, game=game,
+                                            tournament=ladder)
+                entry.save()
+                entry = TournamentGameEntry(team=tplayers[1].team, team_opp=tplayers[0].team, game=game,
+                                            tournament=ladder)
+                entry.save()
+                winning_token = game_data['winner_id']
+                if str(winning_token) == str(tplayers[0].player.token):
+                    game.winning_team = tplayers[0].team
+                else:
+                    game.winning_team = tplayers[1].team
+                game.save()
+
+def process_single_time_player_ratings():
+    try:
+        games = TournamentGame.objects.filter(is_finished=True).order_by('id')
+        for g in games:
+            g.handle_tournament_player_updates()
+    except:
+        log_exception()
 
 def process_team_vacations():
     try:
@@ -109,6 +209,38 @@ def is_correct_player(player_token, player_team):
     except:
         log_exception()
         return False
+
+
+def patch_player_list():
+    games = TournamentGame.objects.all()
+    for g in games:
+        if g.player_list is None or len(g.player_list) == 0:
+            print("Found game with no player list")
+            # get the players on the teams in the game and set this field for all games
+            team1_id = int(g.teams.split('.'))
+            team2_id = int(g.teams.split('.'))
+            team1 = TournamentTeam.objects.filter(pk=team1_id)
+            team2 = TournamentTeam.objects.filter(pk=team2.id)
+            tournament_team_tokens = []
+            if team1 and team2:
+                team1 = team1[0]
+                team2 = team2[0]
+                players1 = TournamentPlayer.objects.filter(team=team1)
+                players2 = TournamentPlayer.objects.filter(team=team2)
+                if players1 and players2:
+                    player_list = []
+                    for player in players1:
+                        player_list.append(player.player.token)
+                    tournament_team_tokens.append(".".join(player_list))
+                    player2_list = []
+                    for player in players2:
+                        player2_list.append(player.player.token)
+                    tournament_team_tokens.append(".".join(player2_list))
+
+            player_ids = "-".join(tournament_team_tokens)
+            print("Player Token List: {}".format(player_ids))
+            g.players = player_ids
+            #g.save()
 
 
 def cache_games(**kwargs):

@@ -3,8 +3,8 @@ from django.http import HttpResponseRedirect
 from wlct.form_message_handling import FormError
 from wlct.api import API, get_account_token
 from wlct.models import Player, Clan
-from wlct.tournaments import SwissTournament, GroupStageTournament, SeededTournament, TournamentInvite, TournamentPlayer, find_tournament_by_id, Tournament, find_league_by_id, is_player_allowed_join, TournamentGameEntry, get_matchup_data, RealTimeLadder
-from wlct.forms import SwissTournamentForm, SeededTournamentForm, GroupTournamentForm, MonthlyTemplateCircuitForm, PromotionRelegationLeagueForm, ClanLeagueForm
+from wlct.tournaments import SwissTournament, GroupStageTournament, SeededTournament, TournamentInvite, TournamentPlayer, find_tournament_by_id, Tournament, find_league_by_id, is_player_allowed_join, TournamentGameEntry, get_matchup_data, RealTimeLadder, RoundRobinRandomTeams
+from wlct.forms import SwissTournamentForm, SeededTournamentForm, GroupTournamentForm, MonthlyTemplateCircuitForm, PromotionRelegationLeagueForm, ClanLeagueForm, RoundRobinRandomTeamsForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.exceptions import ObjectDoesNotExist
@@ -1010,10 +1010,14 @@ def create_new_view(request, type=None):
         # creating a group stage tourney
         return render(request, 'create_new.html', {'type': '1', 'tournament_type': "Group Stage"})
     elif type == 2:
+        # creating a swiss tournament
         return render(request, 'create_new.html', {'type': '2', 'tournament_type': "Swiss"})
     elif type == 3:
         # creating a seeded tournament
         return render(request, 'create_new.html', {'type': '3', 'tournament_type': "Seeded"})
+    elif type == 4:
+        # creating a random teams round robin
+        return render(request, 'create_new.html', {'type': '4', 'tournament_type': 'Random Teams'})
     else:
         return render(request, 'create_new.html')
 
@@ -1035,6 +1039,8 @@ def create_new_form_submit_view(request):
                         form = SwissTournamentForm(request.POST)
                     elif type == "3":
                         form = SeededTournamentForm(request.POST)
+                    elif type == "4":
+                        form = RoundRobinRandomTeamsForm(request.POST)
                     elif type == "mtc":
                         form = MonthlyTemplateCircuitForm(request.POST)
                     elif type == "pr":

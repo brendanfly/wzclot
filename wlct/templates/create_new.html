@@ -76,9 +76,17 @@
                       </div>
 
                     <div class="form-group row">
+                        {% ifequal type '4' %}
+                        <label class="col-for-label" for="players_team"><b>Players Per Team: </b><span id="players_team_text">2</span></label>
+                        {% else %}
                         <label class="col-for-label" for="players_team"><b>Players Per Team: </b><span id="players_team_text">1</span></label>
+                        {% endifequal %}
                         <div class="input-group">
+                            {% ifequal type '4' %}
+                            <input type="hidden" readonly="readonly" value="2" class="slider" id="players_team" name="players_team"/>
+                            {% else %}
                             <input type="range" min="1" max="4" value="1" class="slider" id="players_team" name="players_team" oninput="playersPerTeamChanged();"/>
+                            {% endifequal %}
                         </div>
                     </div>
 
@@ -99,6 +107,10 @@
                             {% endifequal %}
 
                             {% ifequal type '3' %}
+                            <input type="range" min="4" max="256" value="4" class="slider" id="number_teams" name="number_teams" oninput="numberOfTeamsChanged();"/>
+                            {% endifequal %}
+
+                            {% ifequal type '4' %}
                             <input type="range" min="4" max="256" value="4" class="slider" id="number_teams" name="number_teams" oninput="numberOfTeamsChanged();"/>
                             {% endifequal %}
                         </div>
@@ -146,6 +158,15 @@
 
                     <!-- Seeded tournaments -->
                     {% ifequal type '3' %}
+
+                    <div class="form-group row">
+                        <label class="col-for-label" for="rounds"><b>Number of Rounds: </b><span id="rounds_text">4</span></label>
+                        <input type="hidden" value="4" id="rounds" name="rounds" />
+                    </div>
+                    {% endifequal %}
+
+                    <!-- Random Teams -->
+                    {% ifequal type '4' %}
 
                     <div class="form-group row">
                         <label class="col-for-label" for="rounds"><b>Number of Rounds: </b><span id="rounds_text">4</span></label>
@@ -213,6 +234,20 @@
                                     <li>Maximum of 2 teams</li>
                                 </ul>
                                 <a href="{% url 'create_new_tourney_specific_view' 3 %}" class="btn btn-outline-primary mb-3" target="_self">+Create</a>
+                            </div>
+                        </div>
+                        <div class="card card-pricing text-center px-3 mb-4">
+                            <span class="h6 w-60 mx-auto px-4 py-1 rounded-bottom bg-primary text-white shadow-sm">Random Teams</span>
+                            <div class="bg-transparent card-header pt-4 border-0">
+                                <h1 class="h1 font-weight-normal text-primary text-center mb-0" data-pricing-value="45"><span class="price">4-256</span><span class="h6 text-muted ml-2">/ players</span></h1>
+                            </div>
+                            <div class="card-body pt-0">
+                                <ul class="list-unstyled mb-4">
+                                    <li>Round Robin Format</li>
+                                    <li>Real-time or Multi-Day</li>
+                                    <li>2 players per team <b>(required)</b></li>
+                                </ul>
+                                <a href="{% url 'create_new_tourney_specific_view' 4 %}" class="btn btn-outline-primary mb-3" target="_self">+Create</a>
                             </div>
                         </div>
                     </div>

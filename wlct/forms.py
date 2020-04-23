@@ -1,5 +1,5 @@
 from django.forms import ModelForm
-from wlct.tournaments import SwissTournament, Tournament, TournamentTeam, SeededTournament, GroupStageTournament, GroupStageTournamentGroup, MonthlyTemplateRotation, PromotionalRelegationLeague, ClanLeague
+from wlct.tournaments import SwissTournament, Tournament, TournamentTeam, SeededTournament, GroupStageTournament, GroupStageTournamentGroup, MonthlyTemplateRotation, PromotionalRelegationLeague, ClanLeague, RoundRobinTournament, RoundRobinRandomTeams
 from wlct.form_message_handling import FormError
 from wlct.validators import get_int, get_dropdown_to_boolean
 import math
@@ -153,10 +153,24 @@ class SwissTournamentForm(TournamentForm):
         for index in range(1, self.number_teams+1):
             tournament_team = TournamentTeam(tournament=tournament, rating=1000, players=tournament.players_per_team, team_index=index)
             tournament_team.save()
-
         return tournament.id
 
 
+class RoundRobinRandomTeamsForm(TournamentForm):
+
+    def __init__(self, formdata):
+        self.tournament_type = "Round Robin Random Teams"
+
+        super(RoundRobinRandomTeamsForm, self).__init__(formdata, RoundRobinRandomTeams.min_teams)
+
+    def create_and_save(self, player):
+        tournament = RoundRobinRandomTeams(name=self.name, multi_day = self.multi_day, start_option_when_full=False, private=self.private, description=self.description, template=self.template, template_settings=self.template_settings, max_players=self.number_players, teams_per_game=self.teams_per_game, created_by=player, players_per_team=self.players_per_team, number_rounds=self.number_rounds, number_players=0)
+        tournament.save()
+
+        for i in range(1, self.number_teams+1):
+            tournament_team = TournamentTeam(tournament=tournament, rating=1000, players=tournament.players_per_team, team_index=i)
+            tournament_team.save()
+        return tournament.id
 
 class LeagueForm:
     def __init__(self, formdata):

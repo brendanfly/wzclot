@@ -1539,6 +1539,20 @@ function numberOfTeamsChanged()
 
             break;
         }
+
+        case "4": // random team tournaments
+        {
+            var rounds = numberOfTeams - 1;
+            $('#rounds_text').text(rounds);
+            $('#rounds').val(rounds);
+
+            var maxPlayers = numberOfTeams * playersPerTeam;
+            $('#number_players_text').text(maxPlayers);
+            $('#number_players').val(maxPlayers);
+
+            $('#number_teams_text').text(numberOfTeams);
+            $('#number_teams').val(numberOfTeams);
+        }
     }
 
     // regardless, there are even teams in every tournament
