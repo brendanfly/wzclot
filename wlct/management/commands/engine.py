@@ -250,11 +250,11 @@ def patch_player_list():
                 g.players = player_ids
                 g.save()
 
-            print("Handle Tournament Player Updates")
             if g.is_finished:
                 g.handle_tournament_player_updates()
-            print("Finished handle tournament player updates")
-            time.sleep(2000)
+
+        print("Done handling player tournament updates")
+        time.sleep(2000)
     except:
         log_exception()
 
