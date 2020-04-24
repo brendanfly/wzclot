@@ -3928,7 +3928,7 @@ class PromotionalRelegationLeagueSeason(Tournament):
 
     def start(self, tournament_data):
 
-        tournaments = PromotionalRelegationLeagueTournament(parent_tournament=self)
+        tournaments = PromotionalRelegationLeagueTournament.objects.filter(parent_tournament=self)
         if tournaments.count() > 0 or self.has_started:
             return
 
