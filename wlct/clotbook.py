@@ -1,6 +1,4 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
-from django.contrib import admin
 from django.utils import timezone
 
 # Models for the Off-site betting for the CLOT
@@ -18,12 +16,12 @@ class DiscordChannelCLOTBookLink(models.Model):
 
 class Bet(models.Model):
     gameid = models.BigIntegerField(default=0)
-    game = models.ForeignKey('TournamentGame')
-    player = models.ForeignKey('Player')
+    game = models.ForeignKey('TournamentGame', on_delete=models.CASCADE)
+    player = models.ForeignKey('Player', on_delete=models.CASCADE)
     bet_created = models.DateTimeField(timezone.now)
 
 class BetOdds(models.Model):
     players = models.CharField(max_length=255, default="")
     odds = models.IntegerField(default=0)
-    bet = models.ForeignKey('Bet')
+    bet = models.ForeignKey('Bet', on_delete=models.CASCADE)
     last_changed = models.DateTimeField(timezone.now)

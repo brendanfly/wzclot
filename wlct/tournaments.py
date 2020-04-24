@@ -23,6 +23,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import traceback
 import urllib.request
 from wlct.cogs.common import embed_list_special_delimiter
+from wlct.clotbook import CLOTBook
 
 def is_player_allowed_join_by_token(token, templateid):
     allowed_join = False
