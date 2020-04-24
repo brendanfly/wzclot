@@ -3230,7 +3230,7 @@ class TournamentGame(models.Model):
                     player.save()
 
                     player.player.wins += 1
-                    player.player.rating = calcugelate_new_elo_rating(True, player.player.rating, average_player_loss_rating)
+                    player.player.rating = calculate_new_elo_rating(True, player.player.rating, average_player_loss_rating)
                     player.player.save()
             for id in losing_players:
                 tplayer = TournamentPlayer.objects.filter(player__token=int(id))
