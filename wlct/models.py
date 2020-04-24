@@ -37,9 +37,6 @@ class Engine(models.Model):
     last_run_time = models.DateTimeField(default=timezone.now)
     next_run_time = models.DateTimeField(blank=True, null=True)
 
-
-
-
 class Clan(models.Model):
     name = models.CharField(max_length=64, default=invalid_clan_string, db_index=True)
     icon_link = models.CharField(max_length=255, default=invalid_clan_string)
@@ -66,6 +63,7 @@ class Player(models.Model):
     rating = models.IntegerField(default=1000)
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
+    bankroll = models.IntegerField(default=100)
 
     def set_player_data(self, token, playerData):
         self.token = token

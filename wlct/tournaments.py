@@ -519,6 +519,7 @@ class Tournament(models.Model):
 
         player_ids = "-".join(tournament_team_ids)
         print("Player Ids for Game: {}".format(player_ids))
+
         if len(player_names) == 2:
             try:
                 game_name += " {} vs. {}".format(player_names[0], player_names[1])
