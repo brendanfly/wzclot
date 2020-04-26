@@ -12,7 +12,7 @@ import datetime
 import pytz
 import urllib.request
 import json
-from wlct.clotbook import DiscordChannelCLOTBookLink, BetOdds
+from wlct.clotbook import DiscordChannelCLOTBookLink, BetOdds, get_clotbook
 
 class Tasks(commands.Cog, name="tasks"):
     def __init__(self, bot):
@@ -65,6 +65,7 @@ class Tasks(commands.Cog, name="tasks"):
     async def handle_clotbook(self):
         channel_links = DiscordChannelCLOTBookLink.objects.all()
         odds_sent = []
+        cb = get_clotbook()
         try:
             for cl in channel_links:
                 channel = self.bot.get_channel(cl.channelid)
@@ -83,11 +84,13 @@ class Tasks(commands.Cog, name="tasks"):
                         emb.add_field(name="Teams", value=team_text, inline=True)
 
                         # grab both the american and decimal odds
-                        american1 = bo.american_odds.split('.')[0]
-                        american2 = bo.american_odds.split('.')[1]
+                        american1 = bo.american_odds.split('!')[0]
+                        american1 = cb.format_american(int(american1))
+                        american2 = bo.american_odds.split('!')[1]
+                        american2 = cb.format_american(int(american2))
 
-                        dec1 = bo.decimal_odds.split('.')[0]
-                        dec2 = bo.decimal_odds.split('.')[1]
+                        dec1 = bo.decimal_odds.split('!')[0]
+                        dec2 = bo.decimal_odds.split('!')[1]
 
                         odds = "{}/{}\n{}/{}".format(american1, dec1, american2, dec2)
                         emb.add_field(name="Odds", value=odds, inline=True)

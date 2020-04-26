@@ -49,15 +49,15 @@ class CLOTBook(models.Model):
 
     def decimal_odds_to_american(self, odds):
         if odds > 2.0:
-            return (odds-1)*100
+            return int((odds-1)*100)
         else:
-            return -100 // (odds-1)
+            return int(-100 // (odds-1))
 
     def american_odds_to_decimal(self, odds):
         if odds > 0:
-            return odds // 100 + 1
+            return round(odds / 100 + 1, 2)
         else:
-            return 100 // odds + 1
+            return round(100 // odds + 1, 2)
 
     def prob_to_decimal_odds(self, prob):
         return (1/prob)
@@ -67,6 +67,10 @@ class CLOTBook(models.Model):
 
     def round_to_nearest_multiple(self, x, base=5):
         return base * round(x / base)
+
+    def format_american(self, odds):
+        if odds > 0:
+            return "+{}".format(odds)
 
     '''
     Creates a new BetOdds object that serves as the initial line for the game
@@ -78,15 +82,24 @@ class CLOTBook(models.Model):
             probs2 = self.probability_to_win(ratings2, ratings1)
 
             log_cb_msg("Initial odds for gameid {}: {}% to {}%".format(game.gameid, probs1, probs2))
-            probability = "{}.{}".format(probs1, probs2)
+            probability = "{}!{}".format(probs1, probs2)
 
             decimal1 = self.prob_to_decimal_odds(probs1)
             decimal2 = self.prob_to_decimal_odds(probs2)
-            decimal_odds = "{}.{}".format(decimal1, decimal2)
-            log_cb_msg("Decimal odds for gameid {}: {}".format(game.gameid, decimal_odds))
 
-            american_odds = "{}.{}".format(self.decimal_odds_to_american(decimal1), self.decimal_odds_to_american(decimal2))
+            american1 = self.decimal_odds_to_american(decimal1)
+            american2 = self.decimal_odds_to_american(decimal2)
+
+            # round the american to the nearest 5 or 0, and change that back into decimal
+            american1 = self.round_to_nearest_multiple(american1)
+            american2 = self.round_to_nearest_multiple(american2)
+            american_odds = "{}!{}".format(american1, american2)
             log_cb_msg("American odds for gameid {}: {}".format(game.gameid, american_odds))
+
+            decimal1 = self.american_odds_to_decimal(american1)
+            decimal2 = self.american_odds_to_decimal(american2)
+            decimal_odds = "{}!{}".format(decimal1, decimal2)
+            log_cb_msg("Decimal odds for gameid {}: {}".format(game.gameid, decimal_odds))
 
             odds = BetOdds(gameid=game.id, game=game, players=game.players, initial=True, decimal_odds=decimal_odds, probability=probability, american_odds=american_odds)
             odds.save()
