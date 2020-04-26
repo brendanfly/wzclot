@@ -77,21 +77,21 @@ class Tasks(commands.Cog, name="tasks"):
 
                         # grab the player list
                         team_text = ""
-                        for team in bet_odds.players.split('-'):
+                        for team in bo.players.split('-'):
                             team_text += "{}\n".format(get_team_data_no_clan_player_list(team.split('.')))
 
                         emb.add_field(name="Teams", value=team_text, inline=True)
 
                         # grab both the american and decimal odds
-                        american1 = bet_odds.american_odds.split('.')[0]
-                        american2 = bet_odds.american_odds.split('.')[1]
+                        american1 = bo.american_odds.split('.')[0]
+                        american2 = bo.american_odds.split('.')[1]
 
-                        dec1 = bet_odds.decimal_odds.split('.')[0]
-                        dec2 = bet_odds.decimal_odds.split('.')[1]
+                        dec1 = bo.decimal_odds.split('.')[0]
+                        dec2 = bo.decimal_odds.split('.')[1]
 
                         odds = "{}/{}\n{}/{}".format(american1, dec1, american2, dec2)
                         emb.add_field(name="Odds", value=odds, inline=True)
-                        emb.title = "Opening lines for Game {}".format(bet_odds.gameid)
+                        emb.title = "Opening lines for Game {}".format(bo.gameid)
 
                         await channel.send(embed=emb)
                         odds_sent.append(bo)
