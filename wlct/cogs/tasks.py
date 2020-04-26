@@ -20,6 +20,7 @@ class Tasks(commands.Cog, name="tasks"):
         self.last_task_run = timezone.now()
         self.executions = 0
         self.bg_task.start()
+        self.handle_clotbook.start()
 
     async def handle_rtl_tasks(self):
         ladders = RealTimeLadder.objects.all()
@@ -62,15 +63,16 @@ class Tasks(commands.Cog, name="tasks"):
                 diff = datetime.datetime.utcnow() - next_start
                 # diff is our delta, compute how many days, hours, minutes remaining
 
+    @tasks.loop(seconds=10)
     async def handle_clotbook(self):
         channel_links = DiscordChannelCLOTBookLink.objects.all()
         odds_sent = []
         try:
             for cl in channel_links:
-                bet_text = ""
+                print("Found {} channels to send lines to".format(channel_links.count()))
                 channel = self.bot.get_channel(cl.channelid)
                 if hasattr(self.bot, 'uptime') and channel:
-                    bet_odds = BetOdds.objects.filter(sent_notification=False).order_by('created_time')
+                    bet_odds = BetOdds.objects.filter(sent_notification=False, initial=True).order_by('created_time')
                     log_cb_msg("Found {} games to send initial lines on.".format(bet_odds.count()))
                     for bo in bet_odds:
                         emb = self.bot.get_default_embed()
@@ -90,7 +92,7 @@ class Tasks(commands.Cog, name="tasks"):
                         dec2 = bet_odds.decimal_odds.split('.')[1]
 
                         odds = "{}/{}\n{}/{}".format(american1, dec1, american2, dec2)
-                        emb.add_field(name="Odds", value=odds)
+                        emb.add_field(name="Odds", value=odds, inline=True)
                         emb.title = "Opening lines for Game {}".format(bet_odds.gameid)
 
                         await channel.send(embed=emb)
@@ -300,7 +302,6 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_game_logs()
         await self.handle_cache_queue()
         await self.handle_discord_tournament_updates()
-        await self.handle_clotbook()
 
     async def process_member_join(self, memid):
         member = self.bot.get_user(memid)

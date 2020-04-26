@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from wlct.models import Player
 from django.contrib import admin
+from wlct.logging import log_cb_msg
 
 # Models for the Off-site betting for the CLOT
 def get_clotbook():
@@ -31,7 +32,7 @@ class CLOTBook(models.Model):
 
         if underdog == ratings1:
             prob_win = 1-prob_win
-        print("Probability: Favorite: {}/{}, Underdog {}/{}".format(favorite, prob_win, underdog, 100-prob_win))
+        print("Probability: Favorite: {}/{}, Underdog {}/{}".format(favorite, prob_win, underdog, 1-prob_win))
         return prob_win
 
     def create_new_bet(self, wager, player, game):
@@ -69,19 +70,20 @@ class CLOTBook(models.Model):
     '''
     def create_initial_odds_for_game(self, game, ratings1, ratings2):
         # get the ratings from the players in the game
-        players1 = game.players.split('-')[0].split('.')
-        players2 = game.players.split('-')[1].split('.')
-
         probs1 = self.probability_to_win(ratings1, ratings2)
         probs2 = self.probability_to_win(ratings2, ratings1)
 
+        log_cb_msg("Initial odds for gameid {}: {}% to {}%".format(game.gameid, probs1, probs2))
         probability = "{}.{}".format(probs1, probs2)
 
         decimal1 = self.prob_to_decimal_odds(probs1)
         decimal2 = self.prob_to_decimal_odds(probs2)
         decimal_odds = "{}.{}".format(decimal1, decimal2)
+        log_cb_msg("Decimal odds for gameid {}: {}".format(game.gameid, decimal_odds))
 
         american_odds = "{}.{}".format(self.decimal_odds_to_american(decimal1), self.decimal_odds_to_american(decimal2))
+        log_cb_msg("American odds for gameid {}: {}".format(game.gameid, american_odds))
+
         odds = BetOdds(gameid=game.id, game=game, players=game.players, initial=True, decimal_odds=decimal_odds, probability=probability, american_odds=american_odds)
         odds.save()
 

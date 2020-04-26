@@ -5475,13 +5475,14 @@ class RealTimeLadder(Tournament):
 
     def is_player_allowed_join(self, player):
         # loop through all the templates and see if the player is allowed to join
-        templates = RealTimeLadderTemplate.objects.filter(ladder=self)
-        for t in templates:
-            allowed_join = is_player_allowed_join_by_token(player.token, t.template)
-            # we only need a single template valid to be able to play...
-            print("{} is {} allowed to play template {}".format(player.name, allowed_join, t.template))
-            if allowed_join:
-                return True
+        if player:
+            templates = RealTimeLadderTemplate.objects.filter(ladder=self)
+            for t in templates:
+                allowed_join = is_player_allowed_join_by_token(player.token, t.template)
+                # we only need a single template valid to be able to play...
+                print("{} is {} allowed to play template {}".format(player.name, allowed_join, t.template))
+                if allowed_join:
+                    return True
         return False
 
     def is_template_allowed(self, templateid, team):
