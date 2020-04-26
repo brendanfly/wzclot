@@ -20,7 +20,6 @@ class Tasks(commands.Cog, name="tasks"):
         self.last_task_run = timezone.now()
         self.executions = 0
         self.bg_task.start()
-        self.handle_clotbook.start()
 
     async def handle_rtl_tasks(self):
         ladders = RealTimeLadder.objects.all()
@@ -63,7 +62,6 @@ class Tasks(commands.Cog, name="tasks"):
                 diff = datetime.datetime.utcnow() - next_start
                 # diff is our delta, compute how many days, hours, minutes remaining
 
-    @tasks.loop(seconds=10)
     async def handle_clotbook(self):
         channel_links = DiscordChannelCLOTBookLink.objects.all()
         odds_sent = []
@@ -302,6 +300,7 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_game_logs()
         await self.handle_cache_queue()
         await self.handle_discord_tournament_updates()
+        await self.handle_clotbook()
 
     async def process_member_join(self, memid):
         member = self.bot.get_user(memid)
