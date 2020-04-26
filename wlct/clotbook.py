@@ -115,7 +115,7 @@ class Bet(models.Model):
     gameid = models.BigIntegerField(default=0, db_index=True)
     game = models.ForeignKey('TournamentGame', on_delete=models.CASCADE, blank=True, null=True)
     players = models.CharField(max_length=255, default="")
-    created_time = models.DateTimeField(timezone.now)
+    created_time = models.DateTimeField(default=timezone.now)
     odds = models.ForeignKey('BetOdds', on_delete=models.CASCADE, blank=True, null=True)
 
 class BetAdmin(admin.ModelAdmin):
@@ -129,7 +129,7 @@ class BetOdds(models.Model):
     players = models.CharField(max_length=255, default="")
     decimal_odds = models.CharField(max_length=255, default="")
     american_odds = models.CharField(max_length=255, default="")
-    created_time = models.DateTimeField(timezone.now)
+    created_time = models.DateTimeField(default=timezone.now)
     initial = models.BooleanField(default=False)
     probability = models.CharField(max_length=255, default="")
     sent_notification = models.BooleanField(default=False)
