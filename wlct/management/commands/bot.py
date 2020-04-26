@@ -107,6 +107,8 @@ class WZBot(commands.AutoShardedBot):
                     elif channel.name == "critical-errors":
                         print("Caching Critical Error Channel in guild: {}".format(guild.name))
                         self.critical_error_channels.append(channel)
+            if not hasattr(self, 'uptime'):
+                self.uptime = timezone.now()
         except Exception as e:
             log_exception()
 
