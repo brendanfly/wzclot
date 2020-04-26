@@ -36,9 +36,7 @@ class DiscordTournamentUpdate(models.Model):
 class Engine(models.Model):
     last_run_time = models.DateTimeField(default=timezone.now)
     next_run_time = models.DateTimeField(blank=True, null=True)
-
-
-
+    update_elo_scores_500 = models.BooleanField(default=False)
 
 class Clan(models.Model):
     name = models.CharField(max_length=64, default=invalid_clan_string, db_index=True)
@@ -63,9 +61,10 @@ class Player(models.Model):
     is_on_vacation = models.BooleanField(default=False, blank=True, null=True)
     bot_token = models.CharField(max_length=34, default=invalid_token_string, db_index=True)
     discord_member = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.CASCADE, related_name='discord')
-    rating = models.IntegerField(default=1000)
+    rating = models.IntegerField(default=1500)
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
+    bankroll = models.IntegerField(default=100)
 
     def set_player_data(self, token, playerData):
         self.token = token
