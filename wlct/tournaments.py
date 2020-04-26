@@ -555,9 +555,11 @@ class Tournament(models.Model):
                 self, tournament_game)
 
             # we need to create the initial lines for the match-up
+            self.post_create_games()
+
             cb = get_clotbook()
             cb.create_initial_odds_for_game(tournament_game, ratings[0], ratings[1])
-            self.post_create_games()
+
             return tournament_game
         else:
             # not good, error, TODO: Log???

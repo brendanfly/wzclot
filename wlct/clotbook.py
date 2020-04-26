@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 from wlct.models import Player
 from django.contrib import admin
-from wlct.logging import log_cb_msg
+from wlct.logging import log_cb_msg, log_exception
 
 # Models for the Off-site betting for the CLOT
 def get_clotbook():
@@ -65,29 +65,35 @@ class CLOTBook(models.Model):
     def update_odds(self, bet_odds):
         pass
 
+    def round_to_nearest_multiple(self, x, base=5):
+        return base * round(x / base)
+
     '''
     Creates a new BetOdds object that serves as the initial line for the game
     '''
     def create_initial_odds_for_game(self, game, ratings1, ratings2):
-        # get the ratings from the players in the game
-        probs1 = self.probability_to_win(ratings1, ratings2)
-        probs2 = self.probability_to_win(ratings2, ratings1)
+        try:
+            # get the ratings from the players in the game
+            probs1 = self.probability_to_win(ratings1, ratings2)
+            probs2 = self.probability_to_win(ratings2, ratings1)
 
-        log_cb_msg("Initial odds for gameid {}: {}% to {}%".format(game.gameid, probs1, probs2))
-        probability = "{}.{}".format(probs1, probs2)
+            log_cb_msg("Initial odds for gameid {}: {}% to {}%".format(game.gameid, probs1, probs2))
+            probability = "{}.{}".format(probs1, probs2)
 
-        decimal1 = self.prob_to_decimal_odds(probs1)
-        decimal2 = self.prob_to_decimal_odds(probs2)
-        decimal_odds = "{}.{}".format(decimal1, decimal2)
-        log_cb_msg("Decimal odds for gameid {}: {}".format(game.gameid, decimal_odds))
+            decimal1 = self.prob_to_decimal_odds(probs1)
+            decimal2 = self.prob_to_decimal_odds(probs2)
+            decimal_odds = "{}.{}".format(decimal1, decimal2)
+            log_cb_msg("Decimal odds for gameid {}: {}".format(game.gameid, decimal_odds))
 
-        american_odds = "{}.{}".format(self.decimal_odds_to_american(decimal1), self.decimal_odds_to_american(decimal2))
-        log_cb_msg("American odds for gameid {}: {}".format(game.gameid, american_odds))
+            american_odds = "{}.{}".format(self.decimal_odds_to_american(decimal1), self.decimal_odds_to_american(decimal2))
+            log_cb_msg("American odds for gameid {}: {}".format(game.gameid, american_odds))
 
-        odds = BetOdds(gameid=game.id, game=game, players=game.players, initial=True, decimal_odds=decimal_odds, probability=probability, american_odds=american_odds)
-        odds.save()
+            odds = BetOdds(gameid=game.id, game=game, players=game.players, initial=True, decimal_odds=decimal_odds, probability=probability, american_odds=american_odds)
+            odds.save()
 
-        log_cb_msg("Created initial odds for gameid {}".format(game.gameid))
+            log_cb_msg("Created initial odds for gameid {}".format(game.gameid))
+        except:
+            log_exception()
 
 class CLOTBookAdmin(admin.ModelAdmin):
     pass
