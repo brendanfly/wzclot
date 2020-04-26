@@ -107,31 +107,6 @@ class WZBot(commands.AutoShardedBot):
                     elif channel.name == "critical-errors":
                         print("Caching Critical Error Channel in guild: {}".format(guild.name))
                         self.critical_error_channels.append(channel)
-
-            if not hasattr(self, 'uptime'):
-                self.uptime = timezone.now()
-
-            try:
-                scheduler = BlockingScheduler()
-                # If you want all scheduled jobs to use this store by default,
-                # use the name 'default' instead of 'djangojobstore'.
-                scheduler.add_jobstore(DjangoJobStore(), 'default')
-                if not scheduler.running:
-                    scheduler.add_job(tournament_engine, 'interval', seconds=get_run_time(), id='tournament_engine',
-                                      max_instances=1, coalesce=False)
-                    scheduler.add_job(tournament_caching, 'interval', seconds=(get_run_time()*2), id='tournament_caching',
-                                      max_instances=1, coalesce=False)
-                    scheduler.add_job(process_team_vacations, 'interval', seconds=(get_run_time()*20), id='process_team_vacations',
-                                      max_instances=1, coalesce=False)
-                    scheduler.add_job(parse_and_update_clan_logo, 'interval', seconds=(get_run_time()*25), id='parse_and_update_clan_logo',
-                                      max_instances=1, coalesce=False)
-                    scheduler.add_job(process_mdl_games, 'interval', seconds=(get_run_time()*20), id='process_mdl_games',
-                                      max_instances=1, coalesce=False)
-                    scheduler.start()
-            except ConflictingIdError:
-                pass
-            except Exception as e:
-                raise e
         except Exception as e:
             log_exception()
 
