@@ -44,7 +44,8 @@ class LogFilter(SimpleListFilter):
             return queryset.distinct().filter(level=LogLevel.clean_logs)
         if self.value() == 'clotbook':
             return queryset.distinct().filter(level=LogLevel.clotbook)
-
+        if self.value() == 'tournament':
+            return queryset.distinct().filter(level=LogLevel.tournament)
 
 class LogAdmin(admin.ModelAdmin):
     list_filter = (LogFilter, )

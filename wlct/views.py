@@ -121,16 +121,19 @@ def tournament_start(request):
 
         try:
             player = Player.objects.get(token=request.session['token'])
-
             tournament = find_tournament_by_id(tournamentid, True)
+            log("Starting tournament {}, by {}-{}".format(tournament.name, player.name, player.token), LogLevel.tournament)
             if tournament is not None and request.session['token'] == tournament.created_by.token:
                 tournament.start(tournament_data)
                 context.update({"success": "true"})
                 if tournament.is_league:
+                    log("Starting league {}".format(tournament.name), LogLevel.tournament)
                     context.update({'redirect_url': '/leagues/{}/'.format(tournamentid)})
                 elif hasattr(tournament, 'pr_tournament'):
+                    log("Starting P/R season {}".format(tournament.name), LogLevel.tournament)
                     context.update({'redirect_url': '/pr/season/{}/'.format(tournamentid)})
                 else:
+                    log("Starting tournament {}".format(tournament.name), LogLevel.tournament)
                     context.update({'redirect_url': '/tournaments/{}/'.format(tournamentid)})
 
                 return JsonResponse(context)

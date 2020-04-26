@@ -2589,7 +2589,7 @@ class RoundRobinTournament(Tournament):
         # There should be number_teams-1 games which is stored in self.number_rounds as well
         # based off of this start pairing up giving players no more than 2 games
         self.total_games = int((self.number_teams * (self.number_teams - 1)) / 2)
-        print("Total games: {}, number_teams: {}".format(self.total_games, self.number_teams))
+        log_tournament("Starting {}. Total games: {}, number_teams: {}".format(self.name, self.total_games, self.number_teams), self)
         self.save()
 
         # create the round
@@ -3935,19 +3935,23 @@ class PromotionalRelegationLeagueSeason(Tournament):
     games_at_once = models.IntegerField(default=2)
 
     def start(self, tournament_data):
-
-        tournaments = PromotionalRelegationLeagueTournament(parent_tournament=self)
+        log_tournament("Starting {}".format(self.name), self)
+        tournaments = PromotionalRelegationLeagueTournament.objects.filter(parent_tournament=self)
         if tournaments.count() > 0 or self.has_started:
+            log_tournament("Cannot start {}, tournament count: {}, and self.has_started: {}".format(self.name, tournaments.count(), self.has_started), self)
             return
 
         self.has_started = True
         self.save()
+
+        log_tournament("{}.has_started = True...creating RR for divisions".format(self.name), self)
 
         divisions = ClanLeagueDivision.objects.filter(pr_season=self)
         for div in divisions:
             teams = TournamentTeam.objects.filter(clan_league_division=div, tournament=self)
             tournament = PromotionalRelegationLeagueTournament(parent_tournament=self, template=self.season_template.templateid, name=div.title, division=div, created_by=self.created_by, number_players=teams.count()*self.season_template.players_per_team, max_players=teams.count()*self.season_template.players_per_team, number_rounds=teams.count()-1, players_per_team=self.season_template.players_per_team, teams_per_game=2, private=True, games_at_once=self.games_at_once)
             tournament.save()
+            log_tournament("Created P/R RR Tournament {}".format(tournament.name), self)
             for team in teams:
                 team.round_robin_tournament = tournament
                 team.save()
