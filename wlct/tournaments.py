@@ -148,18 +148,18 @@ def get_team_data_no_clan(team):
 def get_team_data_no_clan_player_list(list):
     team_data = ""
     for player_token in list:
-        tournament_players = TournamentPlayer.objects.filter(player__token=player_token)
-        for tournament_player in tournament_players:
-            team_data += '{} '.format(tournament_player.player.name)
+        players = Player.objects.filter(token=player_token)
+        for player in players:
+            team_data += '{} '.format(player.name)
     return team_data
 
 def get_team_data_player_list(list):
     team_data = ""
     for player_token in list:
-        player = TournamentPlayer.objects.filter(player__token=player_token)
+        player = Player.objects.filter(token=player_token)
         if player:
             player = player[0]
-            team_data += get_tournament_player_data(player)
+            team_data += get_player_data(player)
     return team_data
 
 def get_matchup_data_player_list(players1, players2):
