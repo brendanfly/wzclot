@@ -58,7 +58,7 @@ def log_game_status(msg, tournament, game):
     logger.save()
 
 def log_cb_msg(msg):
-    log = Log(msg=msg, level=LogLevel.clotbook)
+    log = Logger(msg=msg, level=LogLevel.clotbook)
     if settings.DEBUG:
         print("{} log: {}".format(log.level, msg))
     log.save()
