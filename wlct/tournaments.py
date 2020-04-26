@@ -23,7 +23,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import traceback
 import urllib.request
 from wlct.cogs.common import embed_list_special_delimiter
-from wlct.clotbook import CLOTBook
+from wlct.clotbook import get_clotbook
 
 def is_player_allowed_join_by_token(token, templateid):
     allowed_join = False
@@ -501,7 +501,9 @@ class Tournament(models.Model):
         team_id = 1
         tournament_team_ids = []
         player_names = []
+        ratings = []
         for team in teams:
+            current_rating = 0
             teamid = int(team)
             tournament_team = TournamentTeam.objects.filter(pk=teamid)
             if tournament_team:
@@ -511,15 +513,17 @@ class Tournament(models.Model):
                 for tournament_player in tournament_players:
                     data['players'].append({"token": tournament_player.player.token, 'team': '{}'.format(team_id)})
                     team_player_ids.append(tournament_player.player.token)
+                    current_rating += tournament_player.player.rating
                     if self.player_data_in_name():
                         player_names.append(tournament_player.player.name)
                         # append the player names to the game name
                 tournament_team_ids.append(".".join(team_player_ids))
+                current_rating = current_rating / tournament_players.count()
+                ratings.append(current_rating)
             team_id += 1
 
         player_ids = "-".join(tournament_team_ids)
-        print("Player Ids for Game: {}".format(player_ids))
-
+        print("Rating {} vs. {}".format(ratings[0], ratings[1]))
         if len(player_names) == 2:
             try:
                 game_name += " {} vs. {}".format(player_names[0], player_names[1])
@@ -550,6 +554,9 @@ class Tournament(models.Model):
                                                                                             tournament_round.round_number),
                 self, tournament_game)
 
+            # we need to create the initial lines for the match-up
+            cb = get_clotbook()
+            cb.create_initial_odds_for_game(tournament_game, ratings[0], ratings[1])
             self.post_create_games()
             return tournament_game
         else:
@@ -3010,7 +3017,7 @@ class TournamentRound(models.Model):
 # Each tournament team belongs to a tournament
 class TournamentTeam(models.Model):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
-    rating = models.IntegerField(default=1000)
+    rating = models.IntegerField(default=1500)
     buchholz = models.IntegerField(default=0)
     players = models.IntegerField(default=1)
     team_index = models.IntegerField(default=0, db_index=True)
@@ -3254,7 +3261,7 @@ class TournamentPlayer(models.Model):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
     team = models.ForeignKey('TournamentTeam', on_delete=models.CASCADE)
     player = models.ForeignKey('Player', on_delete=models.DO_NOTHING)
-    rating = models.IntegerField(default=1000)
+    rating = models.IntegerField(default=1500)
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
 
@@ -3702,7 +3709,7 @@ class MonthlyTemplateRotation(Tournament):
         else:
             team_index = 1
 
-        new_team = TournamentTeam(tournament=self, team_index=team_index, rating=1000, players=self.players_per_team)
+        new_team = TournamentTeam(tournament=self, team_index=team_index, players=self.players_per_team)
         new_team.save()
         self.number_players += 1
         self.save()

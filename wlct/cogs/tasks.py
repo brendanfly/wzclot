@@ -1,17 +1,18 @@
 import discord
 from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink, DiscordTournamentUpdate
-from wlct.tournaments import Tournament, TournamentTeam, TournamentGame, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame, ClanLeagueTournament, get_multi_day_ladder, TournamentGameEntry, TournamentRound
+from wlct.tournaments import Tournament, TournamentTeam, TournamentGame, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame, ClanLeagueTournament, get_multi_day_ladder, TournamentGameEntry, TournamentRound, get_team_data_no_clan_player_list
 from discord.ext import commands, tasks
 from wlct.cogs.common import is_admin
 from django.utils import timezone
 from traceback import print_exc
-from wlct.logging import log_exception, log, LogLevel, Logger, log_bot_msg
+from wlct.logging import log_exception, log, LogLevel, Logger, log_bot_msg, log_cb_msg
 from wlct.api import API
 import gc
 import datetime
 import pytz
 import urllib.request
 import json
+from wlct.clotbook import DiscordChannelCLOTBookLink, BetOdds
 
 class Tasks(commands.Cog, name="tasks"):
     def __init__(self, bot):
@@ -60,6 +61,46 @@ class Tasks(commands.Cog, name="tasks"):
                 next_start = datetime.datetime.strptime(start_times[0], "%m.%d.%y")
                 diff = datetime.datetime.utcnow() - next_start
                 # diff is our delta, compute how many days, hours, minutes remaining
+
+    async def handle_clotbook(self):
+        channel_links = DiscordChannelCLOTBookLink.objects.all()
+        odds_sent = []
+        try:
+            for cl in channel_links:
+                bet_text = ""
+                channel = self.bot.get_channel(cl.channelid)
+                if hasattr(self.bot, 'uptime') and channel:
+                    bet_odds = BetOdds.objects.filter(sent_notification=False).order_by('created_time')
+                    log_cb_msg("Found {} games to send initial lines on.".format(bet_odds.count()))
+                    for bo in bet_odds:
+                        emb = self.bot.get_default_embed()
+
+                        # grab the player list
+                        team_text = ""
+                        for team in bet_odds.players.split('-'):
+                            team_text += "{}\n".format(get_team_data_no_clan_player_list(team.split('.')))
+
+                        emb.add_field(name="Teams", value=team_text, inline=True)
+
+                        # grab both the american and decimal odds
+                        american1 = bet_odds.american_odds.split('.')[0]
+                        american2 = bet_odds.american_odds.split('.')[1]
+
+                        dec1 = bet_odds.decimal_odds.split('.')[0]
+                        dec2 = bet_odds.decimal_odds.split('.')[1]
+
+                        odds = "{}/{}\n{}/{}".format(american1, dec1, american2, dec2)
+                        emb.add_field(name="Odds", value=odds)
+                        emb.title = "Opening lines for Game {}".format(bet_odds.gameid)
+
+                        await channel.send(embed=emb)
+                        odds_sent.append(bo)
+        except Exception:
+            log_exception()
+        finally:
+            for odds in odds_sent:
+                odds.sent_notification = True
+                odds.save()
 
     async def handle_game_logs(self):
         channel_links = DiscordChannelTournamentLink.objects.all()
@@ -259,6 +300,7 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_game_logs()
         await self.handle_cache_queue()
         await self.handle_discord_tournament_updates()
+        await self.handle_clotbook()
 
     async def process_member_join(self, memid):
         member = self.bot.get_user(memid)

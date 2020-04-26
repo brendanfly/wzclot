@@ -272,6 +272,25 @@ def cleanup_logs():
                 LogManager(value, timestamp__lt=enddate, level=value).prune()
         gc.collect()
 
+def update_elo_scores_500():
+    print("Updating ELO for TournamentTeam")
+    teams = TournamentTeam.objects.all()
+    for t in teams:
+        t.rating += 500
+        t.save()
+    print("Updating ELO for TournamentPlayer")
+    players = TournamentPlayer.objects.all()
+    for p in players:
+        p.rating += 500
+        p.save()
+    print("Updating ELO for Player")
+    players = Player.objects.all()
+    for p in players:
+        p.rating += 500
+        p.save()
+
+    print("Finished updating elo + 500")
+
 def tournament_caching():
     try:
         cleanup_logs()
@@ -296,6 +315,12 @@ def tournament_engine():
             engine.save()
 
         print("Process Games Starting...")
+
+        if not engine.update_elo_scores_500:
+            update_elo_scores_500()
+            engine.update_elo_scores_500 = True
+            engine.save()
+
         # bulk of the logic, we handle all types of tournaments separately here
         # there must be logic for each tournament type, as the child class contains
         # the logic

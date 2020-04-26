@@ -107,7 +107,7 @@ class GroupTournamentForm(TournamentForm):
         # create all the objects associated with this tournament
         # including groups, teams, and
         for index in range(1, self.number_teams+1):
-            tournament_team = TournamentTeam(tournament=tournament, rating=1000, players=tournament.players_per_team, team_index=index)
+            tournament_team = TournamentTeam(tournament=tournament, players=tournament.players_per_team, team_index=index)
             tournament_team.save()
 
         return tournament.id
@@ -126,7 +126,7 @@ class SeededTournamentForm(TournamentForm):
         # create all the team objects associated with this tournament
         # range goes up to number of team, and stops so we need to add 1 to both sides of range
         for index in range(1, self.number_teams+1):
-            tournament_team = TournamentTeam(tournament=tournament, rating=1000, players=tournament.players_per_team, team_index=index)
+            tournament_team = TournamentTeam(tournament=tournament, players=tournament.players_per_team, team_index=index)
             tournament_team.save()
 
         return tournament.id
@@ -151,7 +151,7 @@ class SwissTournamentForm(TournamentForm):
         # create all the team objects associated with this tournament
         # range goes up to number of team, and stops so we need to add 1 to both sides of range
         for index in range(1, self.number_teams+1):
-            tournament_team = TournamentTeam(tournament=tournament, rating=1000, players=tournament.players_per_team, team_index=index)
+            tournament_team = TournamentTeam(tournament=tournament, players=tournament.players_per_team, team_index=index)
             tournament_team.save()
         return tournament.id
 
@@ -168,7 +168,7 @@ class RoundRobinRandomTeamsForm(TournamentForm):
         tournament.save()
 
         for i in range(1, self.number_teams+1):
-            tournament_team = TournamentTeam(tournament=tournament, rating=1000, players=tournament.players_per_team, team_index=i)
+            tournament_team = TournamentTeam(tournament=tournament, players=tournament.players_per_team, team_index=i)
             tournament_team.save()
         return tournament.id
 
@@ -216,7 +216,7 @@ class LeagueForm:
 
     def fill_league_with_teams(self, tournament):
         for index in range(1, self.number_teams+1):
-            tournament_team = TournamentTeam(tournament=tournament, rating=1000, players=tournament.players_per_team, team_index=index)
+            tournament_team = TournamentTeam(tournament=tournament, players=tournament.players_per_team, team_index=index)
             tournament_team.save()
 
 class MonthlyTemplateCircuitForm(LeagueForm):

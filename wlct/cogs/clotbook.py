@@ -61,7 +61,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                     await ctx.send(self.bot.discord_link_text)
                     return
                 player = player[0]
-                await ctx.send("{}, you have {} Nohams lef in your account.".format(player.name, player.bankroll))
+                await ctx.send("{}, you have {} {} left in your account.".format(player.name, player.bankroll, CLOTBook.currency_name))
             else:
                 await ctx.send("You must specify an option with this command.")
         except:

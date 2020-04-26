@@ -20,6 +20,7 @@ class LogLevel:
     clean_logs = "Log Cleanup"
     process_game = "Process Game"
     process_new_games = "Process New Games"
+    clotbook = "CLOTBook"
 
 def log_exception():
     log(traceback.format_exc(), LogLevel.critical)
@@ -55,6 +56,12 @@ def log_game_status(msg, tournament, game):
         print("{} log: {}".format(logger.level, msg))
 
     logger.save()
+
+def log_cb_msg(msg):
+    log = Log(msg=msg, level=LogLevel.clotbook)
+    if settings.DEBUG:
+        print("{} log: {}".format(log.level, msg))
+    log.save()
 
 def log_bot_msg(msg):
     logger = BotLog(msg=msg, level=LogLevel.bot)
