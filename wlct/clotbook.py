@@ -119,7 +119,8 @@ class Bet(models.Model):
     odds = models.ForeignKey('BetOdds', on_delete=models.CASCADE, blank=True, null=True)
 
 class BetAdmin(admin.ModelAdmin):
-    pass
+    raw_id_fields = ['game', 'odds']
+
 
 admin.site.register(Bet, BetAdmin)
 
@@ -134,7 +135,8 @@ class BetOdds(models.Model):
     probability = models.CharField(max_length=255, default="")
     sent_notification = models.BooleanField(default=False)
 
+
 class BetOddsAdmin(admin.ModelAdmin):
-    pass
+    raw_id_fields = ['game']
 
 admin.site.register(BetOdds, BetOddsAdmin)
