@@ -28,7 +28,7 @@ class CLOTBook(models.Model):
         else:
             favorite = ratings1 if ratings1 > ratings2 else ratings2
             underdog = ratings1 if ratings1 < ratings2 else ratings2
-        prob_win = (1 / ((10*(favorite-underdog)/400) + 1))
+        prob_win = round((1 / ((10*(favorite-underdog)/400) + 1)), 2)
 
         if underdog == ratings1:
             prob_win = 1-prob_win
@@ -51,13 +51,13 @@ class CLOTBook(models.Model):
         if odds > 2.0:
             return (odds-1)*100
         else:
-            return -100/(odds-1)
+            return -100 // (odds-1)
 
     def american_odds_to_decimal(self, odds):
         if odds > 0:
-            return odds / 100 + 1
+            return odds // 100 + 1
         else:
-            return 100 / odds + 1
+            return 100 // odds + 1
 
     def prob_to_decimal_odds(self, prob):
         return (1/prob)
@@ -87,6 +87,7 @@ class CLOTBook(models.Model):
         odds = BetOdds(gameid=game.id, game=game, players=game.players, initial=True, decimal_odds=decimal_odds, probability=probability, american_odds=american_odds)
         odds.save()
 
+        log_cb_msg("Created initial odds for gameid {}".format(game.gameid))
 
 class CLOTBookAdmin(admin.ModelAdmin):
     pass

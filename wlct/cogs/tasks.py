@@ -69,9 +69,9 @@ class Tasks(commands.Cog, name="tasks"):
         odds_sent = []
         try:
             for cl in channel_links:
-                print("Found {} channels to send lines to".format(channel_links.count()))
                 channel = self.bot.get_channel(cl.channelid)
                 if hasattr(self.bot, 'uptime') and channel:
+                    print("Getting odds to send to channel: {}".format(channel.name))
                     bet_odds = BetOdds.objects.filter(sent_notification=False, initial=True).order_by('created_time')
                     log_cb_msg("Found {} games to send initial lines on.".format(bet_odds.count()))
                     for bo in bet_odds:
