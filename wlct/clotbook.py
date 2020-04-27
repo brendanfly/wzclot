@@ -32,7 +32,7 @@ class CLOTBook(models.Model):
 
         if underdog == ratings1:
             prob_win = 1-prob_win
-        print("Probability: Favorite: {}/{}, Underdog {}/{}".format(favorite, prob_win, underdog, 1-prob_win))
+        log_cb_msg("Probability: Favorite: {}/{}, Underdog {}/{}".format(favorite, prob_win, underdog, 1-prob_win))
         return prob_win
 
     def create_new_bet(self, wager, player, game):

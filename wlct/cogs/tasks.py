@@ -71,7 +71,6 @@ class Tasks(commands.Cog, name="tasks"):
                 channel = self.bot.get_channel(cl.channelid)
                 if hasattr(self.bot, 'uptime') and channel:
                     bet_odds = BetOdds.objects.filter(sent_notification=False, initial=True).order_by('created_time')
-                    log_cb_msg("Found {} games to send initial lines on.".format(bet_odds.count()))
                     for bo in bet_odds:
                         emb = self.bot.get_default_embed()
 
