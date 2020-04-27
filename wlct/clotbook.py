@@ -48,7 +48,7 @@ class CLOTBook(models.Model):
         if odds > 0:
             return round(odds / 100 + 1, 2)
         else:
-            return round(100 // odds + 1, 2)
+            return round(100 / odds + 1, 2)
 
     def prob_to_decimal_odds(self, prob):
         return round((1/prob), 2)
@@ -86,6 +86,7 @@ class CLOTBook(models.Model):
             american2 = self.decimal_odds_to_american(decimal2)
 
             # round the american to the nearest 5 or 0, and change that back into decimal
+            log_cb_msg("American odds for gameid {} before rounding: {} {}".format(game.gameid, american1, american2))
             american1 = self.round_to_nearest_multiple(american1)
             american2 = self.round_to_nearest_multiple(american2)
             american_odds = "{}!{}".format(american1, american2)
