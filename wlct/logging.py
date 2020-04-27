@@ -70,7 +70,7 @@ def log_bot_msg(msg):
 class Logger(models.Model):
 
     msg = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True, default=timezone.now)
+    timestamp = models.DateTimeField(default=timezone.now)
     bot_seen = models.BooleanField(default=False)
 
     # free-form logging is the best kind, do not tie this to
