@@ -17,8 +17,9 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                           bb!cb off - turns OFF CLOTBook updates for this channel
                           bb!cb stats - displays stats for the CLOTBook
                           bb!cb me - displays CLOTBook information about you
+                          bb!cb initial <game_id> - forces initial odds to be recalculated for a specific game
                       ''')
-    async def cb(self, ctx, option=""):
+    async def cb(self, ctx, option="", arg=""):
         try:
             discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
             if not discord_user:
@@ -62,6 +63,19 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                     return
                 player = player[0]
                 await ctx.send("{}, you have {} {} left in your account.".format(player.name, player.bankroll, CLOTBook.currency_name))
+            elif option == "initial":
+                if arg.isnumeric():
+                    game = TournamentGame.objects.filter(gameid=arg)
+                    if game:
+                        game = game[0]
+                        odds = BetOdds.objects.filter(game=game)
+                        for odd in odds:
+                            odd.delete()
+                        game.create_initial_lines()
+                        await ctx.send("Updated initial lines for game {}".format(game.gameid))
+                        return
+                await ctx.send("You must specify a valid game id to use with this command.")
+                return
             else:
                 await ctx.send("You must specify an option with this command.")
         except:

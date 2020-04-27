@@ -74,11 +74,13 @@ class CLOTBook(models.Model):
             probs1 = probs[0]
             probs2 = probs[1]
 
-            log_cb_msg("Initial odds for gameid {}: {}% to {}%".format(game.gameid, probs1, probs2))
+            log_cb_msg("Initial probabilities for gameid {}: {}% to {}%".format(game.gameid, probs1, probs2))
             probability = "{}!{}".format(probs1, probs2)
 
             decimal1 = self.prob_to_decimal_odds(probs1)
             decimal2 = self.prob_to_decimal_odds(probs2)
+
+            log_cb_msg("Decimal odds for gameid {}: {} {}".format(game.gameid, decimal1, decimal2))
 
             american1 = self.decimal_odds_to_american(decimal1)
             american2 = self.decimal_odds_to_american(decimal2)
@@ -87,6 +89,7 @@ class CLOTBook(models.Model):
             american1 = self.round_to_nearest_multiple(american1)
             american2 = self.round_to_nearest_multiple(american2)
             american_odds = "{}!{}".format(american1, american2)
+
             log_cb_msg("American odds for gameid {}: {}".format(game.gameid, american_odds))
 
             decimal1 = self.american_odds_to_decimal(american1)

@@ -90,11 +90,11 @@ class Tasks(commands.Cog, name="tasks"):
 
                         team_text = ""
                         if int(american1) < int(american2):
-                            team_text += "{} - {}/{}\n".format(team1, american1, dec1)
-                            team_text += "{} - {}/{}\n".format(team2, american2, dec2)
+                            team_text += "{} ({}/{})\n".format(team1, american1, dec1)
+                            team_text += "{} ({}/{})\n".format(team2, american2, dec2)
                         else:
-                            team_text += "{} - {}/{}\n".format(team2, american2, dec2)
-                            team_text += "{} - {}/{}\n".format(team1, american1, dec1)
+                            team_text += "{} ({}/{})\n".format(team2, american2, dec2)
+                            team_text += "{} ({}/{})\n".format(team1, american1, dec1)
 
                         emb.add_field(name="Lines", value=team_text, inline=True)
                         emb.title = "Opening lines for Game {}".format(bo.gameid)

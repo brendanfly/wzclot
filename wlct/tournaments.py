@@ -556,10 +556,7 @@ class Tournament(models.Model):
 
             # we need to create the initial lines for the match-up
             self.post_create_games()
-
-            cb = get_clotbook()
-            cb.create_initial_odds_for_game(tournament_game, ratings[0], ratings[1])
-
+            tournament_game.create_initial_lines_ratings(ratings[0], ratings[1])
             return tournament_game
         else:
             # not good, error, TODO: Log???
@@ -3111,6 +3108,31 @@ class TournamentGame(models.Model):
 
     def __str__(self):
         return "Round {} game in {} between {}. Game ID ({}) Finished? {}".format(self.round.round_number, self.tournament.name, self.teams, self.gameid, self.is_finished)
+
+    def create_initial_lines_ratings(self, ratings1, ratings2):
+        cb = get_clotbook()
+        cb.create_initial_odds_for_game(self, ratings1, ratings2)
+
+    def create_initial_lines(self):
+        players1 = self.players.split('-')[0]
+        players2 = self.players.split('-')[1]
+
+        ratings1 = 0
+        for p in players1:
+            player = Player.objects.filter(token=p)
+            if player:
+                ratings1 += player[0].rating
+        ratings1 = ratings1 / len(players1)
+
+        ratings2 = 0
+        for p in players2:
+            player = Player.objects.filter(token=p)
+            if player:
+                ratings2 += player[0].rating
+        ratings2 = ratings2 / len(players2)
+
+        cb = get_clotbook()
+        cb.create_initial_odds_for_game(self, ratings1, ratings2)
 
     def finish_game_with_info(self, game_info):
         self.finish_game()
