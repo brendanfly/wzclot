@@ -3075,7 +3075,7 @@ class TournamentGameEntry(models.Model):
     team_opp = models.ForeignKey('TournamentTeam', on_delete=models.DO_NOTHING, related_name='team_opp')
     game = models.ForeignKey('TournamentGame', on_delete=models.CASCADE, related_name='game', blank=True, null=True)
     is_finished = models.BooleanField(default=False)
-    created_date = models.DateTimeField(auto_now_add=True)
+    created_date = models.DateTimeField(default=timezone.now)
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, related_name='tournament', blank=True, null=True)
     round = models.ForeignKey('TournamentRound', on_delete=models.CASCADE, related_name='tournament_round', blank=True, null=True)
 
@@ -5120,6 +5120,8 @@ class RealTimeLadder(Tournament):
                         t.save()
                 else:
                     unranked_teams.append(t)
+                    t.ranked = False
+                    t.save()
         return ranked_teams, unranked_teams
 
     def get_team_table(self, allowed_join, logged_in, player):
@@ -5128,7 +5130,6 @@ class RealTimeLadder(Tournament):
         if self.has_started:
             table += '<table class="table table-condensed">'
             table += '<tr><th>Team</th><th>Rating</th><th>Record</th></tr>'
-            current_team = 1
             for team in team_list:
                 table += '<tr>'
                 total_players = 0
@@ -5211,7 +5212,7 @@ class RealTimeLadder(Tournament):
         game_log += '<tbody>'
 
         games_output = []
-        tournament_game_entries = TournamentGameEntry.objects.filter(tournament=self).order_by('-pk')
+        tournament_game_entries = TournamentGameEntry.objects.filter(tournament=self).order_by('-created_date')
         for entry in tournament_game_entries:
             if entry.game.id in games_output:
                 continue
