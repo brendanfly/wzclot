@@ -75,10 +75,9 @@ class Tasks(commands.Cog, name="tasks"):
 
                         # grab the player list
                         team_text = ""
-                        for team in bo.players.split('-'):
-                            team_text += "{}\n".format(get_team_data_no_clan_player_list(team.split('.')))
 
-                        emb.add_field(name="Teams", value=team_text, inline=True)
+                        team1 = get_team_data_no_clan_player_list(bo.players.split('-')[0].split('.'))
+                        team2 = get_team_data_no_clan_player_list(bo.players.split('-')[1].split('.'))
 
                         # grab both the american and decimal odds
                         american1 = bo.american_odds.split('!')[0]
@@ -89,8 +88,15 @@ class Tasks(commands.Cog, name="tasks"):
                         dec1 = bo.decimal_odds.split('!')[0]
                         dec2 = bo.decimal_odds.split('!')[1]
 
-                        odds = "{}/{}\n{}/{}".format(american1, dec1, american2, dec2)
-                        emb.add_field(name="Odds", value=odds, inline=True)
+                        team_text = ""
+                        if american1 < american2:
+                            team_text += "{} - {}/{}\n".format(team1, american1, dec1)
+                            team_text += "{} - {}/{}\n".format(team2, american2, dec2)
+                        else:
+                            team_text += "{} - {}/{}\n".format(team2, american2, dec2)
+                            team_text += "{} - {}/{}\n".format(team1, american1, dec1)
+
+                        emb.add_field(name="Lines", value=team_text, inline=True)
                         emb.title = "Opening lines for Game {}".format(bo.gameid)
 
                         await channel.send(embed=emb)
