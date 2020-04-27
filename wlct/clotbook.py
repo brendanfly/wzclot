@@ -22,18 +22,9 @@ class CLOTBook(models.Model):
 
     # always gives the probability to win for ratings1 based on the opponents of ratings2
     def probability_to_win(self, ratings1, ratings2):
-        if ratings1 == ratings2:
-            favorite = ratings1
-            underdog = ratings2
-        else:
-            favorite = ratings1 if ratings1 > ratings2 else ratings2
-            underdog = ratings1 if ratings1 < ratings2 else ratings2
-        prob_win = round((1 / ((10*(favorite-underdog)/400) + 1)), 2)
-
-        if underdog == ratings1:
-            prob_win = 1-prob_win
-        log_cb_msg("Probability: Favorite: {}/{}, Underdog {}/{}".format(favorite, prob_win, underdog, 1-prob_win))
-        return prob_win
+        prob_win = round((1 / ((10*(-(ratings1-ratings2))/400) + 1)), 2)
+        log_cb_msg("Probability: Favorite: {}/{}, Underdog {}/{}".format(ratings1, prob_win, ratings2, 1-prob_win))
+        return (prob_win, 1-prob_win)
 
     def create_new_bet(self, wager, player, game):
         pass
@@ -79,8 +70,9 @@ class CLOTBook(models.Model):
     def create_initial_odds_for_game(self, game, ratings1, ratings2):
         try:
             # get the ratings from the players in the game
-            probs1 = self.probability_to_win(ratings1, ratings2)
-            probs2 = self.probability_to_win(ratings2, ratings1)
+            probs = self.probability_to_win(ratings1, ratings2)
+            probs1 = probs[0]
+            probs2 = probs[1]
 
             log_cb_msg("Initial odds for gameid {}: {}% to {}%".format(game.gameid, probs1, probs2))
             probability = "{}!{}".format(probs1, probs2)
