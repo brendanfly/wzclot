@@ -66,16 +66,18 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
             elif option == "initial":
                 if arg.isnumeric():
                     game = TournamentGame.objects.filter(gameid=arg)
-                    if game:
-                        game = game[0]
-                        odds = BetOdds.objects.filter(game=game)
-                        for odd in odds:
-                            odd.delete()
-                        game.create_initial_lines()
-                        await ctx.send("Updated initial lines for game {}".format(game.gameid))
-                        return
-                await ctx.send("You must specify a valid game id to use with this command.")
-                return
+                    if not game:
+                        game = TournamentGame.objects.filter(pk=int(arg))
+                        if not game:
+                            await ctx.send("You must specify a valid game id to use with this command.")
+                            return
+                    game = game[0]
+                    odds = BetOdds.objects.filter(game=game)
+                    for odd in odds:
+                        odd.delete()
+                    game.create_initial_lines()
+                    await ctx.send("Updated initial lines for game {}".format(game.gameid))
+                    return
             else:
                 await ctx.send("You must specify an option with this command.")
         except:
