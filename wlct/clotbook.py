@@ -71,6 +71,7 @@ class CLOTBook(models.Model):
     def format_american(self, odds):
         if odds > 0:
             return "+{}".format(odds)
+        return odds
 
     '''
     Creates a new BetOdds object that serves as the initial line for the game
