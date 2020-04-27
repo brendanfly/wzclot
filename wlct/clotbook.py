@@ -48,7 +48,7 @@ class CLOTBook(models.Model):
         if odds > 0:
             return round(odds / 100 + 1, 2)
         else:
-            return round(100 / odds + 1, 2)
+            return round(100 / -(odds) + 1, 2)
 
     def prob_to_decimal_odds(self, prob):
         return round((1/prob), 2)
