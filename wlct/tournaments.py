@@ -5296,6 +5296,7 @@ class RealTimeLadder(Tournament):
                 # remove them if they are the only player on the ladder
                 time_spent = team.joined_time - timezone.now()
                 if time_spent.total_seconds() > (60*30):  # 30 minutes
+                    log_tournament("Removing {} from ladder due to being on it for more than 30 minutes without a game.".format(team.id), self)
                     team.active = False
                     team.save()
                     continue
