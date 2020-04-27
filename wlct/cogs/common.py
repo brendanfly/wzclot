@@ -6,7 +6,7 @@ import json
 from bs4 import BeautifulSoup
 from wlct.models import Engine
 from wlct.logging import TournamentGameLog, ProcessGameLog, log_exception
-from wlct.models import Player
+from wlct.models import Player, TournamentAdministrator
 from wlct.cogs.help import get_help_embed
 from django.utils import timezone
 import datetime
@@ -17,7 +17,7 @@ def embed_list_special_delimiter():
     return "$%"
 
 def is_tournament_creator(discord_id, tournament):
-    if is_admin(discord_id):
+    if is_clotadmin(discord_id):
         return True
 
     player = Player.objects.filter(discord_member__memberid=discord_id)
@@ -26,6 +26,19 @@ def is_tournament_creator(discord_id, tournament):
     else:
         return False
 
+def has_tournament_admin_access(discord_id, tournament):
+    if has_admin_access(discord_id):
+        return True
+    else:
+        player = Player.objects.filter(discord_member__memberid=discord_id)
+        if player:
+            player = player[0]
+            if player.id == tournament.created_by.id:
+                return True
+            elif TournamentAdministrator.objects.filter(player=player, tournament=tournament).count() == 1:
+                return True
+    return False
+
 def has_admin_access(discord_id):
     # B/Cowboy/Justin's ID
     admins = ["288807658264330242", "199018621098262528", "162968893177069568"]
@@ -33,7 +46,7 @@ def has_admin_access(discord_id):
         return True
     return False
 
-def is_admin(discord_id):
+def is_clotadmin(discord_id):
     if str(discord_id) == "288807658264330242":
         return True
     return False
@@ -98,7 +111,7 @@ class Common(commands.Cog, name="general"):
                       usage="bb!game_logs <gameid> <num_logs> <pages>")
     async def game_logs(self, ctx, game_id=0, num_logs=-1, page=-1):
         try:
-            if is_admin(ctx.message.author.id):
+            if is_clotadmin(ctx.message.author.id):
                 if game_id != 0 and num_logs != -1 and page != -1:
                     # good
                     print("Game Id: {}, num_logs per page: {}, page: {}".format(game_id, num_logs, page))

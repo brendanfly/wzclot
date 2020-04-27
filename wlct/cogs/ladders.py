@@ -3,7 +3,7 @@ from wlct.models import Clan, Player, DiscordChannelTournamentLink
 from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame
 from wlct.logging import log_bot_msg, log_exception
 from discord.ext import commands, tasks
-from wlct.cogs.common import is_admin, is_tournament_creator, embed_list_special_delimiter
+from wlct.cogs.common import is_tournament_creator, embed_list_special_delimiter
 from django.utils import timezone
 from traceback import print_exc
 

@@ -4,7 +4,7 @@ from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, Month
 from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
 from django.conf import settings
-from wlct.cogs.common import has_admin_access, is_admin
+from wlct.cogs.common import has_admin_access, is_clotadmin
 from wlct.clotbook import DiscordChannelCLOTBookLink, CLOTBook, Bet, BetOdds
 
 class CLOTBook(commands.Cog, name="CLOTBook"):
@@ -34,7 +34,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
             if option == "stats":
                 await ctx.send("This command is currently under construction.")
             elif option == "on":
-                if ctx.message.author.guild_permissions.administrator or is_admin(ctx.message.author.id):
+                if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
                     discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id)
                     if discord_channel_link.count() == 0:
                         discord_channel_link = DiscordChannelCLOTBookLink(channelid=ctx.message.channel.id, discord_user=discord_user)
@@ -45,7 +45,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 else:
                     await ctx.send("You must be a server administrator to use this command.")
             elif option == "off":
-                if ctx.message.author.guild_permissions.administrator or is_admin(ctx.message.author.id):
+                if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
                     discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(
                           channelid=ctx.message.channel.id)
                     if discord_channel_link:

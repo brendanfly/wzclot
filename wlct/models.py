@@ -53,6 +53,15 @@ class ClanAdmin(admin.ModelAdmin):
 admin.site.register(Clan, ClanAdmin)
 
 
+class TournamentAdministrator(models.Model):
+    tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
+    player = models.ForeignKey('Player', on_delete=models.CASCADE)
+
+class TournamentAdministratorAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(TournamentAdministrator, TournamentAdministratorAdmin)
+
 class Player(models.Model):
     token = models.CharField(max_length=32, default=invalid_token_string, db_index=True)
     name = models.CharField(max_length=64, default=invalid_name_string, db_index=True)

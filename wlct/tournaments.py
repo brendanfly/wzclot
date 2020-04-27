@@ -5292,13 +5292,15 @@ class RealTimeLadder(Tournament):
             teams_find_games = []
             teams = TournamentTeam.objects.filter(tournament=self, active=True).order_by('joined_time')
             for team in teams:
+                # if the team has been sitting around for more than 30 minutes with no game
+                # remove them if they are the only player on the ladder
+                time_spent = team.joined_time - timezone.now()
+                if time_spent.total_seconds() > (60*30):  # 30 minutes
+                    team.active = False
+                    team.save()
+                    continue
                 if get_games_unfinished_for_team(team.id, self) == 0:
                     teams_find_games.append(team)
-
-            top10 = []
-            top_teams = TournamentTeam.objects.filter(tournament=self, active=True).order_by('-rating')[:10]
-            for t in top_teams:
-                top10.append(t.id)
 
             teams_find_games_against = teams_find_games.copy()
             # loop through teams_find_games, trying to get a matchup of an opponent from
@@ -5356,6 +5358,8 @@ class RealTimeLadder(Tournament):
                                         team2.active = False
                                         self.number_players -= 1
 
+                                    team1.joined_time = timezone.now()
+                                    team2.joined_time = timezone.now()
                                     self.save()
                                     team1.leave_after_game = False
                                     team2.leave_after_game = False
