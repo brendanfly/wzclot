@@ -22,7 +22,7 @@ class CLOTBook(models.Model):
 
     # always gives the probability to win for ratings1 based on the opponents of ratings2
     def probability_to_win(self, ratings1, ratings2):
-        prob_win = round((1 / ((10*(-(ratings1-ratings2))/400) + 1)), 2)
+        prob_win = round((1 / ((10**(-(ratings1-ratings2))/400) + 1)), 2)
         log_cb_msg("Probability: Favorite: {}/{}, Underdog {}/{}".format(ratings1, prob_win, ratings2, 1-prob_win))
         return (prob_win, 1-prob_win)
 
