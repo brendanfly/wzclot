@@ -51,7 +51,7 @@ class CLOTBook(models.Model):
             return round(100 // odds + 1, 2)
 
     def prob_to_decimal_odds(self, prob):
-        return (1/prob)
+        return round((1/prob), 2)
 
     def update_odds(self, bet_odds):
         pass
