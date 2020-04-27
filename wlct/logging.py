@@ -5,6 +5,7 @@ import traceback
 from django.conf import settings
 from enum import Enum
 import pytz
+from django.utils import timezone
 
 # list of levels
 class LogLevel:
@@ -69,7 +70,7 @@ def log_bot_msg(msg):
 class Logger(models.Model):
 
     msg = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True, default=timezone.now)
     bot_seen = models.BooleanField(default=False)
 
     # free-form logging is the best kind, do not tie this to
