@@ -3118,14 +3118,16 @@ class TournamentGame(models.Model):
         players2 = self.players.split('-')[1]
 
         ratings1 = 0
-        for p in players1.split('.'):
+        players1 = players1.split('.')
+        for p in players1:
             player = Player.objects.filter(token=p)
             if player:
                 ratings1 += player[0].rating
         ratings1 = ratings1 / len(players1)
 
         ratings2 = 0
-        for p in players2.split('.'):
+        players2 = players2.split('.')
+        for p in players2:
             player = Player.objects.filter(token=p)
             if player:
                 ratings2 += player[0].rating
