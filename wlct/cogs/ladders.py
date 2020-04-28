@@ -203,7 +203,7 @@ class Ladders(commands.Cog, name="ladders"):
         # loop through all rtl linked channels sending the appropriate message to all servers
         processed_channels = []
         channels = DiscordChannelTournamentLink.objects.filter(tournament=ladder)
-        if channels:
+        if channels and channels.count() > 0:
             log_bot_msg("Found {} channels to send RTL messages to.".format(channels.count()))
         for rtl_channel in channels:
             channel = self.bot.get_channel(rtl_channel.channelid)

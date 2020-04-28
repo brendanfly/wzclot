@@ -275,15 +275,6 @@ class Clot(commands.Cog, name="clot"):
                                 await ctx.send("Added {} as a {} admin successfully.".format(player[0].name, tournament.name))
                                 return
                 await ctx.send("Please enter a valid player token and tournament id.")
-            elif cmd == "pdi":
-                if not is_clotadmin(ctx.message.author.id):
-                    await ctx.send("Only CLOT admins can use this command.")
-                    return
-                discord_users = DiscordUser.objects.all()
-                for user in discord_users:
-                    player = Player.objects.filter(discord_member=user)
-                    if not player:
-                        user.delete()
             else:
                 await ctx.send("Please enter a valid command. Use ``bb!help admin`` to see commands.")
 
