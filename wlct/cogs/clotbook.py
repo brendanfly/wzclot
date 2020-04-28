@@ -5,7 +5,7 @@ from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
 from django.conf import settings
 from wlct.cogs.common import has_admin_access, is_clotadmin
-from wlct.clotbook import DiscordChannelCLOTBookLink, CLOTBook, Bet, BetOdds
+from wlct.clotbook import DiscordChannelCLOTBookLink, CLOTBook, Bet, BetOdds, get_clotbook
 
 class CLOTBook(commands.Cog, name="CLOTBook"):
     def __init__(self, bot):
@@ -62,7 +62,8 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                     await ctx.send(self.bot.discord_link_text)
                     return
                 player = player[0]
-                await ctx.send("{}, you have {} {} left in your account.".format(player.name, player.bankroll, CLOTBook.currency_name))
+                cb = get_clotbook()
+                await ctx.send("{}, you have {} {} left in your account.".format(player.name, player.bankroll, cb.currency_name))
             elif option == "initial":
                 if arg.isnumeric():
                     game = TournamentGame.objects.filter(gameid=arg)

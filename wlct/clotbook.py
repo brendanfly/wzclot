@@ -18,7 +18,7 @@ class CLOTBook(models.Model):
     total_bets = models.BigIntegerField(default=0)
     in_progress_bets = models.BigIntegerField(default=0)
 
-    currency_name = "Nohams"
+    currency_name = "Coins"
 
     # always gives the probability to win for ratings1 based on the opponents of ratings2
     def probability_to_win(self, ratings1, ratings2):
