@@ -22,6 +22,7 @@ import pytz
 from django.core.exceptions import ObjectDoesNotExist
 import traceback
 import urllib.request
+from urllib.error import HTTPError
 from wlct.cogs.common import embed_list_special_delimiter
 from wlct.clotbook import get_clotbook
 
@@ -5319,7 +5320,7 @@ class RealTimeLadder(Tournament):
             for team in teams:
                 # if the team has been sitting around for more than 30 minutes with no game
                 # remove them if they are the only player on the ladder
-                time_spent = team.joined_time - timezone.now()
+                time_spent = timezone.now() - team.joined_time
                 if time_spent.total_seconds() > (60*30):  # 30 minutes
                     log_tournament("Removing {} from ladder due to being on it for more than 30 minutes without a game.".format(team.id), self)
                     team.active = False
@@ -5689,20 +5690,25 @@ class MultiDayLadder(Tournament):
     type = "MDL"
 
     def update_game_log(self):
-        mdl_url = "http://md-ladder.cloudapp.net/api/v1.0/players/"
+        try:
+            mdl_url = "http://md-ladder.cloudapp.net/api/v1.0/players/"
 
-        content = urllib.request.urlopen(mdl_url).read()
+            content = urllib.request.urlopen(mdl_url).read()
 
-        data = json.loads(content)
-        num_players = 0
-        for index, player in enumerate(data['players']):
-            # once we have the players, start printing out each of the top 10
-            if 'rank' in player:
-                num_players += 1
+            data = json.loads(content)
+            num_players = 0
+            for index, player in enumerate(data['players']):
+                # once we have the players, start printing out each of the top 10
+                if 'rank' in player:
+                    num_players += 1
 
-        print("Found {} players on the MDL".format(num_players))
-        self.number_players = num_players
-        self.save()
+            print("Found {} players on the MDL".format(num_players))
+            self.number_players = num_players
+            self.save()
+        except HTTPError:
+            pass
+        except Exception as e:
+            raise e
 
     def get_game_log(self):
         pass

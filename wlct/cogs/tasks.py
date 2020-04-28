@@ -185,9 +185,13 @@ class Tasks(commands.Cog, name="tasks"):
                         log_bot_msg("Looping through channels to log: {}, length: {}".format(game_log_text, len(game_log_text)))
                         if channel and len(game_log_text) > 0:
                             log_bot_msg("Sending game_log to channel: {}".format(channel.name))
-                            await channel.send(game_log_text)
-                            games_sent.append(game)
-                            game_log_text = ""
+                            try:
+                                await channel.send(game_log_text)
+                                games_sent.append(game)
+                                game_log_text = ""
+                            except:
+                                log_bot_msg("Exception: {} when sending message to server {}, channel {}".format(log_exception(), channel.guild.name, channel.name))
+
         except Exception:
             log_exception()
         finally:

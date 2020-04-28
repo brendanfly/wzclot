@@ -85,21 +85,27 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
 
     @commands.command(brief="Place your wagers, and view existing bets on the CLOTBook",
                       usage='''
-                            bb!bet gameid teamid 20 - places a bet of 20 Nohams on teamid in gameid
-                               - e.g. bb!bet 256783 5346 20  
+                            bb!bet gameid teamid 20 - places a bet of 20 Coins on teamid in gameid
+                               - e.g. bb!bet 5346 23456 20
+                            bb!bet 5346 player_name 20 - places a bet of 20 Coins on AIs team in gameid
+                               - e.g. bb!bet 5346 AI 20
                             bb!bet gameid - displays all current bets for this gameid
+                            
                         ''')
     async def bet(self, ctx, option="", option2="", option3=""):
         try:
             discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
             if not discord_user:
+                print("No discord user present...creating one")
                 discord_user = DiscordUser(memberid=ctx.message.author.id)
                 discord_user.save()
             else:
+                print("Found a discord user...using that")
                 discord_user = discord_user[0]
 
             player = Player.objects.filter(discord_member=discord_user)
             if not player:
+                print("Could not find player {} in the database with discord_user.id {}".format(ctx.mesage.author.name, ctx.message.author.id))
                 await ctx.send(self.bot.discord_link_text)
                 return
 
@@ -114,13 +120,8 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 if not game:
                     await ctx.send("That game cannot be found on the CLOT. Please enter a valid gameid.")
                     return
-
-
-
         except:
             log_exception()
-
-
 
 def setup(bot):
     bot.add_cog(CLOTBook(bot))
