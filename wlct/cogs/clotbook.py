@@ -105,7 +105,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
 
             player = Player.objects.filter(discord_member=discord_user)
             if not player:
-                print("Could not find player {} in the database with discord_user.id {}".format(ctx.mesage.author.name, ctx.message.author.id))
+                print("Could not find player {} in the database with discord_user.id {}".format(ctx.message.author.name, ctx.message.author.id))
                 await ctx.send(self.bot.discord_link_text)
                 return
 
