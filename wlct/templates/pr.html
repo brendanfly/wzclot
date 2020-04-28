@@ -39,6 +39,29 @@
                 {% endif %}
 
     {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
+            <!-- Modal to display the start_locked_data for the tournament -->
+            <div class="modal" tabindex="-1" role="dialog" id="copy-season-modal">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="copy-season-title"></h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="tournament_start_request_text" style="overflow-y:auto;">
+                            <div class="input-group">
+                                <label class="col-form-label" for="copy-season-name-text"><b>Season Name: &nbsp;</b></label>
+                                <input type="text" class="form-control mb-4" placeholder="Season Name" name="copy-season-name" id="copy-season-name" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" id="copy-season-button" data="">Copy Season</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="card gedf-card span8">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
