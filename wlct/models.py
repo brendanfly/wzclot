@@ -16,7 +16,7 @@ class User(AbstractUser):
 Discord specific models. 
 '''
 class DiscordUser(models.Model):
-    memberid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
+    memberid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True, unique=True)
     link_mention = models.BooleanField(default=False, blank=True, null=True)
 
     def __str__(self):

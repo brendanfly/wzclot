@@ -283,7 +283,6 @@ class Clot(commands.Cog, name="clot"):
                 for user in discord_users:
                     player = Player.objects.filter(discord_member=user)
                     if not player:
-                        print("Removing discord user with no linked player account.")
                         user.delete()
             else:
                 await ctx.send("Please enter a valid command. Use ``bb!help admin`` to see commands.")
