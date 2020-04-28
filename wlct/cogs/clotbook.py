@@ -65,6 +65,9 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 cb = get_clotbook()
                 await ctx.send("{}, you have {} {} left in your account.".format(player.name, player.bankroll, cb.currency_name))
             elif option == "initial":
+                if not is_clotadmin(ctx.message.author.id):
+                    await ctx.send("Only CLOT admins can use this command.")
+                    return
                 if arg.isnumeric():
                     game = TournamentGame.objects.filter(gameid=arg)
                     if not game:
