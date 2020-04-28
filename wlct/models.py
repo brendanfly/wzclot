@@ -25,7 +25,7 @@ class DiscordUser(models.Model):
 class DiscordChannelTournamentLink(models.Model):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, blank=True, null=True)
     channelid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
-    discord_user = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.CASCADE)
+    discord_user = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.DO_NOTHING)
 
 # class to track text updates the bot will send out a single-time to channels linked to the tournament
 class DiscordTournamentUpdate(models.Model):
