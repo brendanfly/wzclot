@@ -1180,6 +1180,7 @@ class Tournament(models.Model):
 
         remaining_hours = (hours % 24)
         days = int(hours // 24)
+        print("Time Since: {} days, {} remaining_hours, {} hours, {} minutes, {} seconds".format(days, remaining_hours, hours, minutes, seconds))
         if hours > 0:
             if remaining_hours > 0:
                 if days > 1 and ((remaining_hours > 1) or (hours > 24)):
