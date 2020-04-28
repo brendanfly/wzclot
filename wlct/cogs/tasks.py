@@ -35,8 +35,19 @@ class Tasks(commands.Cog, name="tasks"):
                 team2 = game.teams.split('.')[1]
                 player1 = ladder.get_player_from_teamid(team1)
                 player2 = ladder.get_player_from_teamid(team2)
-                data += "<@{}> vs. <@{}> [Game Link]({})\n".format(player1.discord_member.memberid, player2.discord_member.memberid,
-                                                                   game.game_link)
+                if player1.discord_member and player2.discord_member:
+                    data += "<@{}> vs. <@{}> [Game Link]({})\n".format(player1.discord_member.memberid, player2.discord_member.memberid,
+                                                                       game.game_link)
+                elif player1.discord_member:
+                    data += "<@{}> vs. <{}> [Game Link]({})\n".format(player1.discord_member.memberid, player2.name,
+                                                                       game.game_link)
+                elif player2.discord_member:
+                    data += "<{}> vs. <@{}> [Game Link]({})\n".format(player1.name, player2.discord_member.memberid,
+                                                                       game.game_link)
+                else:
+                    game.mentioned = True
+                    game.save()
+                    return
                 emb.add_field(name="Game", value=data, inline=True)
                 if player1:
                     user = self.bot.get_user(player1.discord_member.memberid)
