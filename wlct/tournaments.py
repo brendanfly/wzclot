@@ -5439,9 +5439,9 @@ class RealTimeLadder(Tournament):
                         token = data['id']
                         player = TournamentPlayer.objects.filter(player__token=token)
                         if player:
-                            log_tournament("Removing player {} ({}) from ladder".format(player[0].player.name, player[0].player.token), self)
                             player[0].team.active = False
                             player[0].team.save()
+                            log_tournament("Removing player {} ({}) from ladder".format(player[0].player.name, player[0].player.token), self)
 
     def join_leave_player(self, player, join, leave_after_game):
         tplayer = TournamentPlayer.objects.filter(player=player, tournament=self)
@@ -5477,6 +5477,8 @@ class RealTimeLadder(Tournament):
             team.save()
             tplayer = TournamentPlayer(player=player, tournament=self, team=team)
             tplayer.save()
+            self.number_players += 1
+            self.save()
             return "Looks like you're new to the **{}**. Welcome, and best of luck!".format(self.name)
 
     def join_leave_discord(self, discord_id, join, leave_after_game):
