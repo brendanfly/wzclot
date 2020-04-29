@@ -48,6 +48,8 @@ class WZBot(commands.AutoShardedBot):
         self.clot_server = None
         self.executions = 0
 
+        self.performance_counter = False
+
         # deltas for when the bot does stuff
         self.discord_link_text = "Your discord account is not linked to the CLOT. Please see <http://wztourney.herokuapp.com/me/> for instructions."
         self.discord_link_text_user = "That user's discord account is not linked to the CLOT."
