@@ -23,9 +23,9 @@ class Tasks(commands.Cog, name="tasks"):
         self.bg_task.start()
 
     async def handle_rtl_tasks(self):
-        ladders = await database_sync_to_async(RealTimeLadder.objects.all())
+        ladders = database_sync_to_async(RealTimeLadder.objects.all())
         for ladder in ladders:
-            games = await database_sync_to_async(TournamentGame.objects.filter(tournament=ladder, is_finished=False, mentioned=False))
+            games = database_sync_to_async(TournamentGame.objects.filter(tournament=ladder, is_finished=False, mentioned=False))
             # cache the game data + link for use with the embed
             emb = discord.Embed(color=self.bot.embed_color)
             emb.set_author(icon_url=self.bot.user.avatar_url, name="WarzoneBot")
@@ -88,7 +88,7 @@ class Tasks(commands.Cog, name="tasks"):
             for cl in channel_links:
                 channel = self.bot.get_channel(cl.channelid)
                 if hasattr(self.bot, 'uptime') and channel:
-                    bet_odds = await database_sync_to_async(BetOdds.objects.filter(sent_notification=False, initial=True).order_by('created_time'))
+                    bet_odds = database_sync_to_async(BetOdds.objects.filter(sent_notification=False, initial=True).order_by('created_time'))
                     if bet_odds.count() == 0:
                         return
                     for bo in bet_odds:
@@ -276,7 +276,7 @@ class Tasks(commands.Cog, name="tasks"):
                 self.bot.cache_queue.pop(i)
 
     async def handle_critical_errors(self):
-        logs = await database_sync_to_async(list(Logger.objects.filter(level=LogLevel.critical, bot_seen=False)))
+        logs = database_sync_to_async(list(Logger.objects.filter(level=LogLevel.critical, bot_seen=False)))
         if logs:
             for log in logs:
                 for cc in self.bot.critical_error_channels:
@@ -289,7 +289,7 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_discord_tournament_updates(self):
         try:
-            updates = await database_sync_to_async(list(DiscordTournamentUpdate.objects.filter(bot_send=False)))
+            updates = database_sync_to_async(list(DiscordTournamentUpdate.objects.filter(bot_send=False)))
             for u in updates:
                 # look up the tournament, and get all channel links for that tournament
                 channel_links = await database_sync_to_async(DiscordChannelTournamentLink.objects.filter(tournament=u.tournament))
