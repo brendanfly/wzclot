@@ -21,6 +21,7 @@ class Tasks(commands.Cog, name="tasks"):
         self.last_task_run = timezone.now()
         self.executions = 0
         self.bg_task.start()
+        self.orm_helpers = DjangoORMHelpers()
 
     async def handle_rtl_tasks(self):
         ladders = database_sync_to_async(RealTimeLadder.objects.all())
@@ -276,7 +277,7 @@ class Tasks(commands.Cog, name="tasks"):
                 self.bot.cache_queue.pop(i)
 
     async def handle_critical_errors(self):
-        logs = await database_sync_to_async(Logger.objects.filter(level=LogLevel.critical, bot_seen=False))()
+        logs = await self.orm_helpers.get_critical_errors()
         if logs:
             for log in logs:
                 for cc in self.bot.critical_error_channels:
@@ -289,15 +290,14 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_discord_tournament_updates(self):
         try:
-            updates = await database_sync_to_async(DiscordTournamentUpdate.objects.filter(bot_send=False))()
+            updates = await self.orm_helpers.get_tournament_updates()
             for u in updates:
                 # look up the tournament, and get all channel links for that tournament
-                channel_links = await database_sync_to_async(DiscordChannelTournamentLink.objects.filter(tournament=u.tournament))()
+                channel_links = await self.orm_helpers.get_channel_tournament_links(u.tournament)
                 for c in channel_links:
-                    channel = self.bot.get_channel(await database_sync_to_async(c.channelid)())
+                    channel = self.bot.get_channel(c.channelid)
                     if channel:
-                        update_text = await database_sync_to_async(u.update_text)()
-                        await channel.send(update_text)
+                        await channel.send(u.update_text)
                 u.bot_send = True
                 u.save()
         except:
@@ -404,6 +404,20 @@ class Tasks(commands.Cog, name="tasks"):
         except:
             print_exc()
             raise
+
+class DjangoORMHelpers():
+
+    @database_sync_to_async
+    def get_critical_errors(self):
+        return list(Logger.objects.filter(level=LogLevel.critical, bot_seen=False))
+
+    @database_sync_to_async
+    def get_tournament_updates(self):
+        return list(DiscordTournamentUpdate.objects.filter(bot_send=False))
+
+    @database_sync_to_async
+    def get_channel_tournament_links(self, tournament):
+        return list(DiscordChannelTournamentLink.objects.filter(tournament=tournament))
 
 def setup(bot):
     bot.add_cog(Tasks(bot))
