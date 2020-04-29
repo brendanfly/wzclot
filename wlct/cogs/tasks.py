@@ -299,6 +299,7 @@ class Tasks(commands.Cog, name="tasks"):
         # calculate the time different here
         # determine if we need hours run or 4 hours run
         # for 1 hour, executions should be 360
+        start = datetime.datetime.utcnow()
         hours = (self.executions % 360 == 0)
         hours4 = (self.executions % (360*4) == 0)
         hours6 = (self.executions % (360*6) == 0)
@@ -316,18 +317,36 @@ class Tasks(commands.Cog, name="tasks"):
                 await self.handle_day_tasks()
             if two_minute:
                 await self.handle_rt_ladder()
+                end = datetime.datetime.utcnow()
+                print("RT Ladder Tasks took {} total seconds".format(end))
 
             # always tasks
             await self.handle_always_tasks()
+            end = datetime.datetime.utcnow()
+            print("Always Tasks took {} total seconds".format(end))
         except Exception:
             log_exception()
+        finally:
+            end = datetime.datetime.utcnow()
+            print("All Tasks took {} total seconds".format(end))
 
     async def handle_always_tasks(self):
+        start = datetime.datetime.utcnow()
         await self.handle_critical_errors()
+        end = datetime.datetime.utcnow()
+        print("Critical Errors Tasks took {} total seconds".format(end))
         await self.handle_game_logs()
+        end = datetime.datetime.utcnow()
+        print("Game Logs Tasks took {} total seconds".format(end))
         await self.handle_cache_queue()
+        end = datetime.datetime.utcnow()
+        print("Cache queue took {} total seconds".format(end))
         await self.handle_discord_tournament_updates()
+        end = datetime.datetime.utcnow()
+        print("Tournament updates Tasks took {} total seconds".format(end))
         await self.handle_clotbook()
+        end = datetime.datetime.utcnow()
+        print("CLOTBook Tasks took {} total seconds".format(end))
 
     async def process_member_join(self, memid):
         member = self.bot.get_user(memid)
