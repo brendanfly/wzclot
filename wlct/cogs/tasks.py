@@ -140,7 +140,7 @@ class Tasks(commands.Cog, name="tasks"):
                 # only look at games that have finished times greater than when the bot started
                 game_log_text = ""
                 if hasattr(self.bot, 'uptime'):
-                    games = await self.orm_helpers.get_game_logs_for_tournament(cl.tournament)
+                    games = await self.orm_helpers.get_game_logs_for_tournament(cl.tournament, self.bot.uptime-datetime.timedelta(days=3))
                     log_bot_msg("Found {} games to log in channel {}".format(games.count(), channel.name))
                     if games.count() == 0:
                         # we have no games to log regardless of channel...return early
@@ -424,8 +424,8 @@ class DjangoORMHelpers():
         return list(TournamentGame.objects.filter(tournament=ladder, is_finished=False, mentioned=False))
 
     @database_sync_to_async
-    def get_game_logs_for_tournament(self, tournament):
-        return list(TournamentGame.objects.filter(is_finished=True, tournament=tournament, game_finished_time__gt=(self.bot.uptime-datetime.timedelta(days=3)), game_log_sent=False))
+    def get_game_logs_for_tournament(self, tournament, time_since):
+        return list(TournamentGame.objects.filter(is_finished=True, tournament=tournament, game_finished_time__gt=(time_since), game_log_sent=False))
 
 def setup(bot):
     bot.add_cog(Tasks(bot))
