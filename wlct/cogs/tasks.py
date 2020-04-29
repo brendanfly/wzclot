@@ -276,7 +276,7 @@ class Tasks(commands.Cog, name="tasks"):
                 self.bot.cache_queue.pop(i)
 
     async def handle_critical_errors(self):
-        logs = await database_sync_to_async(Logger.objects.filter(level=LogLevel.critical, bot_seen=False).list())
+        logs = await database_sync_to_async(list(Logger.objects.filter(level=LogLevel.critical, bot_seen=False)))
         if logs:
             for log in logs:
                 for cc in self.bot.critical_error_channels:
@@ -289,7 +289,7 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_discord_tournament_updates(self):
         try:
-            updates = await database_sync_to_async(DiscordTournamentUpdate.objects.filter(bot_send=False).list())
+            updates = await database_sync_to_async(list(DiscordTournamentUpdate.objects.filter(bot_send=False)))
             for u in updates:
                 # look up the tournament, and get all channel links for that tournament
                 channel_links = await database_sync_to_async(DiscordChannelTournamentLink.objects.filter(tournament=u.tournament))
