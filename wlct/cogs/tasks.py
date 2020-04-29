@@ -13,6 +13,7 @@ import urllib.request
 import json
 from wlct.clotbook import DiscordChannelCLOTBookLink, BetOdds, get_clotbook
 from channels.db import database_sync_to_async
+import gc
 
 class Tasks(commands.Cog, name="tasks"):
     def __init__(self, bot):
@@ -275,7 +276,7 @@ class Tasks(commands.Cog, name="tasks"):
                 self.bot.cache_queue.pop(i)
 
     async def handle_critical_errors(self):
-        logs = await database_sync_to_async(Logger.objects.filter(level=LogLevel.critical, bot_seen=False))
+        logs = await database_sync_to_async(Logger.objects.filter(level=LogLevel.critical, bot_seen=False).list())
         if logs:
             for log in logs:
                 for cc in self.bot.critical_error_channels:
@@ -288,7 +289,7 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_discord_tournament_updates(self):
         try:
-            updates = await database_sync_to_async(DiscordTournamentUpdate.objects.filter(bot_send=False))
+            updates = await database_sync_to_async(DiscordTournamentUpdate.objects.filter(bot_send=False).list())
             for u in updates:
                 # look up the tournament, and get all channel links for that tournament
                 channel_links = await database_sync_to_async(DiscordChannelTournamentLink.objects.filter(tournament=u.tournament))
@@ -337,6 +338,7 @@ class Tasks(commands.Cog, name="tasks"):
         finally:
             end = datetime.datetime.utcnow()
             print("All Tasks took {} total seconds".format((end-start).total_seconds()))
+            gc.collect()
 
     async def handle_always_tasks(self):
         start = datetime.datetime.utcnow()
