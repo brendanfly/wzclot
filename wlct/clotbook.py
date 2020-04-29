@@ -14,6 +14,18 @@ def get_clotbook():
         cb.save()
         return cb
 
+
+class DecimalOddsAdjustment:
+
+    def __init_(self, odds_num, odds_value, adjustment_direction):
+        self.odds_num = odds_num
+        self.odds_value = odds_value
+        self.adjustment_direction = adjustment_direction
+
+    def adjust(self):
+        self.odds_value += self.adjustment_direction
+        return self.odds_value
+
 class CLOTBook(models.Model):
     total_bets = models.BigIntegerField(default=0)
     in_progress_bets = models.BigIntegerField(default=0)
@@ -66,18 +78,58 @@ class CLOTBook(models.Model):
         # adjust the line to make sure we are slightly ahead on the other side
         winning1 = 0
         winning2 = 0
+        wager1 = 0
+        wager2 = 0
 
         bets = Bet.objects.filter(game=game)
-        for bet in bets:
-            odds1 = bet.odds.decimal_odds.split('!')[0]
-            odds2 = bet.odds.decimal_odds.split('!')[1]
-            if game.players.split('-')[0] == bet.players:
-                winning1 += self.calculate_decimal_odds_winnings(odds1, bet.wager)
+        if bets.count() > 3:
+            for bet in bets:
+                odds1 = bet.odds.decimal_odds.split('!')[0]
+                odds2 = bet.odds.decimal_odds.split('!')[1]
+                if game.players.split('-')[0] == bet.players:
+                    winning1 += self.calculate_decimal_odds_winnings(odds1, bet.wager)
+                    wager1 += bet.wager
+                else:
+                    winning2 += self.calculate_decimal_odds_winnings(odds2, bet.wager)
+                    wager2 += bet.wager
+
+            print("Game {} winnings1 {} winnings2 {}".format(game.gameid, winning1, winning2))
+            # we must have a default value even if no one bet on either team
+            if winning1 == 0:
+                wager1 = 5
+            if winning2 == 0:
+                wager2 = 5
+
+            print("Before adjustment Game {} winnings1 {} winnings2 {} wager1 {} wager2 {}".format(game.gameid, winning1, winning2, wager1, wager2))
+            if winning1 < winning2:
+                # winning2 > winning1 means there is more money on the second line...
+
+
+                odds_to_change = odds1
+                bottom_line = odds1
+                top_line = odds2
             else:
-                winning2 += self.calculate_decimal_odds_winnings(odds2, bet.wager)
+                odds_to_change = odds2
+                bottom_line = odds2
+                top_line = odds1
 
-        if winning1 < winning2:
+            print("Before adjustment Game {}, odds_to_change {} bottom_line {} top_line {}".format(game.gameid, odds_to_change, bottom_line, top_line))
+            line_adjusted = False
+            return
 
+            new_odds1 = odds1
+            new_odds2 = odds2
+            new_odds = odds_to_change
+            while not line_adjusted:
+                if odds_to_change > 2:
+                    # move the odds +
+                    new_odds += 0.01
+                else:
+                    # move the odds -
+                    new_odds -= 0.01
+
+                new_winnings1 = self.calculate_decimal_odds_winnings(new_odds1, bet.wager)
+                print("Adjusting line. New odds for odds_to_change {}, {} produces winning1 {} and winning2 {}".format(odds_to_change, new_odds))
 
     def create_new_bet(self, wager, player, game, team):
         # first we need to see which team the bet is on
@@ -95,10 +147,10 @@ class CLOTBook(models.Model):
                 players = game.players.split('-')[1]
                 current_odds = odds.decimal_odds.split('!')[1]
 
-                winnings = self.calculate_decimal_odds_winnings(current_odds, wager)
-                bet = Bet(players=players, gameid=game.gameid, game=game, odds=odds, player=player, wager=wager, winnings=winnings)
-                bet.save()
-                return bet
+            winnings = self.calculate_decimal_odds_winnings(current_odds, wager)
+            bet = Bet(players=players, gameid=game.gameid, game=game, odds=odds, player=player, wager=wager, winnings=winnings)
+            bet.save()
+            return bet
 
     '''
     Creates a new BetOdds object that serves as the initial line for the game

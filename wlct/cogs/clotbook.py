@@ -23,7 +23,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                       ''')
     async def cb(self, ctx, option="", arg=""):
         try:
-            discord_user = await database_sync_to_async(DiscordUser.objects.filter(memberid=ctx.message.author.id))
+            discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
             if not discord_user:
                 discord_user = DiscordUser(memberid=ctx.message.author.id)
                 discord_user.save()
@@ -38,9 +38,9 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 await ctx.send("This command is currently under construction.")
             elif option == "on":
                 if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
-                    discord_channel_link = await database_sync_to_async(DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id))
+                    discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id)
                     if discord_channel_link.count() == 0:
-                        discord_channel_link = await database_sync_to_async(DiscordChannelCLOTBookLink(channelid=ctx.message.channel.id, discord_user=discord_user))
+                        discord_channel_link = DiscordChannelCLOTBookLink(channelid=ctx.message.channel.id, discord_user=discord_user)
                         discord_channel_link.save()
                         await ctx.send("The CLOTBook will start using this channel to send live betting updates.")
                     else:
@@ -49,8 +49,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                     await ctx.send("You must be a server administrator to use this command.")
             elif option == "off":
                 if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
-                    discord_channel_link = await database_sync_to_async(DiscordChannelCLOTBookLink.objects.filter(
-                          channelid=ctx.message.channel.id))
+                    discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id)
                     if discord_channel_link:
                         discord_channel_link[0].delete()
                         await ctx.send("The CLOTBook will no longer use this channel for updates.")
@@ -59,26 +58,49 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 else:
                     await ctx.send("You must be a server administrator to use this command.")
             elif option == "me":
-                player = await database_sync_to_async(Player.objects.filter(discord_member=discord_user))
+                player = Player.objects.filter(discord_member=discord_user)
                 if not player:
                     await ctx.send(self.bot.discord_link_text)
                     return
                 player = player[0]
                 cb = get_clotbook()
-                await ctx.send("{}, you have {} {} left in your account.".format(player.name, player.bankroll, cb.currency_name))
+                user = self.bot.get_user(discord_user.memberid)
+                emb = self.bot.get_embed()
+                emb.title = "{}'s last 10 bets".format(user.name)
+                bets = Bet.objects.filter(player=player)
+                total_bets = bets.count()
+                bets = bets[:10]
+                for bet in bets:
+                    bet_text = ""
+                    if bet.placed:
+                        bet_text = "[Game]({}) - Bet {} coins, and".format(bet.game.game_link)
+                        if bet.winnings == 0:
+                            bet_text += "and lost bet"
+                        else:
+                            bet_text += "and won {} coins".format(bet.winnings)
+                    else:
+                        bet_text = "Bet {} coins on [Game]({})".format(bet.wager, bet.game.game_link)
+
+                if len(bet_text) > 0:
+                    emb.add_field(name="Bets", value=bet_text)
+
+                info_text = "Total Bets: {}\nBankroll: {} coins".format(total_bets, player.bankroll)
+                emb.add_field(name="Info", value="info_text")
+                await ctx.send(embed=emb)
+
             elif option == "initial":
                 if not is_clotadmin(ctx.message.author.id):
                     await ctx.send("Only CLOT admins can use this command.")
                     return
                 if arg.isnumeric():
-                    game = await database_sync_to_async(TournamentGame.objects.filter(gameid=arg))
+                    game = TournamentGame.objects.filter(gameid=arg)
                     if not game:
-                        game = await database_sync_to_async(TournamentGame.objects.filter(pk=int(arg)))
+                        game = TournamentGame.objects.filter(pk=int(arg))
                         if not game:
                             await ctx.send("You must specify a valid game id to use with this command.")
                             return
                     game = game[0]
-                    odds = await database_sync_to_async(BetOdds.objects.filter(game=game))
+                    odds = BetOdds.objects.filter(game=game)
                     for odd in odds:
                         odd.delete()
                     game.create_initial_lines()
@@ -100,18 +122,15 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                         ''')
     async def bet(self, ctx, gameid="", team="", wager=""):
         try:
-            discord_user = await database_sync_to_async(DiscordUser.objects.filter(memberid=ctx.message.author.id))
+            discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
             if not discord_user:
-                print("No discord user present...creating one")
                 discord_user = DiscordUser(memberid=ctx.message.author.id)
                 discord_user.save()
             else:
-                print("Found a discord user...using that")
                 discord_user = discord_user[0]
 
-            player = await database_sync_to_async(Player.objects.filter(discord_member=discord_user))
+            player = Player.objects.filter(discord_member=discord_user)
             if not player:
-                print("Could not find player {} in the database with discord_user.id {}".format(ctx.message.author.name, ctx.message.author.id))
                 await ctx.send(self.bot.discord_link_text)
                 return
 
@@ -159,11 +178,11 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                     return
                 cb = get_clotbook()
                 bet = cb.create_new_bet(self, wager, player, game, team)
-                message = await ctx.send(
-                    "{}, are you sure you want to place your bet on team {} in game {} for {} coins to win {}? (reply with y/n)".format(
+                await ctx.send("{}, bet placed on team {} in game {} for {} coins to win {} coins.".format(
                         ctx.message.author.name, team, gameid, bet.wager, bet.winnings))
 
-                
+            if discord_user.memberid not in self.bets:
+                self.bets[discord_user.memberid].append(message)
 
         except:
             log_exception()
