@@ -12,6 +12,7 @@ import pytz
 import urllib.request
 import json
 from wlct.clotbook import DiscordChannelCLOTBookLink, BetOdds, get_clotbook
+from channels.db import database_sync_to_async
 
 class Tasks(commands.Cog, name="tasks"):
     def __init__(self, bot):
@@ -269,7 +270,7 @@ class Tasks(commands.Cog, name="tasks"):
                 self.bot.cache_queue.pop(i)
 
     async def handle_critical_errors(self):
-        logs = Logger.objects.filter(level=LogLevel.critical, bot_seen=False)
+        logs = await database_sync_to_async(Logger.objects.filter(level=LogLevel.critical, bot_seen=False))
         if logs:
             for log in logs:
                 for cc in self.bot.critical_error_channels:
@@ -282,10 +283,10 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_discord_tournament_updates(self):
         try:
-            updates = DiscordTournamentUpdate.objects.filter(bot_send=False)
+            updates = await database_sync_to_async(DiscordTournamentUpdate.objects.filter(bot_send=False))
             for u in updates:
                 # look up the tournament, and get all channel links for that tournament
-                channel_links = DiscordChannelTournamentLink.objects.filter(tournament=u.tournament)
+                channel_links = await database_sync_to_async(DiscordChannelTournamentLink.objects.filter(tournament=u.tournament))
                 for c in channel_links:
                     channel = self.bot.get_channel(c.channelid)
                     if channel:
@@ -316,11 +317,13 @@ class Tasks(commands.Cog, name="tasks"):
             if day:
                 await self.handle_day_tasks()
             if two_minute:
+                start = datetime.datetime.utcnow()
                 await self.handle_rt_ladder()
                 end = datetime.datetime.utcnow()
                 print("RT Ladder Tasks took {} total seconds".format((end-start).total_seconds()))
 
             # always tasks
+            start = datetime.datetime.utcnow()
             await self.handle_always_tasks()
             end = datetime.datetime.utcnow()
             print("Always Tasks took {} total seconds".format((end-start).total_seconds()))
@@ -335,15 +338,19 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_critical_errors()
         end = datetime.datetime.utcnow()
         print("Critical Errors Tasks took {} total seconds".format((end-start).total_seconds()))
+        start = datetime.datetime.utcnow()
         await self.handle_game_logs()
         end = datetime.datetime.utcnow()
         print("Game Logs Tasks took {} total seconds".format((end-start).total_seconds()))
+        start = datetime.datetime.utcnow()
         await self.handle_cache_queue()
         end = datetime.datetime.utcnow()
         print("Cache queue took {} total seconds".format((end-start).total_seconds()))
+        start = datetime.datetime.utcnow()
         await self.handle_discord_tournament_updates()
         end = datetime.datetime.utcnow()
         print("Tournament updates Tasks took {} total seconds".format((end-start).total_seconds()))
+        start = datetime.datetime.utcnow()
         await self.handle_clotbook()
         end = datetime.datetime.utcnow()
         print("CLOTBook Tasks took {} total seconds".format((end-start).total_seconds()))
