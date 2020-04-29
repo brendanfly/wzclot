@@ -141,10 +141,7 @@ class Tasks(commands.Cog, name="tasks"):
                 game_log_text = ""
                 if hasattr(self.bot, 'uptime'):
                     games = await self.orm_helpers.get_game_logs_for_tournament(cl.tournament, self.bot.uptime-datetime.timedelta(days=3))
-                    log_bot_msg("Found {} games to log in channel {}".format(games.count(), channel.name))
-                    if games.count() == 0:
-                        # we have no games to log regardless of channel...return early
-                        return
+                    log_bot_msg("Found {} games to log in channel {}".format(len(games), channel.name))
                     for game in games:
                         if game.game_finished_time is None and game.winning_team or not game.winning_team:
                             continue  # ignore games with no finished time (which might be 0 and returned in this query)
