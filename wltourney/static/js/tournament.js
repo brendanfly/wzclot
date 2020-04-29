@@ -344,8 +344,9 @@ function update_division(type, obj)
 
 function show_copy_season_modal(obj)
 {
+    let seasonName = $(`#season-${obj.data('id')}`).html();
     $('#copy-season-modal').modal('show');
-    $('#copy-season-title').text(`Copy ${obj.data('id')}?`);
+    $('#copy-season-title').text(`Copy ${seasonName}?`);
     $('#copy-season-button').data('id', obj.data('id'));
 }
 
@@ -368,7 +369,6 @@ function update_pr_season(obj, type)
     } else if (type == "copy") {
         data["season-name"] = $("#copy-season-name").val();
         data["season_id"] = obj.data('id');
-
     }
     var url = "/pr/seasons/update/";
 
@@ -411,12 +411,12 @@ function hook_pr_buttons()
         update_pr_season(jQuery(this), "add");
     });
 
-    $("#remove-pr-season").on('click', function()
+    $(".remove-pr-season").on('click', function()
     {
         update_pr_season(jQuery(this), "remove");
     });
 
-    $("#copy-pr-season").on('click', function()
+    $(".copy-pr-season").on('click', function()
     {
         show_copy_season_modal(jQuery(this));
     });

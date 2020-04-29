@@ -3920,31 +3920,43 @@ class PromotionalRelegationLeague(Tournament):
         season.save()
 
     def copy_season(self, season_name, copy_season_id):
-        seasonal_copy = PromotionalRelegationLeagueSeason.objects.filter(id=int(copy_season_id))
-        if  not seasonal_copy:
+        # Get original season to copy
+        orig_season = PromotionalRelegationLeagueSeason.objects.filter(id=int(copy_season_id))
+        # Ensure parameters are correct before copying
+        if  not orig_season:
             raise ValueError("Seasonal with id {} could not be found".format(copy_season_id))
-        games_at_once = seasonal_copy[0].games_at_once
-        template = seasonal_copy[0].season_template;
+        # Get the # of games and template from original season
+        games_at_once = orig_season[0].games_at_once
+        template = orig_season[0].season_template;
         if len(season_name) < 3 or len(season_name) > 251:
             raise ValueError("Season name must be between 3-250 characters.")
         if games_at_once < 1 or games_at_once > 100:
             raise ValueError("Games at once must be 1-100 inclusive.")
+        # Create a new season given original season
         season = PromotionalRelegationLeagueSeason(pr_tournament=self, name=season_name, created_by=self.created_by, private=True, games_at_once=games_at_once, season_template=template)
         season.save()
-        divisions = ClanLeagueDivision.objects.filter(pr_season=seasonal_copy[0])
+        
+        # Iterate through original season divisions and copy to new season
+        divisions = ClanLeagueDivision.objects.filter(pr_season=orig_season[0])
         for div in divisions:
             new_division = ClanLeagueDivision(title=div.title, pr_season=season)
             new_division.save()
-            # always default to create 4 slots per team in the division
+
+
+            # Iterate through original season teams and copy TT and TP to new season
             teams = TournamentTeam.objects.filter(clan_league_division=div)
             for team in teams:
-                new_team = TournamentTeam(clan_league_division=new_division, max_games_at_once=games_at_once, players=team.players)
+                new_team = TournamentTeam(clan_league_division=new_division, max_games_at_once=games_at_once, players=team.players, tournament=season)
                 new_team.save()
+                players = TournamentPlayer.objects.filter(team=team)
+                for player in players:
+                    new_player = TournamentPlayer(team=new_team, tournament=season, player=players[0].player)
+                    new_player.save()
 
+        # Set player count for season
         players = TournamentPlayer.objects.filter(tournament=season)
         if players:
             season.numbers_players = players.count()
-        # the creator will get to assign players to these team slots now
         season.game_creation_allowed = False
         season.save()
 
@@ -3968,9 +3980,9 @@ class PromotionalRelegationLeague(Tournament):
                 disabled = ""
                 if not season.is_finished and season.has_started:
                     disabled = "disabled"
-                mgmt_data += '&nbsp;<button type="button" class="btn btn-md btn-danger" id="remove-pr-season" data-id="{}" {}>Delete Season</button>'.format(season.id, disabled)
-                mgmt_data += '&nbsp;<button type="button" class="btn btn-md btn-success" id="copy-pr-season" data-id="{}">Copy Season</button>'.format(season.id)
-            season_data += '<tr><td>{}</td><td>{}</td></tr>'.format(season.name, mgmt_data)
+                mgmt_data += '&nbsp;<button type="button" class="btn btn-md btn-danger remove-pr-season" id="remove-pr-season-{}" data-id="{}" {}>Delete Season</button>'.format(season.id, season.id, disabled)
+                mgmt_data += '&nbsp;<button type="button" class="btn btn-md btn-success copy-pr-season" id="copy-pr-season-{}" data-id="{}">Copy Season</button>'.format(season.id, season.id, disabled)
+            season_data += '<tr><td id="season-{}">{}</td><td>{}</td></tr>'.format(season.id, season.name, mgmt_data)
         season_data += '</table></div></div>'
 
         return season_data
