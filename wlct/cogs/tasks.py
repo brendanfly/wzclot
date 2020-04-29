@@ -55,14 +55,14 @@ class Tasks(commands.Cog, name="tasks"):
                         try:
                             await user.send(embed=emb)
                         except:
-                            log_bot_msg(log_exception())
+                            log_bot_msg("Could not send RTL game msg to {} ".format(player1.name))
                 if player2:
                     user = self.bot.get_user(player2.discord_member.memberid)
                     if user:
                         try:
                             await user.send(embed=emb)
                         except:
-                            log_bot_msg(log_exception())
+                            log_bot_msg("Could not send RTL game msg to {} ".format(player2.name))
                 game.mentioned = True
                 game.save()
 
