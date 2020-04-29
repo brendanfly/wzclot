@@ -82,14 +82,14 @@ class Tasks(commands.Cog, name="tasks"):
                 # diff is our delta, compute how many days, hours, minutes remaining
 
     async def handle_clotbook(self):
-        channel_links = await database_sync_to_async(DiscordChannelCLOTBookLink.objects.all())
+        channel_links = DiscordChannelCLOTBookLink.objects.all()
         odds_sent = []
         cb = get_clotbook()
         try:
             for cl in channel_links:
                 channel = self.bot.get_channel(cl.channelid)
                 if hasattr(self.bot, 'uptime') and channel:
-                    bet_odds = database_sync_to_async(BetOdds.objects.filter(sent_notification=False, initial=True).order_by('created_time'))
+                    bet_odds = BetOdds.objects.filter(sent_notification=False, initial=True).order_by('created_time')
                     if bet_odds.count() == 0:
                         return
                     for bo in bet_odds:
@@ -131,7 +131,7 @@ class Tasks(commands.Cog, name="tasks"):
                 odds.save()
 
     async def handle_game_logs(self):
-        channel_links = await database_sync_to_async(DiscordChannelTournamentLink.objects.all())
+        channel_links = DiscordChannelTournamentLink.objects.all()
         games_sent = []
         try:
             for cl in channel_links:
@@ -140,7 +140,7 @@ class Tasks(commands.Cog, name="tasks"):
                 # only look at games that have finished times greater than when the bot started
                 game_log_text = ""
                 if hasattr(self.bot, 'uptime'):
-                    games = await database_sync_to_async(TournamentGame.objects.filter(is_finished=True, tournament=cl.tournament, game_finished_time__gt=(self.bot.uptime-datetime.timedelta(days=3)), game_log_sent=False))
+                    games = TournamentGame.objects.filter(is_finished=True, tournament=cl.tournament, game_finished_time__gt=(self.bot.uptime-datetime.timedelta(days=3)), game_log_sent=False)
                     log_bot_msg("Found {} games to log in channel {}".format(games.count(), channel.name))
                     if games.count() == 0:
                         # we have no games to log regardless of channel...return early
@@ -175,11 +175,11 @@ class Tasks(commands.Cog, name="tasks"):
                                 if player_team_id_list:
                                     tplayers = player_team_id_list[teams.index(str(team))].split(".")
                                 else:
-                                    tplayers = await database_sync_to_async(TournamentPlayer.objects.filter(team=tt))
+                                    tplayers = TournamentPlayer.objects.filter(team=tt)
 
                                 for tplayer in tplayers:
                                     if player_team_id_list:
-                                        player_name = await database_sync_to_async(Player.objects.filter(token=tplayer))
+                                        player_name = Player.objects.filter(token=tplayer)
                                         player_name = player_name[0].name
                                     else:
                                         player_name = tplayer.player.name
@@ -231,7 +231,7 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_server_stats()
 
     async def handle_no_winning_team_games(self):
-        games = await database_sync_to_async(TournamentGame.objects.filter(winning_team__isnull=True, is_finished=True, no_winning_team_log_sent=False))
+        games = TournamentGame.objects.filter(winning_team__isnull=True, is_finished=True, no_winning_team_log_sent=False)
         msg = ""
         if games:
             msg += "**Games finished with no winning team found**"
