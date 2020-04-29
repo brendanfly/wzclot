@@ -799,7 +799,11 @@ class Tournament(models.Model):
             players_data = None
             # process the game here
             # first we need to look-up the winner and parse the player data
-            # print("Game Status: {}".format(game_status))
+            if 'numberOfTurns' in game_status:
+                number_of_turns = int(game_status['numberOfTurns'])
+                if number_of_turns >= 0:
+                    game.betting_open = False
+                    game.save()
             if 'players' in game_status:
                 players_data = game_status['players']
             if 'state' in game_status:
