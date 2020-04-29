@@ -3098,13 +3098,13 @@ class TournamentGame(models.Model):
     is_finished = models.BooleanField(default=False, db_index=True)
     outcome = models.CharField(max_length=255, null=True, blank=True)
     winning_team = models.ForeignKey('TournamentTeam', null=True, on_delete=models.DO_NOTHING, blank=True)
-    game_finished_time = models.DateTimeField(blank=True, null=True)
+    game_finished_time = models.DateTimeField(blank=True, null=True, db_index=True)
     game_boot_time = models.DateTimeField(blank=True, null=True)
     current_state = models.CharField(max_length=255, null=True, blank=True)
     needs_recreation = models.BooleanField(default=False, blank=True, null=True)
-    game_start_time = models.DateTimeField(default=timezone.now)
+    game_start_time = models.DateTimeField(default=timezone.now, db_index=True)
     mentioned = models.BooleanField(default=False, blank=True, null=True)
-    game_log_sent = models.BooleanField(default=False, blank=True, null=True)
+    game_log_sent = models.BooleanField(default=False, blank=True, null=True, db_index=True)
     no_winning_team_log_sent = models.BooleanField(default=False, blank=True, null=True)
 
     def __str__(self):
