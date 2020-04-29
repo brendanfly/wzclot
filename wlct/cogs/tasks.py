@@ -52,13 +52,19 @@ class Tasks(commands.Cog, name="tasks"):
                 if player1:
                     user = self.bot.get_user(player1.discord_member.memberid)
                     if user:
-                        await user.send(embed=emb)
+                        try:
+                            await user.send(embed=emb)
+                        except:
+                            log_bot_msg(log_exception())
                 if player2:
                     user = self.bot.get_user(player2.discord_member.memberid)
                     if user:
-                        await user.send(embed=emb)
-                        game.mentioned = True
-                        game.save()
+                        try:
+                            await user.send(embed=emb)
+                        except:
+                            log_bot_msg(log_exception())
+                game.mentioned = True
+                game.save()
 
     async def handle_clan_league_next_game(self):
         clt = ClanLeagueTournament.objects.filter(is_finished=False)
