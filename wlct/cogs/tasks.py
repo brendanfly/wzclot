@@ -26,7 +26,7 @@ class Tasks(commands.Cog, name="tasks"):
     async def handle_rtl_tasks(self):
         ladders = RealTimeLadder.objects.all()
         for ladder in ladders:
-            games = self.orm_helpers.get_rtl_games(ladder)
+            games = await self.orm_helpers.get_rtl_games(ladder)
             # cache the game data + link for use with the embed
             emb = discord.Embed(color=self.bot.embed_color)
             emb.set_author(icon_url=self.bot.user.avatar_url, name="WarzoneBot")
