@@ -24,9 +24,9 @@ class Tasks(commands.Cog, name="tasks"):
         self.orm_helpers = DjangoORMHelpers()
 
     async def handle_rtl_tasks(self):
-        ladders = database_sync_to_async(RealTimeLadder.objects.all())
+        ladders = RealTimeLadder.objects.all()
         for ladder in ladders:
-            games = database_sync_to_async(TournamentGame.objects.filter(tournament=ladder, is_finished=False, mentioned=False))
+            games = self.orm_helpers.get_rtl_games(ladder)
             # cache the game data + link for use with the embed
             emb = discord.Embed(color=self.bot.embed_color)
             emb.set_author(icon_url=self.bot.user.avatar_url, name="WarzoneBot")
@@ -418,6 +418,10 @@ class DjangoORMHelpers():
     @database_sync_to_async
     def get_channel_tournament_links(self, tournament):
         return list(DiscordChannelTournamentLink.objects.filter(tournament=tournament))
+
+    @database_sync_to_async
+    def get_rtl_games(self, ladder):
+        return list(TournamentGame.objects.filter(tournament=ladder, is_finished=False, mentioned=False))
 
 def setup(bot):
     bot.add_cog(Tasks(bot))
