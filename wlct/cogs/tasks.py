@@ -85,6 +85,7 @@ class Tasks(commands.Cog, name="tasks"):
         channel_links = DiscordChannelCLOTBookLink.objects.all()
         odds_sent = []
         cb = get_clotbook()
+
         try:
             for cl in channel_links:
                 channel = self.bot.get_channel(cl.channelid)

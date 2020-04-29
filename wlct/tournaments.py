@@ -3106,6 +3106,7 @@ class TournamentGame(models.Model):
     mentioned = models.BooleanField(default=False, blank=True, null=True)
     game_log_sent = models.BooleanField(default=False, blank=True, null=True, db_index=True)
     no_winning_team_log_sent = models.BooleanField(default=False, blank=True, null=True)
+    betting_open = models.BooleanField(default=True)
 
     def __str__(self):
         return "Round {} game in {} between {}. Game ID ({}) Finished? {}".format(self.round.round_number, self.tournament.name, self.teams, self.gameid, self.is_finished)

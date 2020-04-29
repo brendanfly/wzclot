@@ -26,9 +26,6 @@ class CLOTBook(models.Model):
         log_cb_msg("Probability: Favorite: {}/{}, Underdog {}/{}".format(ratings1, prob_win, ratings2, 1-prob_win))
         return (prob_win, 1-prob_win)
 
-    def create_new_bet(self, wager, player, game):
-        pass
-
     def calculate_decimal_odds_winnings(self, odds, wager):
         # winnings are calculated based on the wager and the current odds
         # ex. odds of -105 means you'd have to bet 100 to win 105
@@ -63,6 +60,45 @@ class CLOTBook(models.Model):
         if odds > 0:
             return "+{}".format(odds)
         return odds
+
+    def adjust_line(self, game):
+        # gather how much money on both sides would win
+        # adjust the line to make sure we are slightly ahead on the other side
+        winning1 = 0
+        winning2 = 0
+
+        bets = Bet.objects.filter(game=game)
+        for bet in bets:
+            odds1 = bet.odds.decimal_odds.split('!')[0]
+            odds2 = bet.odds.decimal_odds.split('!')[1]
+            if game.players.split('-')[0] == bet.players:
+                winning1 += self.calculate_decimal_odds_winnings(odds1, bet.wager)
+            else:
+                winning2 += self.calculate_decimal_odds_winnings(odds2, bet.wager)
+
+        if winning1 < winning2:
+
+
+    def create_new_bet(self, wager, player, game, team):
+        # first we need to see which team the bet is on
+        wager = int(wager)
+
+        # players are the list of players the bet is on
+        # the bet the player gets is based on the last odds we see
+        odds = BetOdds.objects.filter(game=game).order_by('-created_time')[0]
+        if odds:
+            odds = odds[0]
+            if str(team.id) == game.teams.split('.')[0]:
+                players = game.players.split('-')[0]
+                current_odds = odds.decimal_odds.split('!')[0]
+            else:
+                players = game.players.split('-')[1]
+                current_odds = odds.decimal_odds.split('!')[1]
+
+                winnings = self.calculate_decimal_odds_winnings(current_odds, wager)
+                bet = Bet(players=players, gameid=game.gameid, game=game, odds=odds, player=player, wager=wager, winnings=winnings)
+                bet.save()
+                return bet
 
     '''
     Creates a new BetOdds object that serves as the initial line for the game
@@ -127,6 +163,10 @@ class Bet(models.Model):
     players = models.CharField(max_length=255, default="")
     created_time = models.DateTimeField(default=timezone.now)
     odds = models.ForeignKey('BetOdds', on_delete=models.CASCADE, blank=True, null=True)
+    wager = models.IntegerField(default=0)
+    player = models.ForeignKey('Player', on_delete=models.CASCADE, blank=True, null=True)
+    placed = models.BooleanField(default=False)
+    winnings = models.IntegerField(default=0)
 
 class BetAdmin(admin.ModelAdmin):
     raw_id_fields = ['game', 'odds']
