@@ -5,7 +5,6 @@ from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
 from django.conf import settings
 from wlct.cogs.common import is_clotadmin, has_tournament_admin_access
-from wlct.clotbook import DiscordChannelCLOTBookLink, CLOTBook, Bet, BetOdds
 
 
 class PlayerStats:
