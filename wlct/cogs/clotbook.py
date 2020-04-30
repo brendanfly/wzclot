@@ -5,7 +5,7 @@ from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
 from django.conf import settings
 from wlct.cogs.common import has_admin_access, is_clotadmin
-from wlct.clotbook import DiscordChannelCLOTBookLink, CLOTBook, Bet, BetOdds, get_clotbook
+from wlct.clotbook import DiscordChannelCLOTBookLink, CLOTBook, Bet, BetGameOdds, get_clotbook
 from channels.db import database_sync_to_async
 
 class CLOTBook(commands.Cog, name="CLOTBook"):
@@ -70,14 +70,14 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                     await ctx.send("Only CLOT admins can use this command.")
                     return
                 if arg.isnumeric():
-                    game = await database_sync_to_async(TournamentGame.objects.filter(gameid=arg))
+                    game = TournamentGame.objects.filter(gameid=arg)
                     if not game:
-                        game = await database_sync_to_async(TournamentGame.objects.filter(pk=int(arg)))
+                        game = TournamentGame.objects.filter(pk=int(arg))
                         if not game:
                             await ctx.send("You must specify a valid game id to use with this command.")
                             return
                     game = game[0]
-                    odds = await database_sync_to_async(BetOdds.objects.filter(game=game))
+                    odds = BetGameOdds.objects.filter(game=game)
                     for odd in odds:
                         odd.delete()
                     game.create_initial_lines()
