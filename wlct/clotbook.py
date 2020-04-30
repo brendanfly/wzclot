@@ -158,22 +158,19 @@ class CLOTBook(models.Model):
             bet.player.save()
 
 
-    def create_new_bet(self, wager, player, team):
+    def create_new_bet(self, wager, player, team_odds):
         # first we need to see which team the bet is on
         wager = int(wager)
 
         # players are the list of players the bet is on
         # the bet the player gets is based on the last odds we see
-        odds = BetTeamOdds.objects.filter(team=team)
-        if odds:
-            odds = odds[0]
-            players = odds.players
-            decimal_odds = odds.decimal_odds
-            american_odds = odds.american_odds
-            winnings = self.calculate_decimal_odds_winnings(decimal_odds, wager)
-            bet = Bet(players=players, gameid=odds.bet_game.game.gameid, game=odds.bet_game.game, current_odds=odds, decimal_odds=decimal_odds, american_odds=american_odds, player=player, wager=wager, winnings=winnings, placed=True)
-            bet.save()
-            return bet
+        players = team_odds.players
+        decimal_odds = team_odds.decimal_odds
+        american_odds = team_odds.american_odds
+        winnings = self.calculate_decimal_odds_winnings(decimal_odds, wager)
+        bet = Bet(players=players, gameid=team_odds.bet_game.game.gameid, game=team_odds.bet_game.game, current_odds=team_odds, decimal_odds=decimal_odds, american_odds=american_odds, player=player, wager=wager, winnings=winnings, placed=True)
+        bet.save()
+        return bet
 
     '''
     Creates a new BetOdds object that serves as the initial line for the game

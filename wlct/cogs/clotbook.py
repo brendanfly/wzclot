@@ -5,7 +5,7 @@ from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
 from django.conf import settings
 from wlct.cogs.common import has_admin_access, is_clotadmin
-from wlct.clotbook import DiscordChannelCLOTBookLink, CLOTBook, Bet, BetGameOdds, get_clotbook
+from wlct.clotbook import DiscordChannelCLOTBookLink, CLOTBook, Bet, BetGameOdds, get_clotbook, BetTeamOdds
 from channels.db import database_sync_to_async
 
 class CLOTBook(commands.Cog, name="CLOTBook"):
@@ -114,14 +114,14 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
 
     @commands.command(brief="Place your wagers, and view existing bets on the CLOTBook",
                       usage='''
-                            bb!bet teamid 20 - places a bet of 20 Coins on teamid
+                            bb!bet betid 20 - places a bet of 20 Coins on teamid
                                - e.g. bb!bet 23456 20
-                            bb!bet player_name 20 - places a bet of 20 Coins on AIs team in gameid
+                            bb!bet player_name 20 - places a bet of 20 Coins on AIs team in betid
                                - e.g. bb!bet AI 20
-                            bb!bet gameid - displays all current bets for this gameid
+                            bb!bet betid - displays all current bets for the betid
                             
                         ''')
-    async def bet(self, ctx, gameid="", team="", wager=""):
+    async def bet(self, ctx, team="", wager=""):
         try:
             discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
             if not discord_user:
@@ -136,28 +136,17 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 return
 
             player = player[0]
-            if gameid == "":
-                await ctx.send("You must specify a gameid with the bet command.")
-                return
-
-            elif not gameid.isnumeric():
-                await ctx.send("Game {} cannot be found on the CLOT. Please enter a valid gameid.".format(gameid))
-                return
-
-            gameid = int(gameid)
-            game = TournamentGame.objects.filter(pk=gameid)
-            if not game:
-                await ctx.send("Game {} cannot be found on the CLOT. Please enter a valid gameid.")
-            # try to look up the game first, then parse the rest of the arguments
-            if not game.betting_open:
-                await ctx.send("Betting is closed for game {}.".format(gameid))
-                return
-
             if not team.isnumeric():
                 await ctx.send("{} is not a valid team id. Please enter a valid teamid. Betting via typing in a player's name isn't supported yet.".format(team))
                 return
 
+            team = int(team)
+            team_odds = BetTeamOdds.objects.filter(pk=team)
+            if not team_odds:
+                await ctx.send("{} is not a valid bet id.".format(team))
+                return
 
+            team_odds = team_odds[0]
             if not wager.isnumeric():
                 await ctx.send("{} is not a valid wager. Please enter a valid wager amount.".format(wager))
                 return
@@ -168,19 +157,12 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 await ctx.send("You only have {} coins to bet with. Please use a smaller wager.".format(player.bankroll))
                 return
 
-            team = int(team)
-            tournament_team = (TournamentTeam.objects.filter(pk=team))
-            if tournament_team:
                 # we have the game, tournament team and player with the wager...
                 # go ahead and create the bet
-                initial_odds = BetGameOdds.objects.filter(game=game)
-                if not initial_odds:
-                    await ctx.send("This is an invalid bet. Please try to use a valid game and team combination.")
-                    return
                 cb = get_clotbook()
-                bet = cb.create_new_bet(self, wager, player, game, team)
-                await ctx.send("{}, bet placed on team {} in game {} for {} coins to win {} coins.".format(
-                        ctx.message.author.name, team, gameid, bet.wager, bet.winnings))
+                bet = cb.create_new_bet(self, wager, player, team_odds)
+                await ctx.send("{}, bet placed on for bet id {} in game {} for {} coins to win {} coins.".format(
+                        ctx.message.author.name, team, team_odds.bet_game.game.gameid, bet.wager, bet.winnings))
         except:
             log_exception()
 
