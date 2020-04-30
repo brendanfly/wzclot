@@ -140,7 +140,7 @@ class Tasks(commands.Cog, name="tasks"):
                 # for each channel, see if there are any new games that have finished in the tournament that's linked
                 # only look at games that have finished times greater than when the bot started
                 game_log_text = ""
-                if hasattr(self.bot, 'uptime'):
+                if hasattr(self.bot, 'uptime') and channel:
                     games = await self.orm_helpers.get_game_logs_for_tournament(cl.tournament, self.bot.uptime-datetime.timedelta(days=3))
                     if len(games) > 0:
                         log_bot_msg("Found {} games to log in channel {}".format(len(games), channel.name))
