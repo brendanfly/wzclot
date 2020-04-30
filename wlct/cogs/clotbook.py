@@ -172,7 +172,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
             if tournament_team:
                 # we have the game, tournament team and player with the wager...
                 # go ahead and create the bet
-                initial_odds = BetOdds.objects.filter(game=game)
+                initial_odds = BetGameOdds.objects.filter(game=game)
                 if not initial_odds:
                     await ctx.send("This is an invalid bet. Please try to use a valid game and team combination.")
                     return
