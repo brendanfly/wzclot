@@ -67,7 +67,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 user = self.bot.get_user(discord_user.memberid)
                 emb = self.bot.get_embed(user)
                 emb.title = "{}'s last 10 bets".format(user.name)
-                bets = Bet.objects.filter(player=player)
+                bets = Bet.objects.filter(player=player).order_by('-created_time')
                 total_bets = bets.count()
                 bets = bets[:10]
                 bet_text = ""
