@@ -253,14 +253,21 @@ class CLOTBook(models.Model):
             id2 = 0
 
         if int(american1) < int(american2):
-            team_text += "[ID: **{}**] {} ({}/{})\n".format(id1, team1, american1, dec1)
-            team_text += "[ID: **{}**] {} ({}/{})\n".format(id2, team2, american2, dec2)
+            team_text += "[**{}**] {} ({}/{})\n".format(id1, team1, american1, dec1)
+            team_text += "[**{}**] {} ({}/{})\n".format(id2, team2, american2, dec2)
         else:
-            team_text += "[ID: **{}**] {} ({}/{})\n".format(id2, team2, american2, dec2)
-            team_text += "[ID: **{}**] {} ({}/{})\n".format(id1, team1, american1, dec1)
+            team_text += "[**{}**] {} ({}/{})\n".format(id2, team2, american2, dec2)
+            team_text += "[**{}**] {} ({}/{})\n".format(id1, team1, american1, dec1)
 
         emb.add_field(name="Lines", value=team_text, inline=True)
-        emb.title = "Opening lines for Game {}\n[Game Link]({})".format(bet_game.gameid, bet_game.game.game_link)
+
+        game_info_text = "[Game Link]({})".format(bet_game.game.game_link)
+        emb.add_field(name="Game Info", value=game_info_text)
+
+        help_info_text = "bb!bet {} 20 - bet 20 coins on {}\n".format(id1, team1)
+        help_info_text += "bb!bet {} 20 - bet 5 coins on {}".format(id2, team2)
+        emb.add_field(name="Betting Help", value=help_info_text)
+        emb.title = "Opening lines for Game {}".format(bet_game.gameid)
 
         return emb
 
