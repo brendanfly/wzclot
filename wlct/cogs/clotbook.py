@@ -157,12 +157,12 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 await ctx.send("You only have {} coins to bet with. Please use a smaller wager.".format(player.bankroll))
                 return
 
-                # we have the game, tournament team and player with the wager...
-                # go ahead and create the bet
-                cb = get_clotbook()
-                bet = cb.create_new_bet(self, wager, player, team_odds)
-                await ctx.send("{}, bet placed on for bet id {} in game {} for {} coins to win {} coins.".format(
-                        ctx.message.author.name, team, team_odds.bet_game.game.gameid, bet.wager, bet.winnings))
+            # we have the game, tournament team and player with the wager...
+            # go ahead and create the bet
+            cb = get_clotbook()
+            bet = cb.create_new_bet(self, wager, player, team_odds)
+            await ctx.send("{}, bet placed on for bet id {} in game {} for {} coins to win {} coins.".format(
+                    ctx.message.author.name, team, team_odds.bet_game.game.gameid, bet.wager, bet.winnings))
         except:
             log_exception()
 
