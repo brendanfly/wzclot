@@ -272,7 +272,7 @@ class CLOTBook(models.Model):
         return emb
 
     def get_bet_results_card(self, bet_game, emb):
-        bets = Bet.objects.filter(game=bet_game.game, winnings__gt=0)
+        bets = Bet.objects.filter(game=bet_game.game)
         if bets.count() == 0:
             return None
 
@@ -308,7 +308,10 @@ class CLOTBook(models.Model):
 
         results_text = ""
         for bet in bets:
-            results_text += "{} won {}\n".format(bet.player.name, bet.winnings)
+            if bet.winnings == 0:
+                results_text += "{} lost {}\n".format(bet.player.name, bet.wager)
+            else:
+                results_text += "{} won {}\n".format(bet.player.name, bet.winnings)
         emb.add_field(name="Lines", value=team_text)
         emb.add_field(name="Results", value=results_text)
         emb.title = "Betting Results for Game {}".format(bet_game.gameid)

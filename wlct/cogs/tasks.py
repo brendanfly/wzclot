@@ -98,6 +98,7 @@ class Tasks(commands.Cog, name="tasks"):
                         odds_created_sent.append(bo)
 
                     bet_odds = BetGameOdds.objects.filter(sent_finished_notification=False, game__is_finished=True)
+                    print("Found {} finished bet game odds".format(bet_odds.count()))
                     for bo in bet_odds:
                         emb = self.bot.get_default_embed()
                         emb = cb.get_bet_results_card(bo, emb)
