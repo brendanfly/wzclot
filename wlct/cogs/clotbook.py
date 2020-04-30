@@ -11,6 +11,7 @@ from channels.db import database_sync_to_async
 class CLOTBook(commands.Cog, name="CLOTBook"):
     def __init__(self, bot):
         self.bot = bot
+        self.bets = {}
 
     @commands.command(brief="Turn on CLOTBook Updates for this channel",
                       usage='''
@@ -22,7 +23,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                       ''')
     async def cb(self, ctx, option="", arg=""):
         try:
-            discord_user = await database_sync_to_async(DiscordUser.objects.filter(memberid=ctx.message.author.id))
+            discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
             if not discord_user:
                 discord_user = DiscordUser(memberid=ctx.message.author.id)
                 discord_user.save()
@@ -37,9 +38,9 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 await ctx.send("This command is currently under construction.")
             elif option == "on":
                 if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
-                    discord_channel_link = await database_sync_to_async(DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id))
+                    discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id)
                     if discord_channel_link.count() == 0:
-                        discord_channel_link = await database_sync_to_async(DiscordChannelCLOTBookLink(channelid=ctx.message.channel.id, discord_user=discord_user))
+                        discord_channel_link = DiscordChannelCLOTBookLink(channelid=ctx.message.channel.id, discord_user=discord_user)
                         discord_channel_link.save()
                         await ctx.send("The CLOTBook will start using this channel to send live betting updates.")
                     else:
@@ -48,8 +49,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                     await ctx.send("You must be a server administrator to use this command.")
             elif option == "off":
                 if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
-                    discord_channel_link = await database_sync_to_async(DiscordChannelCLOTBookLink.objects.filter(
-                          channelid=ctx.message.channel.id))
+                    discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id)
                     if discord_channel_link:
                         discord_channel_link[0].delete()
                         await ctx.send("The CLOTBook will no longer use this channel for updates.")
@@ -58,13 +58,35 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 else:
                     await ctx.send("You must be a server administrator to use this command.")
             elif option == "me":
-                player = await database_sync_to_async(Player.objects.filter(discord_member=discord_user))
+                player = Player.objects.filter(discord_member=discord_user)
                 if not player:
                     await ctx.send(self.bot.discord_link_text)
                     return
                 player = player[0]
                 cb = get_clotbook()
-                await ctx.send("{}, you have {} {} left in your account.".format(player.name, player.bankroll, cb.currency_name))
+                user = self.bot.get_user(discord_user.memberid)
+                emb = self.bot.get_embed()
+                emb.title = "{}'s last 10 bets".format(user.name)
+                bets = Bet.objects.filter(player=player)
+                total_bets = bets.count()
+                bets = bets[:10]
+                for bet in bets:
+                    if bet.placed:
+                        bet_text = "[Game]({}) - Bet {} coins, and".format(bet.game.game_link)
+                        if bet.winnings == 0:
+                            bet_text += "and lost bet"
+                        else:
+                            bet_text += "and won {} coins".format(bet.winnings)
+                    else:
+                        bet_text = "Bet {} coins on [Game]({})".format(bet.wager, bet.game.game_link)
+
+                if len(bet_text) > 0:
+                    emb.add_field(name="Bets", value=bet_text)
+
+                info_text = "Total Bets: {}\nBankroll: {} coins".format(total_bets, player.bankroll)
+                emb.add_field(name="Info", value=info_text)
+                await ctx.send(embed=emb)
+
             elif option == "initial":
                 if not is_clotadmin(ctx.message.author.id):
                     await ctx.send("Only CLOT admins can use this command.")
@@ -77,6 +99,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                             await ctx.send("You must specify a valid game id to use with this command.")
                             return
                     game = game[0]
+
                     odds = BetGameOdds.objects.filter(game=game)
                     for odd in odds:
                         odd.delete()
@@ -90,41 +113,73 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
 
     @commands.command(brief="Place your wagers, and view existing bets on the CLOTBook",
                       usage='''
-                            bb!bet gameid teamid 20 - places a bet of 20 Coins on teamid in gameid
-                               - e.g. bb!bet 5346 23456 20
-                            bb!bet 5346 player_name 20 - places a bet of 20 Coins on AIs team in gameid
-                               - e.g. bb!bet 5346 AI 20
+                            bb!bet teamid 20 - places a bet of 20 Coins on teamid
+                               - e.g. bb!bet 23456 20
+                            bb!bet player_name 20 - places a bet of 20 Coins on AIs team in gameid
+                               - e.g. bb!bet AI 20
                             bb!bet gameid - displays all current bets for this gameid
                             
                         ''')
-    async def bet(self, ctx, option="", option2="", option3=""):
+    async def bet(self, ctx, gameid="", team="", wager=""):
         try:
             discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
             if not discord_user:
-                print("No discord user present...creating one")
                 discord_user = DiscordUser(memberid=ctx.message.author.id)
                 discord_user.save()
             else:
-                print("Found a discord user...using that")
                 discord_user = discord_user[0]
 
             player = Player.objects.filter(discord_member=discord_user)
             if not player:
-                print("Could not find player {} in the database with discord_user.id {}".format(ctx.message.author.name, ctx.message.author.id))
                 await ctx.send(self.bot.discord_link_text)
                 return
 
             player = player[0]
-            if option == "":
-                await ctx.send("You must specify an option with the bet command.")
+            if gameid == "":
+                await ctx.send("You must specify a gameid with the bet command.")
                 return
-            elif option.isnumeric():
-                # try to look up the game first, then parse the rest of the arguments
-                gameid = int(option)
-                game = TournamentGame.objects.filter(gameid=gameid)
-                if not game:
-                    await ctx.send("That game cannot be found on the CLOT. Please enter a valid gameid.")
+
+            elif not gameid.isnumeric():
+                await ctx.send("Game {} cannot be found on the CLOT. Please enter a valid gameid.".format(gameid))
+                return
+
+            gameid = int(gameid)
+            game = TournamentGame.objects.filter(pk=gameid)
+            if not game:
+                await ctx.send("Game {} cannot be found on the CLOT. Please enter a valid gameid.")
+            # try to look up the game first, then parse the rest of the arguments
+            if not game.betting_open:
+                await ctx.send("Betting is closed for game {}.".format(gameid))
+                return
+
+            if not team.isnumeric():
+                await ctx.send("{} is not a valid team id. Please enter a valid teamid. Betting via typing in a player's name isn't supported yet.".format(team))
+                return
+
+
+            if not wager.isnumeric():
+                await ctx.send("{} is not a valid wager. Please enter a valid wager amount.".format(wager))
+                return
+
+            # check to see if the player has enough coins to bet
+            wager = int(wager)
+            if player.bankroll < wager:
+                await ctx.send("You only have {} coins to bet with. Please use a smaller wager.".format(player.bankroll))
+                return
+
+            team = int(team)
+            tournament_team = (TournamentTeam.objects.filter(pk=team))
+            if tournament_team:
+                # we have the game, tournament team and player with the wager...
+                # go ahead and create the bet
+                initial_odds = BetOdds.objects.filter(game=game)
+                if not initial_odds:
+                    await ctx.send("This is an invalid bet. Please try to use a valid game and team combination.")
                     return
+                cb = get_clotbook()
+                bet = cb.create_new_bet(self, wager, player, game, team)
+                await ctx.send("{}, bet placed on team {} in game {} for {} coins to win {} coins.".format(
+                        ctx.message.author.name, team, gameid, bet.wager, bet.winnings))
         except:
             log_exception()
 

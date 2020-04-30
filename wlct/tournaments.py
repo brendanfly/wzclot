@@ -3110,6 +3110,7 @@ class TournamentGame(models.Model):
     mentioned = models.BooleanField(default=False, blank=True, null=True)
     game_log_sent = models.BooleanField(default=False, blank=True, null=True, db_index=True)
     no_winning_team_log_sent = models.BooleanField(default=False, blank=True, null=True)
+    betting_open = models.BooleanField(default=True)
 
     def __str__(self):
         return "Round {} game in {} between {}. Game ID ({}) Finished? {}".format(self.round.round_number, self.tournament.name, self.teams, self.gameid, self.is_finished)
@@ -3185,6 +3186,10 @@ class TournamentGame(models.Model):
                 team2Entry[0].save()
             else:
                 log_tournament("finish_game(): Cannot find game entry #2 for team {}".format(team2), self.tournament)
+
+            # handle any clotbook updates
+            cb = get_clotbook()
+            cb.finish_game(self)
 
             self.game_finished_time = timezone.now()
             self.save()

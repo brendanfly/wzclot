@@ -11,7 +11,7 @@ import datetime
 import pytz
 import urllib.request
 import json
-from wlct.clotbook import DiscordChannelCLOTBookLink, BetOdds, get_clotbook
+from wlct.clotbook import DiscordChannelCLOTBookLink, get_clotbook, BetGameOdds, BetTeamOdds, Bet
 from channels.db import database_sync_to_async
 import gc
 
@@ -83,51 +83,36 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_clotbook(self):
         channel_links = DiscordChannelCLOTBookLink.objects.all()
-        odds_sent = []
+        odds_created_sent = []
+        odds_finished_sent = []
         cb = get_clotbook()
+
         try:
             for cl in channel_links:
                 channel = self.bot.get_channel(cl.channelid)
                 if hasattr(self.bot, 'uptime') and channel:
-                    bet_odds = BetOdds.objects.filter(sent_notification=False, initial=True).order_by('created_time')
+                    bet_odds = BetGameOdds.objects.filter(sent_created_notification=False, initial=True).order_by('created_time')
+                    for bo in bet_odds:
+                        emb = self.bot.get_default_embed()
+                        emb = cb.get_initial_bet_card(bo, emb)
+                        await channel.send(embed=emb)
+                        odds_created_sent.append(bo)
+
+                    bet_odds = BetGameOdds.objects.filter(sent_finished_notification=False, game__is_finished=True)
                     if bet_odds.count() == 0:
                         return
                     for bo in bet_odds:
-                        emb = self.bot.get_default_embed()
-
-                        # grab the player list
-                        team_text = ""
-
-                        team1 = get_team_data_no_clan_player_list(bo.players.split('-')[0].split('.'))
-                        team2 = get_team_data_no_clan_player_list(bo.players.split('-')[1].split('.'))
-
-                        # grab both the american and decimal odds
-                        american1 = bo.american_odds.split('!')[0]
-                        american1 = cb.format_american(int(american1))
-                        american2 = bo.american_odds.split('!')[1]
-                        american2 = cb.format_american(int(american2))
-
-                        dec1 = bo.decimal_odds.split('!')[0]
-                        dec2 = bo.decimal_odds.split('!')[1]
-
-                        team_text = ""
-                        if int(american1) < int(american2):
-                            team_text += "{} ({}/{})\n".format(team1, american1, dec1)
-                            team_text += "{} ({}/{})\n".format(team2, american2, dec2)
-                        else:
-                            team_text += "{} ({}/{})\n".format(team2, american2, dec2)
-                            team_text += "{} ({}/{})\n".format(team1, american1, dec1)
-
-                        emb.add_field(name="Lines", value=team_text, inline=True)
-                        emb.title = "Opening lines for Game {}".format(bo.gameid)
-
+                        emb = cb.get_bet_results_card(bo, emb)
                         await channel.send(embed=emb)
-                        odds_sent.append(bo)
+                        odds_finished_sent.append(bo)
         except Exception:
             log_exception()
         finally:
-            for odds in odds_sent:
-                odds.sent_notification = True
+            for odds in odds_created_sent:
+                odds.sent_created_notification = True
+                odds.save()
+            for odds in odds_finished_sent:
+                odds.sent_finished_notification = True
                 odds.save()
 
     async def handle_game_logs(self):
@@ -139,9 +124,10 @@ class Tasks(commands.Cog, name="tasks"):
                 # for each channel, see if there are any new games that have finished in the tournament that's linked
                 # only look at games that have finished times greater than when the bot started
                 game_log_text = ""
-                if hasattr(self.bot, 'uptime'):
+                if hasattr(self.bot, 'uptime') and channel:
                     games = await self.orm_helpers.get_game_logs_for_tournament(cl.tournament, self.bot.uptime-datetime.timedelta(days=3))
-                    log_bot_msg("Found {} games to log in channel {}".format(len(games), channel.name))
+                    if len(games) > 0:
+                        log_bot_msg("Found {} games to log in channel {}".format(len(games), channel.name))
                     for game in games:
                         if game.game_finished_time is None and game.winning_team or not game.winning_team:
                             continue  # ignore games with no finished time (which might be 0 and returned in this query)
