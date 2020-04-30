@@ -58,6 +58,10 @@ class WZBot(commands.AutoShardedBot):
             self.load_extension(ext)
             print("Loaded extension: {}".format(ext))
 
+    def perf_counter(self, msg):
+        if self.performance_counter:
+            print(msg)
+
     @property
     def owner(self):
         return self.get_user(self.owner_id)
