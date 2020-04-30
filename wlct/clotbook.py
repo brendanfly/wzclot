@@ -49,7 +49,7 @@ class CLOTBook(models.Model):
     def calculate_decimal_odds_winnings(self, odds, wager):
         # winnings are calculated based on the wager and the current odds
         # ex. odds of -105 means you'd have to bet 100 to win 105
-        return (wager*odds)-wager
+        return round((wager*odds)-wager, 2)
 
     def calculate_american_odds_winnings(self, odds, wager):
         odds = self.american_odds_to_decimal(odds)

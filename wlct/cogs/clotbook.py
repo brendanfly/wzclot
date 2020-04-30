@@ -1,6 +1,6 @@
 import discord
 from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink
-from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry
+from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry, get_team_data_no_clan_player_list
 from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
 from django.conf import settings
@@ -165,8 +165,9 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
             # go ahead and create the bet
             cb = get_clotbook()
             bet = cb.create_new_bet(wager, player, team_odds)
-            await ctx.send("{}, bet placed on for bet id {} in game {} for {} coins to win {} coins.".format(
-                    ctx.message.author.name, team, team_odds.bet_game.game.gameid, bet.wager, bet.winnings))
+            team_players = get_team_data_no_clan_player_list(team_odds.players)
+            await ctx.send("{} placed bet on {} in game {} for {} coins to win {} coins.".format(
+                    ctx.message.author.name, team_players, team_odds.bet_game.game.gameid, bet.wager, bet.winnings))
         except:
             log_exception()
 
