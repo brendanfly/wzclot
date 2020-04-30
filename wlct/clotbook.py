@@ -171,6 +171,9 @@ class CLOTBook(models.Model):
         winnings = self.calculate_decimal_odds_winnings(decimal_odds, wager)
         bet = Bet(players=players, gameid=team_odds.bet_game.game.gameid, game=team_odds.bet_game.game, current_odds=team_odds, decimal_odds=decimal_odds, american_odds=american_odds, player=player, wager=wager, winnings=winnings, placed=True)
         bet.save()
+
+        player.bankroll -= wager
+        player.save()
         return bet
 
     '''

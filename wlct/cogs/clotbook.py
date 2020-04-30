@@ -73,7 +73,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 bet_text = ""
                 for bet in bets:
                     if bet.placed:
-                        bet_text = "[Game]({}) - Bet {} coins, and".format(bet.game.game_link, bet.wager)
+                        bet_text = "[Game]({}) - Bet {} coins, ".format(bet.game.game_link, bet.wager)
                         if bet.winnings == 0:
                             bet_text += "and lost bet"
                         else:
