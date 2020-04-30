@@ -309,11 +309,14 @@ class CLOTBook(models.Model):
         results_text = ""
         for bet in bets:
             if bet.winnings == 0:
-                results_text += "{} lost {}\n".format(bet.player.name, bet.wager)
+                results_text += "{} lost {} coins\n".format(bet.player.name, bet.wager)
             else:
-                results_text += "{} won {}\n".format(bet.player.name, bet.winnings)
+                results_text += "{} won {} coins\n".format(bet.player.name, bet.winnings)
         emb.add_field(name="Lines", value=team_text)
         emb.add_field(name="Results", value=results_text)
+
+        game_info_text = "[Game Link]({})".format(self.game.game_link)
+        emb.add_field(name="Game Info", value=game_info_text, inline=False)
         emb.title = "Betting Results for Game {}".format(bet_game.gameid)
 
         return emb
@@ -347,6 +350,9 @@ class Bet(models.Model):
     placed = models.BooleanField(default=False)
     winnings = models.FloatField(default=0.0)
 
+    def __str__(self):
+        return "[{}]: Player: {} bet {} on {} to win {}".format(self.game.id, self.player.name, self.wager, self.players, self.winnings)
+
 class BetAdmin(admin.ModelAdmin):
     raw_id_fields = ['game', 'current_odds']
 
@@ -359,6 +365,9 @@ class BetTeamOdds(models.Model):
     created_time = models.DateTimeField(default=timezone.now)
     players_index = models.IntegerField(default=-1)
     bet_game = models.ForeignKey('BetGameOdds', on_delete=models.CASCADE, blank=True, null=True)
+
+    def __str__(self):
+        return "[{}]: Odds for {}: {}".format(self.bet_game.game.id, self.players, self.decimal_odds)
 
 class BetTeamOddsAdmin(admin.ModelAdmin):
     raw_id_fields = ['bet_game']
@@ -376,6 +385,9 @@ class BetGameOdds(models.Model):
     probability = models.CharField(max_length=255, default="")
     sent_created_notification = models.BooleanField(default=False)
     sent_finished_notification = models.BooleanField(default=False)
+
+    def __str__(self):
+        return "Players: {}, Decimal Odds: {}, initial: {}, created_notify: {}, finished_notify: {}".format(self.players, self.decimal_odds, self.initial, self.sent_created_notification, self.sent_finished_notification)
 
 class BetGameOddsAdmin(admin.ModelAdmin):
     raw_id_fields = ['game']
