@@ -259,14 +259,14 @@ class CLOTBook(models.Model):
             team_text += "[**{}**] {} ({}/{})\n".format(id2, team2, american2, dec2)
             team_text += "[**{}**] {} ({}/{})\n".format(id1, team1, american1, dec1)
 
-        emb.add_field(name="Lines", value=team_text, inline=True)
+        emb.add_field(name="Lines", value=team_text, inline=False)
 
         game_info_text = "[Game Link]({})".format(bet_game.game.game_link)
-        emb.add_field(name="Game Info", value=game_info_text)
+        emb.add_field(name="Game Info", value=game_info_text, inline=False)
 
         help_info_text = "bb!bet {} 20 - bet 20 coins on {}\n".format(id1, team1)
         help_info_text += "bb!bet {} 20 - bet 5 coins on {}".format(id2, team2)
-        emb.add_field(name="Betting Help", value=help_info_text)
+        emb.add_field(name="Betting Help", value=help_info_text, inline=False)
         emb.title = "Opening lines for Game {}".format(bet_game.gameid)
 
         return emb

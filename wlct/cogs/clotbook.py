@@ -165,7 +165,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
             # go ahead and create the bet
             cb = get_clotbook()
             bet = cb.create_new_bet(wager, player, team_odds)
-            team_players = get_team_data_no_clan_player_list(team_odds.players)
+            team_players = get_team_data_no_clan_player_list(team_odds.players.split('.'))
             await ctx.send("{} placed bet on {} in game {} for {} coins to win {} coins.".format(
                     ctx.message.author.name, team_players, team_odds.bet_game.game.gameid, bet.wager, bet.winnings))
         except:
