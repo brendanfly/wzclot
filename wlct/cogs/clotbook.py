@@ -137,6 +137,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
             if gameid == "":
                 await ctx.send("You must specify a gameid with the bet command.")
                 return
+
             elif not gameid.isnumeric():
                 await ctx.send("Game {} cannot be found on the CLOT. Please enter a valid gameid.".format(gameid))
                 return
