@@ -20,6 +20,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                           bb!cb stats - displays stats for the CLOTBook
                           bb!cb me - displays CLOTBook information about you
                           bb!cb initial <game_id> - forces initial odds to be recalculated for a specific game
+                          bb!cb <game_id> - displays all bets for game_id
                       ''')
     async def cb(self, ctx, option="", arg=""):
         try:
@@ -63,7 +64,6 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                     await ctx.send(self.bot.discord_link_text)
                     return
                 player = player[0]
-                cb = get_clotbook()
                 user = self.bot.get_user(discord_user.memberid)
                 emb = self.bot.get_embed(user)
                 emb.title = "{}'s last 10 bets".format(user.name)
@@ -73,13 +73,13 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 bet_text = ""
                 for bet in bets:
                     if bet.placed:
-                        bet_text = "[Game]({}) - Bet {} coins, ".format(bet.game.game_link, bet.wager)
+                        bet_text = "[Game Link]({}) - Bet {} coins, ".format(bet.game.game_link, bet.wager)
                         if bet.winnings == 0:
-                            bet_text += "and lost bet"
+                            bet_text += "and lost bet\n"
                         else:
-                            bet_text += "and won {} coins".format(bet.winnings)
+                            bet_text += "and won {} coins\n".format(bet.winnings)
                     else:
-                        bet_text = "Bet {} coins on [Game]({})".format(bet.wager, bet.game.game_link)
+                        bet_text += "Bet {} coins on [Game]({})\n".format(bet.wager, bet.game.game_link)
 
                 if len(bet_text) > 0:
                     emb.add_field(name="Bets", value=bet_text)
@@ -118,8 +118,6 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                                - e.g. bb!bet 23456 20
                             bb!bet player_name 20 - places a bet of 20 Coins on AIs team in betid
                                - e.g. bb!bet AI 20
-                            bb!bet betid - displays all current bets for the betid
-                            
                         ''')
     async def bet(self, ctx, team="", wager=""):
         try:
@@ -158,8 +156,13 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 return
 
             if not team_odds.bet_game.game.betting_open:
-                await ctx.send("Betting is no longer open for game {}".format(team_odds.bet_game.gameid))
+                await ctx.send("Betting is no longer open for game {}.".format(team_odds.bet_game.gameid))
                 return
+
+            for token in team_odds.players.split('.'):
+                if player.token == token:
+                    await ctx.send("You cannot bet on yourself. Please choose a different bet.")
+                    return
 
             # we have the game, tournament team and player with the wager...
             # go ahead and create the bet
@@ -167,7 +170,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
             bet = cb.create_new_bet(wager, player, team_odds)
             team_players = get_team_data_no_clan_player_list(team_odds.players.split('.'))
             await ctx.send("{} placed a bet on {} in game {} for {} coins to win {} coins.".format(
-                    ctx.message.author.name, team_players, team_odds.bet_game.game.gameid, bet.wager, bet.winnings))
+                    ctx.message.author.name, team_players, team_odds.bet_game.game.id, bet.wager, bet.winnings))
         except:
             log_exception()
 

@@ -259,10 +259,10 @@ class CLOTBook(models.Model):
             team_text += "[**{}**] {} ({}/{})\n".format(id2, team2, american2, dec2)
             team_text += "[**{}**] {} ({}/{})\n".format(id1, team1, american1, dec1)
 
-        emb.add_field(name="Lines", value=team_text, inline=False)
+        emb.add_field(name="Lines", value=team_text, inline=True)
 
         game_info_text = "[Game Link]({})".format(bet_game.game.game_link)
-        emb.add_field(name="Game Info", value=game_info_text, inline=False)
+        emb.add_field(name="Game Info", value=game_info_text, inline=True)
 
         help_info_text = "bb!bet {} 20 - bet 20 coins on {}\n".format(id1, team1)
         help_info_text += "bb!bet {} 5 - bet 5 coins on {}".format(id2, team2)
@@ -342,7 +342,7 @@ class Bet(models.Model):
     wager = models.IntegerField(default=0)
     player = models.ForeignKey('Player', on_delete=models.CASCADE, blank=True, null=True)
     placed = models.BooleanField(default=False)
-    winnings = models.IntegerField(default=0)
+    winnings = models.FloatField(default=0.0)
 
 class BetAdmin(admin.ModelAdmin):
     raw_id_fields = ['game', 'current_odds']
