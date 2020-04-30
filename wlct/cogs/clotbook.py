@@ -107,6 +107,11 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                     game.create_initial_lines()
                     await ctx.send("Updated initial lines for game {}".format(game.gameid))
                     return
+            elif option.isnumeric():
+                # try to look up the game id
+                game = int(option)
+                bets = Bet.objects.filter(game__id=game)
+
             else:
                 await ctx.send("You must specify an option with this command.")
         except:
@@ -159,10 +164,11 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 await ctx.send("Betting is no longer open for game {}.".format(team_odds.bet_game.gameid))
                 return
 
-            for token in team_odds.players.split('.'):
-                if player.token == token:
-                    await ctx.send("You cannot bet on yourself. Please choose a different bet.")
-                    return
+            for players_team in team_odds.bet_game.players.split('-'):
+                for token in players_team.split('.'):
+                    if player.token == token:
+                        await ctx.send("You cannot bet on a game you are playing in. Please choose a different bet.")
+                        return
 
             # we have the game, tournament team and player with the wager...
             # go ahead and create the bet
