@@ -315,7 +315,7 @@ class CLOTBook(models.Model):
         emb.add_field(name="Lines", value=team_text)
         emb.add_field(name="Results", value=results_text)
 
-        game_info_text = "[Game Link]({})".format(self.game.game_link)
+        game_info_text = "[Game Link]({})".format(bet.game.game_link)
         emb.add_field(name="Game Info", value=game_info_text, inline=False)
         emb.title = "Betting Results for Game {}".format(bet_game.gameid)
 
