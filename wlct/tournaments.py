@@ -3920,6 +3920,42 @@ class PromotionalRelegationLeague(Tournament):
         season = PromotionalRelegationLeagueSeason(pr_tournament=self, name=season_name, created_by=self.created_by, private=True, games_at_once=int(games_at_once))
         season.save()
 
+    def copy_season(self, season_name, copy_season_id):
+        # Get original season to copy
+        orig_season = PromotionalRelegationLeagueSeason.objects.filter(id=int(copy_season_id))
+        # Ensure parameters are correct before copying
+        if not orig_season:
+            raise ValueError("Seasonal with id {} could not be found".format(copy_season_id))
+        # Get the # of games and template from original season
+        games_at_once = orig_season[0].games_at_once
+        template = orig_season[0].season_template
+        description = orig_season[0].description
+
+        # Create a new season given original season
+        season = PromotionalRelegationLeagueSeason(pr_tournament=self, name=season_name, created_by=self.created_by, private=True, games_at_once=games_at_once, season_template=template, game_creation_allowed=False, description=description)
+        season.save()
+        
+        # Iterate through original season divisions and copy to new season
+        divisions = ClanLeagueDivision.objects.filter(pr_season=orig_season[0])
+        for div in divisions:
+            new_division = ClanLeagueDivision(title=div.title, pr_season=season)
+            new_division.save()
+
+            # Iterate through original season teams and copy TT and TP to new season
+            teams = TournamentTeam.objects.filter(clan_league_division=div)
+            for team in teams:
+                new_team = TournamentTeam(clan_league_division=new_division, max_games_at_once=games_at_once, players=team.players, tournament=season)
+                new_team.save()
+                players = TournamentPlayer.objects.filter(team=team)
+                for player in players:
+                    new_player = TournamentPlayer(team=new_team, tournament=season, player=player.player)
+                    new_player.save()
+        # Set player count for season
+        players = TournamentPlayer.objects.filter(tournament=season)
+        if players:
+            season.numbers_players = players.count()
+        season.save()
+
     def get_seasons_editable(self):
         return self.get_seasons_impl(True)
 
@@ -3940,8 +3976,9 @@ class PromotionalRelegationLeague(Tournament):
                 disabled = ""
                 if not season.is_finished and season.has_started:
                     disabled = "disabled"
-                mgmt_data += '&nbsp;<button type="button" class="btn btn-md btn-danger" id="remove-pr-season" data-id="{}" {}>Delete Season</button>'.format(season.id, disabled)
-            season_data += '<tr><td>{}</td><td>{}</td></tr>'.format(season.name, mgmt_data)
+                mgmt_data += '&nbsp;<button type="button" class="btn btn-md btn-danger remove-pr-season" id="remove-pr-season-{}" data-id="{}" {}>Delete Season</button>'.format(season.id, season.id, disabled)
+                mgmt_data += '&nbsp;<button type="button" class="btn btn-md btn-success copy-pr-season" id="copy-pr-season-{}" data-id="{}">Copy Season</button>'.format(season.id, season.id)
+            season_data += '<tr><td id="season-{}">{}</td><td>{}</td></tr>'.format(season.id, season.name, mgmt_data)
         season_data += '</table></div></div>'
 
         return season_data
