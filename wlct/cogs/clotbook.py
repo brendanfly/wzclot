@@ -65,7 +65,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 player = player[0]
                 cb = get_clotbook()
                 user = self.bot.get_user(discord_user.memberid)
-                emb = self.bot.get_embed()
+                emb = self.bot.get_embed(user)
                 emb.title = "{}'s last 10 bets".format(user.name)
                 bets = Bet.objects.filter(player=player)
                 total_bets = bets.count()
