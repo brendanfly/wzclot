@@ -70,6 +70,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 bets = Bet.objects.filter(player=player)
                 total_bets = bets.count()
                 bets = bets[:10]
+                bet_text = ""
                 for bet in bets:
                     if bet.placed:
                         bet_text = "[Game]({}) - Bet {} coins, and".format(bet.game.game_link)
