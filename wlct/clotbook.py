@@ -250,11 +250,11 @@ class CLOTBook(models.Model):
             id2 = 0
 
         if int(american1) < int(american2):
-            team_text += "[**{}**] {} ({}/{})\n".format(id1, team1, american1, dec1)
-            team_text += "[**{}**] {} ({}/{})\n".format(id2, team2, american2, dec2)
+            team_text += "[ID: **{}**] {} ({}/{})\n".format(id1, team1, american1, dec1)
+            team_text += "[ID: **{}**] {} ({}/{})\n".format(id2, team2, american2, dec2)
         else:
-            team_text += "[**{}**] {} ({}/{})\n".format(id2, team2, american2, dec2)
-            team_text += "[**{}**] {} ({}/{})\n".format(id1, team1, american1, dec1)
+            team_text += "[ID: **{}**] {} ({}/{})\n".format(id2, team2, american2, dec2)
+            team_text += "[ID: **{}**] {} ({}/{})\n".format(id1, team1, american1, dec1)
 
         emb.add_field(name="Lines", value=team_text, inline=True)
         emb.title = "Opening lines for Game {}\n[Game Link]({})".format(bet_game.gameid, bet_game.game.game_link)
