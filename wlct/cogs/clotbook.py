@@ -72,14 +72,14 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 bets = bets[:10]
                 bet_text = ""
                 for bet in bets:
-                    if bet.placed:
+                    if bet.game.is_finished:
                         bet_text = "[Game Link]({}) - Bet {} coins, ".format(bet.game.game_link, bet.wager)
                         if bet.winnings == 0:
                             bet_text += "and lost bet\n"
                         else:
                             bet_text += "and won {} coins\n".format(bet.winnings)
                     else:
-                        bet_text += "Bet {} coins on [Game]({})\n".format(bet.wager, bet.game.game_link)
+                        bet_text += "Bet {} coins on [Game]({}) to win {}\n".format(bet.wager, bet.game.game_link, bet.winnings)
 
                 if len(bet_text) > 0:
                     emb.add_field(name="Bets", value=bet_text)
