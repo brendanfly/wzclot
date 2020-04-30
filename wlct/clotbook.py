@@ -265,7 +265,7 @@ class CLOTBook(models.Model):
         emb.add_field(name="Game Info", value=game_info_text, inline=False)
 
         help_info_text = "bb!bet {} 20 - bet 20 coins on {}\n".format(id1, team1)
-        help_info_text += "bb!bet {} 20 - bet 5 coins on {}".format(id2, team2)
+        help_info_text += "bb!bet {} 5 - bet 5 coins on {}".format(id2, team2)
         emb.add_field(name="Betting Help", value=help_info_text, inline=False)
         emb.title = "Opening lines for Game {}".format(bet_game.gameid)
 

@@ -86,7 +86,6 @@ class Tasks(commands.Cog, name="tasks"):
         odds_created_sent = []
         odds_finished_sent = []
         cb = get_clotbook()
-
         try:
             for cl in channel_links:
                 channel = self.bot.get_channel(cl.channelid)
@@ -99,8 +98,6 @@ class Tasks(commands.Cog, name="tasks"):
                         odds_created_sent.append(bo)
 
                     bet_odds = BetGameOdds.objects.filter(sent_finished_notification=False, game__is_finished=True)
-                    if bet_odds.count() == 0:
-                        return
                     for bo in bet_odds:
                         emb = self.bot.get_default_embed()
                         emb = cb.get_bet_results_card(bo, emb)
