@@ -37,6 +37,31 @@
                     Only)
                 </button><hr>
                 {% endif %}
+    {% if tournament.created_by.token == request.session.token %}
+            <!-- Modal to display after pressing the 'copy season' button on the P/R league overview page -->
+            <div class="modal" tabindex="-1" role="dialog" id="copy-season-modal">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="copy-season-title"></h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="copy_season_request_text" style="overflow-y:auto;">
+                            <div class="input-group">
+                                <label class="col-form-label" for="copy-season-name-text"><b>Season Name: &nbsp;</b></label>
+                                <input type="text" class="form-control mb-4" placeholder="Season Name" name="copy-season-name" id="copy-season-name" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" id="copy-season-button" data="">Copy Season</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    {% endif %}
 
     {% if tournament.created_by.token == request.session.token and not tournament.has_started %}
             <div class="card gedf-card span8">

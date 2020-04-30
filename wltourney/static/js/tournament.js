@@ -342,19 +342,32 @@ function update_division(type, obj)
         });
 }
 
+function show_copy_season_modal(obj)
+{
+    let seasonName = $(`#season-${obj.data('id')}`).html();
+    $('#copy-season-modal').modal('show');
+    $('#copy-season-title').text(`Copy ${seasonName}?`);
+    $('#copy-season-button').data('id', obj.data('id'));
+}
+
 function update_pr_season(obj, type)
 {
     var tournamentid = $("#tournamentid").val();
     var old_text_value = obj.text();
-    var data = {"tournamentid": tournamentid, "season-name": $("#season-name").val(), "games-at-once": $("#games-at-once").val(), "type" : type};
+    var data = {"tournamentid": tournamentid, "type" : type};
 
     if (type == "add")
     {
         show_spinning(obj, "Creating New Season...");
+        data["season-name"] = $("#season-name").val();
+        data["games-at-once"] = $("#games-at-once").val();
     }
     else if (type == "remove")
     {
         show_spinning(obj, "Deleting Season...");
+        data["season_id"] = obj.data('id');
+    } else if (type == "copy") {
+        data["season-name"] = $("#copy-season-name").val();
         data["season_id"] = obj.data('id');
     }
     var url = "/pr/seasons/update/";
@@ -368,6 +381,8 @@ function update_pr_season(obj, type)
                 // populate the new list of seasons
                 $("#pr-season-tab").html(data.season_data);
                 $("#season-name").val('');
+                $("#copy-season-modal").modal('hide');
+                $("#copy-season-name").val('');
             }
             else
             {
@@ -396,9 +411,19 @@ function hook_pr_buttons()
         update_pr_season(jQuery(this), "add");
     });
 
-    $("#remove-pr-season").on('click', function()
+    $(".remove-pr-season").on('click', function()
     {
         update_pr_season(jQuery(this), "remove");
+    });
+
+    $(".copy-pr-season").on('click', function()
+    {
+        show_copy_season_modal(jQuery(this));
+    });
+
+    $("#copy-season-button").on('click', function()
+    {
+        update_pr_season(jQuery(this), "copy");
     });
 
     $("button[id^=division-add-team").on('click', function()

@@ -511,6 +511,8 @@ def pr_update_season(request):
                             tournament.create_season(request.POST['season-name'], request.POST['games-at-once'])
                         elif request.POST['type'] == "remove":
                             tournament.remove_season(request.POST['season_id'])
+                        elif request.POST['type'] == "copy":
+                            tournament.copy_season(request.POST['season-name'], request.POST['season_id']);
 
                         context.update({'success': 'true'})
                         context.update({'season_data': tournament.get_seasons_editable()})
