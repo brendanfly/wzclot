@@ -141,21 +141,22 @@ class CLOTBook(models.Model):
 
     def finish_game(self, game):
         # pay out all bets for this game
-        if game.winning_team.id == int(game.teams.split('.')[0]):
-            winning_players = game.players.split('-')[0]
-        else:
-            winning_players = game.players.split('-')[1]
-
-        bets = Bet.objects.filter(game=game)
-        for bet in bets:
-            if bet.players == winning_players:
-                bet.winnings = self.calculate_decimal_odds_winnings(bet.odds.decimal_odds, bet.wager)
+        if game.winning_team and game.is_finished:
+            if game.winning_team.id == int(game.teams.split('.')[0]):
+                winning_players = game.players.split('-')[0]
             else:
-                bet.winnings = 0
-            bet.save()
+                winning_players = game.players.split('-')[1]
 
-            bet.player.bankroll += bet.winnings
-            bet.player.save()
+            bets = Bet.objects.filter(game=game)
+            for bet in bets:
+                if bet.players == winning_players:
+                    bet.winnings = self.calculate_decimal_odds_winnings(bet.odds.decimal_odds, bet.wager)
+                else:
+                    bet.winnings = 0
+                bet.save()
+
+                bet.player.bankroll += bet.winnings
+                bet.player.save()
 
 
     def create_new_bet(self, wager, player, team_odds):
