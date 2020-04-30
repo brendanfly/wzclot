@@ -280,24 +280,6 @@ class CLOTBook(models.Model):
         team1 = get_team_data_no_clan_player_list(bet_game.players.split('-')[0].split('.'))
         team2 = get_team_data_no_clan_player_list(bet_game.players.split('-')[1].split('.'))
 
-        # grab both the american and decimal odds
-        american1 = bet_game.american_odds.split('!')[0]
-        american1 = self.format_american(int(american1))
-        american2 = bet_game.american_odds.split('!')[1]
-        american2 = self.format_american(int(american2))
-
-        team_odds1 = BetTeamOdds.objects.filter(bet_game=bet_game, players_index=0)
-        if team_odds1:
-            id1 = team_odds1[0].id
-        else:
-            id1 = 0
-
-        team_odds2 = BetTeamOdds.objects.filter(bet_game=bet_game, players_index=1)
-        if team_odds2:
-            id2 = team_odds2[0].id
-        else:
-            id2 = 0
-
         if bet_game.game.winning_team.id == int(bet_game.game.teams.split('.')[0]):
             team_text = "{} *defeats* {}".format(team1, team2)
         else:
