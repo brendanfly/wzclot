@@ -2146,6 +2146,9 @@ class GroupStageTournament(Tournament):
             log_tournament("Finished with all round robin tournaments, proceeding to create the knockout tournament", self)
 
             if self.knockout_tournament is not None and self.knockout_tournament.id > 0:
+                if self.knockout_tournament.is_finished:
+                    self.is_finished = True
+                    self.save()
                 return
 
             # seeded data fed into the tournament needs to be in the following format
