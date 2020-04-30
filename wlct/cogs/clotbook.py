@@ -99,7 +99,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                         ''')
     async def bet(self, ctx, option="", option2="", option3=""):
         try:
-            discord_user = await database_sync_to_async(DiscordUser.objects.filter(memberid=ctx.message.author.id))
+            discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
             if not discord_user:
                 print("No discord user present...creating one")
                 discord_user = DiscordUser(memberid=ctx.message.author.id)
@@ -108,7 +108,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 print("Found a discord user...using that")
                 discord_user = discord_user[0]
 
-            player = await database_sync_to_async(Player.objects.filter(discord_member=discord_user))
+            player = Player.objects.filter(discord_member=discord_user)
             if not player:
                 print("Could not find player {} in the database with discord_user.id {}".format(ctx.message.author.name, ctx.message.author.id))
                 await ctx.send(self.bot.discord_link_text)
@@ -121,7 +121,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
             elif option.isnumeric():
                 # try to look up the game first, then parse the rest of the arguments
                 gameid = int(option)
-                game = await database_sync_to_async(TournamentGame.objects.filter(gameid=gameid))
+                game = TournamentGame.objects.filter(gameid=gameid)
                 if not game:
                     await ctx.send("That game cannot be found on the CLOT. Please enter a valid gameid.")
                     return
