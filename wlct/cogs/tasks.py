@@ -90,10 +90,10 @@ class Tasks(commands.Cog, name="tasks"):
         try:
             for cl in channel_links:
                 channel = self.bot.get_channel(cl.channelid)
-                emb = self.bot.get_default_embed()
                 if hasattr(self.bot, 'uptime') and channel:
                     bet_odds = BetGameOdds.objects.filter(sent_created_notification=False, initial=True).order_by('created_time')
                     for bo in bet_odds:
+                        emb = self.bot.get_default_embed()
                         emb = cb.get_initial_bet_card(bo, emb)
                         await channel.send(embed=emb)
                         odds_created_sent.append(bo)
@@ -102,8 +102,10 @@ class Tasks(commands.Cog, name="tasks"):
                     if bet_odds.count() == 0:
                         return
                     for bo in bet_odds:
+                        emb = self.bot.get_default_embed()
                         emb = cb.get_bet_results_card(bo, emb)
-                        await channel.send(embed=emb)
+                        if emb:
+                            await channel.send(embed=emb)
                         odds_finished_sent.append(bo)
         except Exception:
             log_exception()

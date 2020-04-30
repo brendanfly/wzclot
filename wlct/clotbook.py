@@ -264,9 +264,8 @@ class CLOTBook(models.Model):
     def get_bet_results_card(self, bet_game, emb):
         bets = Bet.objects.filter(game=bet_game.game, winnings__gt=0)
         if bets.count() == 0:
-            return
+            return None
 
-        emb = self.bot.get_default_embed()
         # grab the player list
         team1 = get_team_data_no_clan_player_list(bet_game.players.split('-')[0].split('.'))
         team2 = get_team_data_no_clan_player_list(bet_game.players.split('-')[1].split('.'))
