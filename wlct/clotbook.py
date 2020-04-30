@@ -298,13 +298,10 @@ class CLOTBook(models.Model):
         else:
             id2 = 0
 
-        team_text = ""
-        if int(american1) < int(american2):
-            team_text += "[**{}**] {}\n".format(id1, team1)
-            team_text += "[**{}**] {}\n".format(id2, team2)
+        if bet_game.game.winning_team.id == int(bet_game.game.teams.split('.')[0]):
+            team_text = "{} *defeats* {}".format(team1, team2)
         else:
-            team_text += "[**{}**] {}\n".format(id2, team2)
-            team_text += "[**{}**] {}\n".format(id1, team1)
+            team_text = "{} *defeats* {}".format(team2, team1)
 
         results_text = ""
         for bet in bets:
