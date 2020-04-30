@@ -157,6 +157,10 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 await ctx.send("You only have {} coins to bet with. Please use a smaller wager.".format(player.bankroll))
                 return
 
+            if not team_odds.bet_game.game.betting_open:
+                await ctx.send("Betting is no longer open for game {}".format(team_odds.bet_game.gameid))
+                return
+
             # we have the game, tournament team and player with the wager...
             # go ahead and create the bet
             cb = get_clotbook()

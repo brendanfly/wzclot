@@ -257,7 +257,7 @@ class CLOTBook(models.Model):
             team_text += "[**{}**] {} ({}/{})\n".format(id1, team1, american1, dec1)
 
         emb.add_field(name="Lines", value=team_text, inline=True)
-        emb.title = "Opening lines for Game {}".format(bet_game.gameid)
+        emb.title = "Opening lines for Game {}\n[Game Link]({})".format(bet_game.gameid, bet_game.game.game_link)
 
         return emb
 
