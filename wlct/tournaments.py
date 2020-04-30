@@ -3183,6 +3183,10 @@ class TournamentGame(models.Model):
             else:
                 log_tournament("finish_game(): Cannot find game entry #2 for team {}".format(team2), self.tournament)
 
+            # handle any clotbook updates
+            cb = get_clotbook()
+            cb.finish_game(self)
+
             self.game_finished_time = timezone.now()
             self.save()
             self.handle_tournament_player_updates()

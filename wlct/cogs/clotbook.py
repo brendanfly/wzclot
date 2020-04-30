@@ -71,7 +71,6 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 total_bets = bets.count()
                 bets = bets[:10]
                 for bet in bets:
-                    bet_text = ""
                     if bet.placed:
                         bet_text = "[Game]({}) - Bet {} coins, and".format(bet.game.game_link)
                         if bet.winnings == 0:
@@ -85,7 +84,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                     emb.add_field(name="Bets", value=bet_text)
 
                 info_text = "Total Bets: {}\nBankroll: {} coins".format(total_bets, player.bankroll)
-                emb.add_field(name="Info", value="info_text")
+                emb.add_field(name="Info", value=info_text)
                 await ctx.send(embed=emb)
 
             elif option == "initial":
@@ -113,10 +112,10 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
 
     @commands.command(brief="Place your wagers, and view existing bets on the CLOTBook",
                       usage='''
-                            bb!bet gameid teamid 20 - places a bet of 20 Coins on teamid in gameid
-                               - e.g. bb!bet 5346 23456 20
-                            bb!bet 5346 player_name 20 - places a bet of 20 Coins on AIs team in gameid
-                               - e.g. bb!bet 5346 AI 20
+                            bb!bet teamid 20 - places a bet of 20 Coins on teamid
+                               - e.g. bb!bet 23456 20
+                            bb!bet player_name 20 - places a bet of 20 Coins on AIs team in gameid
+                               - e.g. bb!bet AI 20
                             bb!bet gameid - displays all current bets for this gameid
                             
                         ''')
@@ -142,20 +141,19 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 await ctx.send("Game {} cannot be found on the CLOT. Please enter a valid gameid.".format(gameid))
                 return
 
-            # try to look up the game first, then parse the rest of the arguments
             gameid = int(gameid)
             game = TournamentGame.objects.filter(pk=gameid)
             if not game:
-                await ctx.send("Game {} cannot be found on the CLOT. Please enter a valid gameid.".format(gameid))
-                return
-
+                await ctx.send("Game {} cannot be found on the CLOT. Please enter a valid gameid.")
+            # try to look up the game first, then parse the rest of the arguments
             if not game.betting_open:
                 await ctx.send("Betting is closed for game {}.".format(gameid))
                 return
 
             if not team.isnumeric():
-                await ctx.send("{} is not a valid team id. Please enter a valid teamid.".format(team))
+                await ctx.send("{} is not a valid team id. Please enter a valid teamid. Betting via typing in a player's name isn't supported yet.".format(team))
                 return
+
 
             if not wager.isnumeric():
                 await ctx.send("{} is not a valid wager. Please enter a valid wager amount.".format(wager))
@@ -180,10 +178,6 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 bet = cb.create_new_bet(self, wager, player, game, team)
                 await ctx.send("{}, bet placed on team {} in game {} for {} coins to win {} coins.".format(
                         ctx.message.author.name, team, gameid, bet.wager, bet.winnings))
-
-            if discord_user.memberid not in self.bets:
-                self.bets[discord_user.memberid].append(message)
-
         except:
             log_exception()
 
