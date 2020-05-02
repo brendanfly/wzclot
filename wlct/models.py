@@ -31,20 +31,24 @@ class DiscordChannelTournamentLink(models.Model):
         player_filters = DiscordChannelPlayerFilter.objects.filter(link=self)
         clan_filters = DiscordChannelClanFilter.objects.filter(link=self)
 
+        # If no filters found, game can be used
         if not player_filters and not clan_filters:
             return True
 
         player_tokens = game.get_player_tokens()
         players = Player.objects.none()
 
+        # Get all players to compare with filters
         for team in player_tokens:
             for player in team:
-                players |= Player.objects.filter(token=str(player))
+                players |= Player.objects.filter(token=player)
 
+        # Check if any filters pass against the player/clans in game
         for player in players:
-            player_filters_found = DiscordChannelPlayerFilter(link=self, player=player)
-            clan_filters_found = DiscordChannelClanFilter(link=self, clan=player.clan)
+            player_filters_found = DiscordChannelPlayerFilter.objects.filter(link=self, player=player)
+            clan_filters_found = DiscordChannelClanFilter.objects.filter(link=self, clan=player.clan)
 
+            # Game passes filter if any results are returned
             if player_filters_found or clan_filters_found:
                 return True
         return False

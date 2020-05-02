@@ -3293,18 +3293,17 @@ class TournamentGame(models.Model):
         else:
             log("Skipping game {} as there is no winning team".format(self.id), LogLevel.game)
 
+    # Returns a list of lists of player tokens
+    # Each sublist pertains to team in same order as game.players/game.teams
     def get_player_tokens(self):
-        if game.players:
+        if self.players:
             team_tokens = self.players.split("-")
             players = []
 
             for team in team_tokens:
                 players.append(team.split("."))
-
-            for token in tokens:
-                players |= Player.objects.filter(token=token)
         else:
-            teams = game.teams.split(".")
+            teams = self.teams.split(".")
             players = []
 
             for team in teams:
