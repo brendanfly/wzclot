@@ -155,6 +155,8 @@ class CLOTBook(models.Model):
                     bet.winnings = 0
                 bet.save()
 
+                if bet.winnings != 0:
+                    bet.winnings += bet.wager
                 bet.player.bankroll += bet.winnings
                 bet.player.save()
 
