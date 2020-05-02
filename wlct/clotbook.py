@@ -150,7 +150,7 @@ class CLOTBook(models.Model):
             bets = Bet.objects.filter(game=game)
             for bet in bets:
                 if bet.players == winning_players:
-                    bet.winnings = self.calculate_decimal_odds_winnings(bet.odds.decimal_odds, bet.wager)
+                    bet.winnings = self.calculate_decimal_odds_winnings(bet.decimal_odds, bet.wager)
                 else:
                     bet.winnings = 0
                 bet.save()
