@@ -391,23 +391,18 @@ class Tasks(commands.Cog, name="tasks"):
 
 class DjangoORMHelpers():
 
-    @database_sync_to_async
     def get_critical_errors(self):
         return list(Logger.objects.filter(level=LogLevel.critical, bot_seen=False))
 
-    @database_sync_to_async
     def get_tournament_updates(self):
         return list(DiscordTournamentUpdate.objects.filter(bot_send=False))
 
-    @database_sync_to_async
     def get_channel_tournament_links(self, tournament):
         return list(DiscordChannelTournamentLink.objects.filter(tournament=tournament))
 
-    @database_sync_to_async
     def get_rtl_games(self, ladder):
         return list(TournamentGame.objects.filter(tournament=ladder, is_finished=False, mentioned=False))
 
-    @database_sync_to_async
     def get_game_logs_for_tournament(self, tournament, time_since):
         return list(TournamentGame.objects.filter(is_finished=True, tournament=tournament, game_finished_time__gt=(time_since), game_log_sent=False))
 
