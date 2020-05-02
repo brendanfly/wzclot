@@ -1,9 +1,10 @@
 import discord
-from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink, TournamentAdministrator
+from wlct.models import Clan, Player, DiscordUser, DiscordChannelClanFilter, DiscordChannelPlayerFilter, DiscordChannelTournamentLink, TournamentAdministrator
 from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry
 from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
 from django.conf import settings
+from django.db.models import Q
 from wlct.cogs.common import is_clotadmin, has_tournament_admin_access
 
 
@@ -281,6 +282,175 @@ class Clot(commands.Cog, name="clot"):
             log_exception()
             await ctx.send("An error has occurred and was unable to process the command.")
 
+    @commands.command(
+        brief="Creates a filter for game logs to only show games fulfilling criteria.",
+        usage='''
+                Hint: Any option with [] is optional. Missing tournament_ids will apply filter to all games
+                bb!filter -a -c clan_id [tournament_id] - adds a filter for the channel to show games from clan with <clan_id>
+                bb!filter -r -c clan_id [tournament_id] - adds a filter for the channel to show games from clan with <clan_id>
+                bb!filter -a -p player_token [tournament_id] - adds a filter for the channel to show games from player with <player_token>
+                bb!filter -r -p player_token [tournament_id] - adds a filter for the channel to show games from player with <player_token>
+                ''',
+        category="clot")
+    async def filter(self, ctx, arg="invalid_cmd", arg2="invalid_cmd", id="invalid_id", tournament_id=""):
+        try:
+            discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
+            if not discord_user:
+                discord_user = DiscordUser(memberid=ctx.message.author.id)
+                discord_user.save()
+            else:
+                discord_user = discord_user[0]
+
+            if arg == "invalid_cmd" or arg != "-a" and arg != "-r":
+                await ctx.send("Please enter a valid option (-a or -r). Use ``bb!help filter`` to see commands.")
+                return
+
+            if arg2 == "invalid_cmd" or arg2 != "-c" and arg2 != "-p":
+                await ctx.send("Please enter a valid option (-c or -p). Use ``bb!help filter`` to see commands.")
+                return
+
+            if id == "invalid_id" or not id.isnumeric():
+                await ctx.send("Please enter a valid id. Use ``bb!help filter`` to see commands.")
+                return
+
+            if tournament_id and not tournament_id.isnumeric():
+                await ctx.send("Please enter a valid tournament ID (or exclude to filter all applicable games). Use ``bb!help filter`` to see commands.")
+                return
+
+            # we must find the tournament id, and the player associated with the discord user must be the creator
+            # validate that here
+            if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
+                # user is a server admin, process to create the channel -> tournament link
+                if tournament_id:
+                    tournament = find_tournament_by_id(int(tournament_id))
+                    if not tournament:
+                        await ctx.send("Unable to find tournament with id {}. Use ``bb!tournaments`` to see list of tournaments.".format(tournament_id))
+                        return
+
+                    discord_channel_link = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id,
+                                                                                       tournament=tournament)
+                else:
+                    discord_channel_link = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id)
+
+                if not discord_channel_link:
+                    await ctx.send("There does not exist a link in this channel. Use ``bb!help linkt`` to see commands to link.")
+                    return
+
+                if arg == "-a":
+                    for cl in discord_channel_link:
+
+                        # if a private tournament, the person sending this command must be linked and be the creator
+                        if cl.tournament.private:
+                            player = Player.objects.filter(discord_member__memberid=ctx.message.author.id)
+                            if player:
+                                player = player[0]
+                                if hasattr(cl.tournament, 'parent_tournament'):
+                                    if cl.tournament.parent_tournament:
+                                        print("Tournament Parent ID {}".format(cl.tournament.parent_tournament.id))
+                                    if player.id != cl.tournament.created_by.id and (cl.tournament.id != 168) and (
+                                            cl.tournament.id != 109) and (cl.tournament.id != 167) and (
+                                            cl.tournament.parent_tournament and cl.tournament.parent_tournament.id != 51):  # hard code this for clan league
+                                        await ctx.send(
+                                            "The creator of the tournament is the only one who can create filters for private tournaments.")
+                                        return
+                                else:
+                                    # no parent tournament, must be creator
+                                    if player.id != cl.tournament.created_by.id:
+                                        await ctx.send(
+                                            "The creator of the tournament is the only one who can create filters for private tournaments.")
+                                        return
+                            else:
+                                await ctx.send(
+                                    "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+                                return
+
+                        if arg2 == "-c":
+                            clan = Clan.objects.filter(id=id)
+                            if not clan:
+                                await ctx.send("Unable to find clan with id {}. Use ``bb!clans`` to see list of clans.".format(id))
+                                return
+                            clan = clan[0]
+                            discord_channel_filter = DiscordChannelClanFilter.objects.filter(link=cl, clan=clan)
+                            if discord_channel_filter:
+                                await ctx.send("Filter for clan {} already exists.".format(clan.name))
+                                return
+
+                            new_filter = DiscordChannelClanFilter(link=cl, clan=clan)
+                        else:
+                            player = Player.objects.filter(token=id)
+                            if not player:
+                                await ctx.send(
+                                    "Unable to find player with token {}.".format(id))
+                                return
+                            player = player[0]
+                            discord_channel_filter = DiscordChannelPlayerFilter.objects.filter(link=cl, player=player)
+                            if discord_channel_filter:
+                                await ctx.send("Filter for {} already exists.".format(player.name))
+                                return
+
+                            new_filter = DiscordChannelPlayerFilter(link=cl, player=player)
+                        new_filter.save()
+                else:
+                    total_filters_removed = 0
+                    for cl in discord_channel_link:
+
+                        # if a private tournament, the person sending this command must be linked and be the creator
+                        if cl.tournament.private:
+                            player = Player.objects.filter(discord_member__memberid=ctx.message.author.id)
+                            if player:
+                                player = player[0]
+                                if hasattr(cl.tournament, 'parent_tournament'):
+                                    if cl.tournament.parent_tournament:
+                                        print("Tournament Parent ID {}".format(cl.tournament.parent_tournament.id))
+                                    if player.id != cl.tournament.created_by.id and (cl.tournament.id != 168) and (
+                                            cl.tournament.id != 109) and (cl.tournament.id != 167) and (
+                                            cl.tournament.parent_tournament and cl.tournament.parent_tournament.id != 51):  # hard code this for clan league
+                                        await ctx.send(
+                                            "The creator of the tournament is the only one who can create filters for private tournaments.")
+                                        return
+                                else:
+                                    # no parent tournament, must be creator
+                                    if player.id != cl.tournament.created_by.id:
+                                        await ctx.send(
+                                            "The creator of the tournament is the only one who can create filters for private tournaments.")
+                                        return
+                            else:
+                                await ctx.send(
+                                    "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+                                return
+
+                        if arg2 == "-c":
+                            clan = Clan.objects.filter(id=id)
+                            if not clan:
+                                await ctx.send(
+                                    "Unable to find clan with id {}. Use ``bb!clans`` to see list of clans.".format(id))
+                                return
+                            clan = clan[0]
+                            discord_channel_filter = DiscordChannelClanFilter.objects.filter(link=cl, clan=clan)
+                        else:
+                            player = Player.objects.filter(token=id)
+                            if not player:
+                                await ctx.send(
+                                    "Unable to find player with token {}.".format(id))
+                                return
+                            player = player[0]
+                            discord_channel_filter = DiscordChannelClanFilter.objects.filter(link=cl, player=player)
+                        if discord_channel_filter:
+                            discord_channel_filter[0].delete()
+                            total_filters_removed += 1
+                    if total_filters_removed:
+                        await ctx.send("Successfully removed the filter for {} links".format(total_filters_removed))
+                    else:
+                        await ctx.send("Unable to find any filters to remove")
+
+            else:
+                await ctx.send("Sorry, you must be a server administrator to use this command.")
+                return
+        except:
+            log_exception()
+            await ctx.send("An error has occurred and was unable to process the command.")
+
+
     '''
     Sends messages containing logs to the channel that the admin used to invoke the command.
     '''
@@ -489,6 +659,60 @@ class Clot(commands.Cog, name="clot"):
             await ctx.send("An error has occurred and was unable to process the command.")
 
     @commands.command(
+        brief="Shows all links and filters for the channel.",
+        usage='bb!links - List the links and filters for the channel',
+        category="clot")
+    async def links(self, ctx):
+        try:
+            discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
+            if not discord_user:
+                discord_user = DiscordUser(memberid=ctx.message.author.id)
+                discord_user.save()
+            else:
+                discord_user = discord_user[0]
+
+            discord_channel_links = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id)
+            if not discord_channel_links:
+                await ctx.send("No links were found for this channel")
+                return
+
+            clan_filters = DiscordChannelClanFilter.objects.none()
+            player_filters = DiscordChannelPlayerFilter.objects.none()
+            message_data = "Tournament Links:\n"
+            for cl in discord_channel_links:
+                if len(message_data) > 1500:
+                    await ctx.send(message_data)
+                    message_data = ""
+
+                message_data += "{} (ID: {})\n".format(cl.tournament.name, cl.tournament.id)
+
+                clan_filters |= DiscordChannelClanFilter.objects.filter(link=cl)
+                player_filters |= DiscordChannelPlayerFilter.objects.filter(link=cl)
+
+            message_data += "\nClan Filters:\n"
+            for cf in clan_filters:
+                if len(message_data) > 1500:
+                    await ctx.send(message_data)
+                    message_data = ""
+
+                message_data += "{} (ID: {}) | {} (ID: {})\n".format(cf.clan.name, cf.clan.id, cf.link.tournament.name, cf.link.tournament.id)
+
+            message_data += "\nPlayer Filters:\n"
+            for pf in player_filters:
+                if len(message_data) > 1500:
+                    await ctx.send(message_data)
+                    message_data = ""
+
+                message_data += "{} (Token: {}) | {} (ID: {})\n".format(pf.player.name, pf.player.token, pf.link.tournament.name, pf.link.tournament.id)
+
+            if message_data:
+                await ctx.send(message_data)
+
+        except:
+            log_exception()
+            await ctx.send("An error has occurred and was unable to process the command.")
+
+    @commands.command(
         brief="Links your discord account with your CLOT/Warzone account for use with creating games and bot ladders.",
         usage="bot_token_from_clot_site",
         category="clot")
@@ -692,7 +916,8 @@ class Clot(commands.Cog, name="clot"):
                         if current_player % 10 == 0:
                             emb.add_field(name=field_name, value=player_data)
                             player_data = ""  # reset this for the next embed
-                    emb.add_field(name=field_name, value=player_data)
+                    if field_name and player_data:
+                        emb.add_field(name=field_name, value=player_data)
                     await ctx.send(embed=emb)
                 else:
                     await ctx.send("No players are registered on the CLOt for {}".format(clan_obj[0].name))

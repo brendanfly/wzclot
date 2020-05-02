@@ -3293,6 +3293,29 @@ class TournamentGame(models.Model):
         else:
             log("Skipping game {} as there is no winning team".format(self.id), LogLevel.game)
 
+    def get_player_tokens(self):
+        if game.players:
+            team_tokens = self.players.split("-")
+            players = []
+
+            for team in team_tokens:
+                players.append(team.split("."))
+
+            for token in tokens:
+                players |= Player.objects.filter(token=token)
+        else:
+            teams = game.teams.split(".")
+            players = []
+
+            for team in teams:
+                tplayers = TournamentPlayer.objects.filter(team__id=int(team))
+
+                team_players = []
+                for tplayer in tplayers:
+                    team_players.append(tplayer.player.token)
+                players.append(team_players)
+        return players
+
 # Object to represent a tournament player
 # A tournament player is a single entity in a tournament team, and included in a team size=1
 # Each player belongs to a tournament and a corresponding WZ player
