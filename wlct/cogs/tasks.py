@@ -26,7 +26,7 @@ class Tasks(commands.Cog, name="tasks"):
     async def handle_rtl_tasks(self):
         ladders = RealTimeLadder.objects.all()
         for ladder in ladders:
-            games = await self.orm_helpers.get_rtl_games(ladder)
+            games = self.orm_helpers.get_rtl_games(ladder)
             # cache the game data + link for use with the embed
             emb = discord.Embed(color=self.bot.embed_color)
             emb.set_author(icon_url=self.bot.user.avatar_url, name="WarzoneBot")
@@ -126,7 +126,7 @@ class Tasks(commands.Cog, name="tasks"):
                 # only look at games that have finished times greater than when the bot started
                 game_log_text = ""
                 if hasattr(self.bot, 'uptime') and channel:
-                    games = await self.orm_helpers.get_game_logs_for_tournament(cl.tournament, self.bot.uptime-datetime.timedelta(days=3))
+                    games = self.orm_helpers.get_game_logs_for_tournament(cl.tournament, self.bot.uptime-datetime.timedelta(days=3))
                     if len(games) > 0:
                         log_bot_msg("Found {} games to log in channel {}".format(len(games), channel.name))
                     for game in games:
@@ -261,7 +261,7 @@ class Tasks(commands.Cog, name="tasks"):
                 self.bot.cache_queue.pop(i)
 
     async def handle_critical_errors(self):
-        logs = await self.orm_helpers.get_critical_errors()
+        logs = self.orm_helpers.get_critical_errors()
         if logs:
             for log in logs:
                 for cc in self.bot.critical_error_channels:
@@ -274,10 +274,10 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_discord_tournament_updates(self):
         try:
-            updates = await self.orm_helpers.get_tournament_updates()
+            updates = self.orm_helpers.get_tournament_updates()
             for u in updates:
                 # look up the tournament, and get all channel links for that tournament
-                channel_links = await self.orm_helpers.get_channel_tournament_links(u.tournament)
+                channel_links = self.orm_helpers.get_channel_tournament_links(u.tournament)
                 for c in channel_links:
                     channel = self.bot.get_channel(c.channelid)
                     if channel:
