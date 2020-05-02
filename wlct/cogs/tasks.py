@@ -26,7 +26,7 @@ class Tasks(commands.Cog, name="tasks"):
     async def handle_rtl_tasks(self):
         ladders = RealTimeLadder.objects.all()
         for ladder in ladders:
-            games = await self.orm_helpers.get_rtl_games(ladder)
+            games = self.orm_helpers.get_rtl_games(ladder)
             # cache the game data + link for use with the embed
             emb = discord.Embed(color=self.bot.embed_color)
             emb.set_author(icon_url=self.bot.user.avatar_url, name="WarzoneBot")
@@ -103,14 +103,15 @@ class Tasks(commands.Cog, name="tasks"):
                     bet_odds = BetGameOdds.objects.filter(sent_finished_notification=False, game__is_finished=True)
                     print("Found {} finished bet game odds".format(bet_odds.count()))
                     for bo in bet_odds:
-                        if not cl.does_game_pass_filter(bo.game):
+                        if bo.game.winning_team:
+                            if not cl.does_game_pass_filter(bo.game):
+                                odds_finished_sent.append(bo)
+                                continue
+                            emb = self.bot.get_default_embed()
+                            emb = cb.get_bet_results_card(bo, emb)
+                            if emb:
+                                await channel.send(embed=emb)
                             odds_finished_sent.append(bo)
-                            continue
-                        emb = self.bot.get_default_embed()
-                        emb = cb.get_bet_results_card(bo, emb)
-                        if emb:
-                            await channel.send(embed=emb)
-                        odds_finished_sent.append(bo)
         except Exception:
             log_exception()
         finally:
@@ -131,7 +132,7 @@ class Tasks(commands.Cog, name="tasks"):
                 # only look at games that have finished times greater than when the bot started
                 game_log_text = ""
                 if hasattr(self.bot, 'uptime') and channel:
-                    games = await self.orm_helpers.get_game_logs_for_tournament(cl.tournament, self.bot.uptime-datetime.timedelta(days=3))
+                    games = self.orm_helpers.get_game_logs_for_tournament(cl.tournament, self.bot.uptime-datetime.timedelta(days=3))
                     if len(games) > 0:
                         log_bot_msg("Found {} games to log in channel {}".format(len(games), channel.name))
                     for game in games:
@@ -271,7 +272,7 @@ class Tasks(commands.Cog, name="tasks"):
                 self.bot.cache_queue.pop(i)
 
     async def handle_critical_errors(self):
-        logs = await self.orm_helpers.get_critical_errors()
+        logs = self.orm_helpers.get_critical_errors()
         if logs:
             for log in logs:
                 for cc in self.bot.critical_error_channels:
@@ -284,10 +285,10 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_discord_tournament_updates(self):
         try:
-            updates = await self.orm_helpers.get_tournament_updates()
+            updates = self.orm_helpers.get_tournament_updates()
             for u in updates:
                 # look up the tournament, and get all channel links for that tournament
-                channel_links = await self.orm_helpers.get_channel_tournament_links(u.tournament)
+                channel_links = self.orm_helpers.get_channel_tournament_links(u.tournament)
                 for c in channel_links:
                     channel = self.bot.get_channel(c.channelid)
                     if channel:
@@ -401,23 +402,18 @@ class Tasks(commands.Cog, name="tasks"):
 
 class DjangoORMHelpers():
 
-    @database_sync_to_async
     def get_critical_errors(self):
         return list(Logger.objects.filter(level=LogLevel.critical, bot_seen=False))
 
-    @database_sync_to_async
     def get_tournament_updates(self):
         return list(DiscordTournamentUpdate.objects.filter(bot_send=False))
 
-    @database_sync_to_async
     def get_channel_tournament_links(self, tournament):
         return list(DiscordChannelTournamentLink.objects.filter(tournament=tournament))
 
-    @database_sync_to_async
     def get_rtl_games(self, ladder):
         return list(TournamentGame.objects.filter(tournament=ladder, is_finished=False, mentioned=False))
 
-    @database_sync_to_async
     def get_game_logs_for_tournament(self, tournament, time_since):
         return list(TournamentGame.objects.filter(is_finished=True, tournament=tournament, game_finished_time__gt=(time_since), game_log_sent=False))
 
