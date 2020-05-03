@@ -692,8 +692,9 @@ class Clot(commands.Cog, name="clot"):
                         if current_player % 10 == 0:
                             emb.add_field(name=field_name, value=player_data)
                             player_data = ""  # reset this for the next embed
-                    emb.add_field(name=field_name, value=player_data)
-                    await ctx.send(embed=emb)
+                    if len(player_data) > 0:
+                        emb.add_field(name=field_name, value=player_data)
+                        await ctx.send(embed=emb)
                 else:
                     await ctx.send("No players are registered on the CLOt for {}".format(clan_obj[0].name))
             else:
