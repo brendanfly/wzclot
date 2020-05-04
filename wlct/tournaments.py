@@ -5396,6 +5396,8 @@ class RealTimeLadder(Tournament):
                     log_tournament("Removing {} from ladder due to being on it for more than 30 minutes without a game.".format(team.id), self)
                     team.active = False
                     team.save()
+                    self.number_players -= 1
+                    self.save()
                     continue
                 if get_games_unfinished_for_team(team.id, self) == 0:
                     teams_find_games.append(team)
@@ -5513,6 +5515,8 @@ class RealTimeLadder(Tournament):
                         if player:
                             player[0].team.active = False
                             player[0].team.save()
+                            self.number_players -= 1
+                            self.save()
                             log_tournament("Removing player {} ({}) from ladder".format(player[0].player.name, player[0].player.token), self)
 
     def join_leave_player(self, player, join, leave_after_game):
