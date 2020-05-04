@@ -1,5 +1,5 @@
 import discord
-from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink, DiscordTournamentUpdate
+from wlct.models import Clan, Player, DiscordUser, DiscordChannelClanFilter, DiscordChannelPlayerFilter, DiscordChannelTournamentLink, DiscordTournamentUpdate
 from wlct.tournaments import Tournament, TournamentTeam, TournamentGame, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame, ClanLeagueTournament, get_multi_day_ladder, TournamentGameEntry, TournamentRound, get_team_data_no_clan_player_list
 from discord.ext import commands, tasks
 from django.utils import timezone
@@ -92,6 +92,9 @@ class Tasks(commands.Cog, name="tasks"):
                 if hasattr(self.bot, 'uptime') and channel:
                     bet_odds = BetGameOdds.objects.filter(sent_created_notification=False, initial=True).order_by('created_time')
                     for bo in bet_odds:
+                        if not cl.does_game_pass_filter(bo.game):
+                            odds_created_sent.append(bo)
+                            continue
                         emb = self.bot.get_default_embed()
                         emb = cb.get_initial_bet_card(bo, emb)
                         await channel.send(embed=emb)
@@ -101,6 +104,9 @@ class Tasks(commands.Cog, name="tasks"):
                     print("Found {} finished bet game odds".format(bet_odds.count()))
                     for bo in bet_odds:
                         if bo.game.winning_team:
+                            if not cl.does_game_pass_filter(bo.game):
+                                odds_finished_sent.append(bo)
+                                continue
                             emb = self.bot.get_default_embed()
                             emb = cb.get_bet_results_card(bo, emb)
                             if emb:
@@ -133,6 +139,11 @@ class Tasks(commands.Cog, name="tasks"):
                         if game.game_finished_time is None and game.winning_team or not game.winning_team:
                             continue  # ignore games with no finished time (which might be 0 and returned in this query)
                         # we have the game, construct the log text and send it to the channel
+
+                        # Check if game passes player/clan filter
+                        if not cl.does_game_pass_filter(game):
+                            games_sent.append(game)
+                            continue
 
                         # bold the clans if any, and italicize
                         teams = game.teams.split('.')

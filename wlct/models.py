@@ -27,11 +27,47 @@ class DiscordChannelTournamentLink(models.Model):
     channelid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
     discord_user = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.DO_NOTHING)
 
+    def does_game_pass_filter(self, game):
+        player_filters = DiscordChannelPlayerFilter.objects.filter(link=self)
+        clan_filters = DiscordChannelClanFilter.objects.filter(link=self)
+
+        # If no filters found, game can be used
+        if not player_filters and not clan_filters:
+            return True
+
+        player_tokens = game.get_player_tokens()
+        players = Player.objects.none()
+
+        # Get all players to compare with filters
+        for team in player_tokens:
+            for player in team:
+                players |= Player.objects.filter(token=player)
+
+        # Check if any filters pass against the player/clans in game
+        for player in players:
+            player_filters_found = DiscordChannelPlayerFilter.objects.filter(link=self, player=player)
+            clan_filters_found = DiscordChannelClanFilter.objects.filter(link=self, clan=player.clan)
+
+            # Game passes filter if any results are returned
+            if player_filters_found or clan_filters_found:
+                return True
+        return False
+
 # class to track text updates the bot will send out a single-time to channels linked to the tournament
 class DiscordTournamentUpdate(models.Model):
     update_text = models.TextField(default="", blank=True, null=True)
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, blank=True, null=True)
     bot_send = models.BooleanField(default=False)
+
+# class to track clan filters for game log updates and the clotbook
+class DiscordChannelClanFilter(models.Model):
+    link = models.ForeignKey('DiscordChannelTournamentLink', on_delete=models.DO_NOTHING, blank=True, null=True)
+    clan = models.ForeignKey('Clan', on_delete=models.CASCADE, blank=True, null=True)
+
+# class to track player filters for game log updates and the clotbook
+class DiscordChannelPlayerFilter(models.Model):
+    link = models.ForeignKey('DiscordChannelTournamentLink', on_delete=models.DO_NOTHING, blank=True, null=True)
+    player = models.ForeignKey('Player', on_delete=models.CASCADE, blank=True, null=True)
 
 class Engine(models.Model):
     last_run_time = models.DateTimeField(default=timezone.now)

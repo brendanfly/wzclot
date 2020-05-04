@@ -47,7 +47,7 @@ def has_admin_access(discord_id):
     return False
 
 def is_clotadmin(discord_id):
-    if str(discord_id) == "288807658264330242":
+    if str(discord_id) == "288807658264330242" or str(discord_id) == "162968893177069568":
         return True
     return False
 
