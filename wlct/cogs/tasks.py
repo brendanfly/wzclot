@@ -82,7 +82,7 @@ class Tasks(commands.Cog, name="tasks"):
                 # diff is our delta, compute how many days, hours, minutes remaining
 
     async def handle_clotbook(self):
-        channel_links = DiscordChannelCLOTBookLink.objects.all()
+        channel_links = DiscordChannelCLOTBookLink.objects.filter(results_only=False)
         odds_created_sent = []
         odds_finished_sent = []
         cb = get_clotbook()
@@ -100,6 +100,10 @@ class Tasks(commands.Cog, name="tasks"):
                         await channel.send(embed=emb)
                         odds_created_sent.append(bo)
 
+            channel_links = DiscordChannelCLOTBookLink.objects.filter(results_only=True)
+            for cl in channel_links:
+                channel = self.bot.get_channel(cl.channelid)
+                if hasattr(self.bot, 'uptime') and channel:
                     bet_odds = BetGameOdds.objects.filter(sent_finished_notification=False, game__is_finished=True)
                     print("Found {} finished bet game odds".format(bet_odds.count()))
                     for bo in bet_odds:

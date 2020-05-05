@@ -310,6 +310,7 @@ admin.site.register(CLOTBook, CLOTBookAdmin)
 class DiscordChannelCLOTBookLink(models.Model):
     channelid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
     discord_user = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.DO_NOTHING)
+    results_only = models.BooleanField(default=False)
 
     def does_game_pass_filter(self, game):
         return True

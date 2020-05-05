@@ -22,7 +22,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                           bb!cb initial <game_id> - forces initial odds to be recalculated for a specific game
                           bb!cb <game_id> - displays all bets for game_id
                       ''')
-    async def cb(self, ctx, option="", arg=""):
+    async def cb(self, ctx, option="", arg="", coins=""):
         try:
             discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
             if not discord_user:
@@ -39,23 +39,44 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 await ctx.send("This command is currently under construction.")
             elif option == "on":
                 if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
-                    discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id)
-                    if discord_channel_link.count() == 0:
-                        discord_channel_link = DiscordChannelCLOTBookLink(channelid=ctx.message.channel.id, discord_user=discord_user)
+                    if arg == "results":
+                        # create a link for results only
+                        discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(
+                            channelid=ctx.message.channel.id, results_only=True)
+                        if discord_channel_link.count() > 0:
+                            await ctx.send("There is already a CLOTBook results link to this channel.")
+                            return
+                        discord_channel_link = DiscordChannelCLOTBookLink(channelid=ctx.message.channel.id,
+                                                                          discord_user=discord_user,
+                                                                          results_only=True)
                         discord_channel_link.save()
-                        await ctx.send("The CLOTBook will start using this channel to send live betting updates.")
                     else:
-                        await ctx.send("This channel is already registered to receive CLOTBook Updates")
+                        discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id, results_only=True)
+                        if discord_channel_link.count() == 0:
+                            discord_channel_link = DiscordChannelCLOTBookLink(channelid=ctx.message.channel.id, discord_user=discord_user)
+                            discord_channel_link.save()
+                            await ctx.send("The CLOTBook will start using this channel to send live betting updates.")
+                        else:
+                            await ctx.send("This channel is already registered to receive CLOTBook Updates")
                 else:
                     await ctx.send("You must be a server administrator to use this command.")
             elif option == "off":
                 if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
-                    discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id)
-                    if discord_channel_link:
-                        discord_channel_link[0].delete()
-                        await ctx.send("The CLOTBook will no longer use this channel for updates.")
+                    if arg == "results":
+                        discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id, results_only=True)
+                        if discord_channel_link:
+                            discord_channel_link[0].delete()
+                            await ctx.send("The CLOTBook will no longer use this channel for updates.")
+                        else:
+                            await ctx.send("This channel is not hooked up to receive CLOTBook updates.")
+
                     else:
-                        await ctx.send("This channel is not hooked up to receive CLOTBook updates.")
+                        discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id, results_only=False)
+                        if discord_channel_link:
+                            discord_channel_link[0].delete()
+                            await ctx.send("The CLOTBook will no longer use this channel for updates.")
+                        else:
+                            await ctx.send("This channel is not hooked up to receive CLOTBook updates.")
                 else:
                     await ctx.send("You must be a server administrator to use this command.")
             elif option == "me":
@@ -107,6 +128,18 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                     game.create_initial_lines()
                     await ctx.send("Updated initial lines for game {}".format(game.gameid))
                     return
+            elif option == "br":
+                if not is_clotadmin(ctx.message.author.id):
+                    await ctx.send("Only CLOT admins can use this command.")
+                    return
+                player = Player.objects.filter(token=arg)
+                if not player:
+                    await ctx.send("Player with token {} cannot be found in the CLOT database.")
+                    return
+                if coins.isnumeric():
+                    player[0].bankroll += float(coins)
+                    player[0].save()
+
             elif option.isnumeric():
                 # try to look up the game id
                 game = int(option)
