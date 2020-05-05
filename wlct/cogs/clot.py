@@ -790,12 +790,15 @@ class Clot(commands.Cog, name="clot"):
                 tournament_data += "Clan League Tournaments\n"
             elif option == "-s":
                 await ctx.send("Searching for Tournaments starting with {}...".format(arg))
-                tournaments = Tournament.objects.filter(name__istartswith=option, private=False)[:10]
+                tournaments = Tournament.objects.filter(name__istartswith=arg.lower(), private=False)[:10]
                 data = "Showing top 10 results"
                 for t in tournaments:
                     data += "{} (Id: {}) | <{}>\n".format(t.name, t.id, t.get_full_public_link())
                 if data != "" and len(data) > 0:
                     await ctx.send(data)
+                else:
+                    await ctx.send("No tournaments found that start with {}".format(arg))
+                return
             else:
                 await ctx.send("You must specify an option. Use ``bb!help tournaments`` to see commands.")
                 return
@@ -829,7 +832,8 @@ class Clot(commands.Cog, name="clot"):
                             cl_tourneys = ClanLeagueTournament.objects.filter(parent_tournament=child_tournament).order_by('id')
                             for cl_tourney in cl_tourneys:
                                 tournament_data += "{} (Id: {})\n".format(cl_tourney.name, cl_tourney.id)
-            await ctx.send(tournament_data)
+            if len(tournament_data) > 0:
+                await ctx.send(tournament_data)
         except:
             log_exception()
             await ctx.send("An error has occurred and was unable to process the command.")
