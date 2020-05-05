@@ -3,6 +3,7 @@ from django.utils import timezone
 from wlct.models import Player
 from django.contrib import admin
 from wlct.logging import log_cb_msg, log_exception
+from wlct.models import DiscordChannelTournamentLink, DiscordChannelClanFilter, DiscordChannelPlayerFilter
 
 def get_team_data_no_clan_player_list(list):
     team_data = ""
@@ -312,7 +313,34 @@ class DiscordChannelCLOTBookLink(models.Model):
     discord_user = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.DO_NOTHING)
 
     def does_game_pass_filter(self, game):
-        return True
+        discord_link = DiscordChannelTournamentLink.objects.filter(channelid=self.channelid, tournament=game.tournament)
+        if not discord_link:
+            return True
+
+        player_filters = DiscordChannelPlayerFilter.objects.filter(link=discord_link[0])
+        clan_filters = DiscordChannelClanFilter.objects.filter(link=discord_link[0])
+
+        # If no filters found, game can be used
+        if not player_filters and not clan_filters:
+            return True
+
+        player_tokens = game.get_player_tokens()
+        players = Player.objects.none()
+
+        # Get all players to compare with filters
+        for team in player_tokens:
+            for player in team:
+                players |= Player.objects.filter(token=player)
+
+        # Check if any filters pass against the player/clans in game
+        for player in players:
+            player_filters_found = DiscordChannelPlayerFilter.objects.filter(link=self, player=player)
+            clan_filters_found = DiscordChannelClanFilter.objects.filter(link=self, clan=player.clan)
+
+            # Game passes filter if any results are returned
+            if player_filters_found or clan_filters_found:
+                return True
+        return False
 
 class DiscordChannelCLOTBookLinkAdmin(admin.ModelAdmin):
     pass
