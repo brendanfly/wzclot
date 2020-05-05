@@ -791,7 +791,7 @@ class Clot(commands.Cog, name="clot"):
             elif option == "-s":
                 await ctx.send("Searching for Tournaments starting with {}...".format(arg))
                 tournaments = Tournament.objects.filter(name__istartswith=arg.lower(), private=False)[:10]
-                data = "Showing top 10 results"
+                data = "Showing top 10 results\n"
                 for t in tournaments:
                     data += "{} (Id: {}) | <{}>\n".format(t.name, t.id, t.get_full_public_link())
                 if data != "" and len(data) > 0:
@@ -822,7 +822,7 @@ class Clot(commands.Cog, name="clot"):
                                                                          get_team_data(child_tournament.winning_team))
                     elif option == "-o":  # only open tournaments
                         if not child_tournament.has_started and not child_tournament.private:
-                            tournament_data += "{} (Id: {}) | <{}> | {} spots left\n".format(child_tournament.name, child_tournament.id, link_text,
+                            tournament_data += "{} (Id: {}) | <{}> | {}\n".format(child_tournament.name, child_tournament.id, link_text,
                                                                                child_tournament.spots_left)
                     elif option == "-p":  # only in progress
                         if child_tournament.has_started and not child_tournament.private:
