@@ -50,6 +50,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                                                                           discord_user=discord_user,
                                                                           results_only=True)
                         discord_channel_link.save()
+                        await ctx.send("The CLOTBook will start using this channel to send live betting results.")
                     else:
                         discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id, results_only=True)
                         if discord_channel_link.count() == 0:
@@ -66,10 +67,9 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                         discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id, results_only=True)
                         if discord_channel_link:
                             discord_channel_link[0].delete()
-                            await ctx.send("The CLOTBook will no longer use this channel for updates.")
+                            await ctx.send("The CLOTBook will no longer use this channel for sending results.")
                         else:
                             await ctx.send("This channel is not hooked up to receive CLOTBook updates.")
-
                     else:
                         discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id, results_only=False)
                         if discord_channel_link:
