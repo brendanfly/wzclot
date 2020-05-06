@@ -1,9 +1,8 @@
 from django.db import models
 from django.utils import timezone
-from wlct.models import Player
 from django.contrib import admin
 from wlct.logging import log_cb_msg, log_exception
-from wlct.models import DiscordChannelTournamentLink, DiscordChannelTournamentFilter, DiscordChannelClanFilter, DiscordChannelPlayerFilter
+from wlct.models import DiscordChannelTournamentFilter, DiscordChannelClanFilter, DiscordChannelPlayerFilter, Player
 
 def get_team_data_no_clan_player_list(list):
     team_data = ""
@@ -311,6 +310,7 @@ admin.site.register(CLOTBook, CLOTBookAdmin)
 class DiscordChannelCLOTBookLink(models.Model):
     channelid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
     discord_user = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.DO_NOTHING)
+    results_only = models.BooleanField(default=False)
 
     def does_game_pass_filter(self, game):
         tournament_filter = DiscordChannelTournamentFilter.objects.filter(clotbook_link=self, tournament=game.tournament)
