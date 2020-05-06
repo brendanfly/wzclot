@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib import admin
 from django.utils import timezone
+from wlct.clotbook import DiscordChannelCLOTBookLink
+from wlct.tournaments import Tournament
 
 invalid_token_string = "invalid"
 invalid_clan_string = "clan+#!invalid"
@@ -61,13 +63,35 @@ class DiscordTournamentUpdate(models.Model):
 
 # class to track clan filters for game log updates and the clotbook
 class DiscordChannelClanFilter(models.Model):
+    clotbook_link = models.ForeignKey('DiscordChannelCLOTBookLink', on_delete=models.DO_NOTHING, blank=True, null=True)
     link = models.ForeignKey('DiscordChannelTournamentLink', on_delete=models.DO_NOTHING, blank=True, null=True)
     clan = models.ForeignKey('Clan', on_delete=models.CASCADE, blank=True, null=True)
 
+    def get_link(self):
+        if self.tournament_link:
+            return self.tournament_link
+        elif self.clotbook_link:
+            return self.clotbook_link
+        else:
+            raise ValueError()
+
 # class to track player filters for game log updates and the clotbook
 class DiscordChannelPlayerFilter(models.Model):
+    clotbook_link = models.ForeignKey('DiscordChannelCLOTBookLink', on_delete=models.DO_NOTHING, blank=True, null=True)
     link = models.ForeignKey('DiscordChannelTournamentLink', on_delete=models.DO_NOTHING, blank=True, null=True)
     player = models.ForeignKey('Player', on_delete=models.CASCADE, blank=True, null=True)
+
+    def get_link(self):
+        if self.tournament_link:
+            return self.tournament_link
+        elif self.clotbook_link:
+            return self.clotbook_link
+        else:
+            raise ValueError()
+
+class DiscordChannelTournamentFilter(models.Model):
+    clotbook_link = models.ForeignKey('DiscordChannelCLOTBookLink', on_delete=models.DO_NOTHING, blank=True, null=True)
+    tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, blank=True, null=True)
 
 class Engine(models.Model):
     last_run_time = models.DateTimeField(default=timezone.now)

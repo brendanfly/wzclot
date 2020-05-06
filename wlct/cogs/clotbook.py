@@ -1,5 +1,5 @@
 import discord
-from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink
+from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink, DiscordChannelClanFilter, DiscordChannelPlayerFilter, DiscordChannelTournamentFilter
 from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry, get_team_data_no_clan_player_list
 from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
@@ -52,6 +52,17 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
                     discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id)
                     if discord_channel_link:
+                        clan_filters = DiscordChannelClanFilter.objects.filter(clotbook_link=discord_channel_link[0])
+                        player_filters = DiscordChannelPlayerFilter.objects.filter(clotbook_link=discord_channel_link[0])
+                        tournament_filters = DiscordChannelTournamentFilter.objects.filter(clotbook_link=discord_channel_link[0])
+
+                        for cf in clan_filters:
+                            cf.delete()
+                        for pf in player_filters:
+                            pf.delete()
+                        for tf in tournament_filters:
+                            tf.delete()
+
                         discord_channel_link[0].delete()
                         await ctx.send("The CLOTBook will no longer use this channel for updates.")
                     else:

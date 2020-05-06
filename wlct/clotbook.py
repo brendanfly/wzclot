@@ -3,7 +3,7 @@ from django.utils import timezone
 from wlct.models import Player
 from django.contrib import admin
 from wlct.logging import log_cb_msg, log_exception
-from wlct.models import DiscordChannelTournamentLink, DiscordChannelClanFilter, DiscordChannelPlayerFilter
+from wlct.models import DiscordChannelTournamentLink, DiscordChannelTournamentFilter, DiscordChannelClanFilter, DiscordChannelPlayerFilter
 
 def get_team_data_no_clan_player_list(list):
     team_data = ""
@@ -313,12 +313,13 @@ class DiscordChannelCLOTBookLink(models.Model):
     discord_user = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.DO_NOTHING)
 
     def does_game_pass_filter(self, game):
-        discord_link = DiscordChannelTournamentLink.objects.filter(channelid=self.channelid, tournament=game.tournament)
-        if not discord_link:
-            return True
+        tournament_filter = DiscordChannelTournamentFilter.objects.filter(clotbook_link=self, tournament=game.tournament)
+        all_tournament_filters = DiscordChannelTournamentFilter.objects.filter(clotbook_link=self)
+        if not tournament_filter and all_tournament_filters:
+            return False
 
-        player_filters = DiscordChannelPlayerFilter.objects.filter(link=discord_link[0])
-        clan_filters = DiscordChannelClanFilter.objects.filter(link=discord_link[0])
+        player_filters = DiscordChannelPlayerFilter.objects.filter(clotbook_link=self)
+        clan_filters = DiscordChannelClanFilter.objects.filter(clotbook_link=self)
 
         # If no filters found, game can be used
         if not player_filters and not clan_filters:
