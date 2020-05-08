@@ -30,6 +30,7 @@ def is_player_allowed_join_by_token(token, templateid):
     allowed_join = False
     api = API()
     apirequest = api.api_validate_token_for_template(token, templateid)
+    log("IsPlayerAllowedJoinByToken: {}, {}".format(token, templateid), LogLevel.api)
     apirequestJson = apirequest.json()
 
     if "tokenIsValid" not in apirequestJson:
@@ -1209,6 +1210,19 @@ class Tournament(models.Model):
                 return "{} seconds ago".format(seconds)
             else:
                 return "{} second ago".format(seconds)
+
+    @property
+    def spots_left_count(self):
+        try:
+            players_in_tournament = TournamentPlayer.objects.filter(tournament=self)
+            if players_in_tournament:
+                return self.max_players - players_in_tournament.count()
+            else:
+                return self.max_players
+        except:
+            log_exception()
+        finally:
+            return 0
 
     @property
     def spots_left(self):

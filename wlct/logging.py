@@ -22,6 +22,7 @@ class LogLevel:
     process_game = "Process Game"
     process_new_games = "Process New Games"
     clotbook = "CLOTBook"
+    api = "API"
 
 def log_exception():
     log(traceback.format_exc(), LogLevel.critical)
