@@ -21,7 +21,8 @@ class LogFilter(SimpleListFilter):
             ('engine', 'Engine'),
             ('bot', 'Bot'),
             ('clean_logs', 'Log Cleanup'),
-            ('clotbook', 'CLOTBook')
+            ('clotbook', 'CLOTBook'),
+            ('api', 'API')
         ]
 
     def queryset(self, request, queryset):
@@ -46,6 +47,8 @@ class LogFilter(SimpleListFilter):
             return queryset.distinct().filter(level=LogLevel.clotbook)
         if self.value() == 'tournament':
             return queryset.distinct().filter(level=LogLevel.tournament)
+        if self.value() == 'api':
+            return queryset.distinct().filter(level=LogLevel.api)
 
 class LogAdmin(admin.ModelAdmin):
     list_filter = (LogFilter, )
