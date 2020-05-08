@@ -30,8 +30,8 @@ def is_player_allowed_join_by_token(token, templateid):
     allowed_join = False
     api = API()
     apirequest = api.api_validate_token_for_template(token, templateid)
-    log("IsPlayerAllowedJoinByToken: {}, {}".format(token, templateid), LogLevel.api)
     apirequestJson = apirequest.json()
+    log("IsPlayerAllowedJoinByToken: {}, {}, {}".format(token, templateid, apirequestJson), LogLevel.api)
 
     if "tokenIsValid" not in apirequestJson:
         log("Invalid token in is_player_allowed_join token: {}".format(token), LogLevel.informational)
