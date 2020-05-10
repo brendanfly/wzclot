@@ -14,6 +14,7 @@ import json
 from wlct.clotbook import DiscordChannelCLOTBookLink, get_clotbook, BetGameOdds, BetTeamOdds, Bet
 from channels.db import database_sync_to_async
 import gc
+import asyncio
 
 class Tasks(commands.Cog, name="tasks"):
     def __init__(self, bot):
@@ -284,6 +285,7 @@ class Tasks(commands.Cog, name="tasks"):
                     msg += log.msg
                     msg = msg[:1999]
                     await cc.send(msg)
+                    await asyncio.sleep(0.21)
                     log.bot_seen = True
                     log.save()
 
