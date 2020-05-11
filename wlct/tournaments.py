@@ -762,7 +762,6 @@ class Tournament(models.Model):
         for player in players:
             apirequest = api.api_validate_invite_token(player.player.token)
             apirequestJson = apirequest.json()
-            log("IsTeamOnVacation: {}".format(apirequestJson), LogLevel.informational)
             if 'onVacationUntil' in apirequestJson:
                 return True
 
