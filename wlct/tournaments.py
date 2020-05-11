@@ -5721,17 +5721,19 @@ class RealTimeLadder(Tournament):
             current_team = start + 1
 
             data = "__**Ladder Rankings**__ - Viewing Rankings {}-{}\n".format(current_team, end)
-        if len(teams) > 0:
-            for team in teams:
-                if team.ranked:
-                    ranked_text = "{}".format(current_team)
-                else:
-                    ranked_text = "Unranked"
-                data += "{} | {} | {}\n".format(ranked_text, team.rating, get_team_data_no_clan(team))
-                current_team += 1
-            return data
+            if len(teams) > 0:
+                for team in teams:
+                    if team.ranked:
+                        ranked_text = "{}".format(current_team)
+                    else:
+                        ranked_text = "Unranked"
+                    data += "{} | {} | {}\n".format(ranked_text, team.rating, get_team_data_no_clan(team))
+                    current_team += 1
+                return data
+            else:
+                return data + "There are no players/rankings to view."
         else:
-            return data + "There are no players/rankings to view."
+            return "The page to view must be numeric."
 
     def get_current_templates(self):
         data = ""
