@@ -53,14 +53,14 @@ class Tasks(commands.Cog, name="tasks"):
                     game.save()
                     return
                 emb.add_field(name="Game", value=data, inline=True)
-                if player1:
+                if player1 and player1.discord_member:
                     user = self.bot.get_user(player1.discord_member.memberid)
                     if user:
                         try:
                             await user.send(embed=emb)
                         except:
                             log_bot_msg("Could not send RTL game msg to {} ".format(player1.name))
-                if player2:
+                if player2 and player2.discord_member:
                     user = self.bot.get_user(player2.discord_member.memberid)
                     if user:
                         try:
