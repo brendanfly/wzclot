@@ -5166,7 +5166,10 @@ class RealTimeLadder(Tournament):
     max_vetoes = models.IntegerField(default=1)
 
     def get_active_team_count(self):
-        return TournamentTeam.objects.filter(tournament=self, active=True).count()
+        num_teams = TournamentTeam.objects.filter(tournament=self, active=True).count()
+        self.number_players = num_teams
+        self.save()
+        return num_teams
 
     def get_active_teams(self):
         return TournamentTeam.objects.filter(tournament=self, active=True)
@@ -5263,7 +5266,6 @@ class RealTimeLadder(Tournament):
     def get_player_from_teamid(self, team):
         tplayer = TournamentPlayer.objects.filter(team=int(team))
         if tplayer:
-            print("Got player")
             return tplayer[0].player
 
     def remove_template(self, templateid):
