@@ -581,8 +581,7 @@ class Tournament(models.Model):
 
     def get_invited_players_inverse_table(self, creator_token, request_data, viewer_token):
         # get all the players, and only add the players we care about (excluding invited players) to the html
-        table = '<div class="row"><input type="text" id="invite-filter" placeholder="Filter Players" /></div>'
-        table += '<table class="table table-hover">'
+        table = '<table class="table table-hover table-condensed compact stripe" id="invite-filter">'
         table += '<thead><tr><th>Player Name</th><th> </th></tr></thead><tbody id="invite-filter-table">'
 
         is_player_available = False
@@ -597,7 +596,10 @@ class Tournament(models.Model):
                 # player wasn't invited to this tournament
                 # check if it's us, if it is, skip
                 if player.token != viewer_token and player.token != creator_token:
-                    table += '<tr><td>'
+                    clan_name = ""
+                    if player.clan:
+                        clan_name = '{}'.format(player.clan.name)
+                    table += '<tr><td data-search="{} {}">'.format(clan_name, player.name)
                     if player.clan is not None:
                         table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                             player.clan.icon_link, player.clan.image_path, player.clan.name)
@@ -4306,8 +4308,7 @@ class PromotionalRelegationLeagueSeason(Tournament):
 
     def get_invited_players_inverse_table(self, creator_token, request_data, viewer_token):
         # get all the players, and only add the players we care about (excluding invited players) to the html
-        table = '<div class="row"><input type="text" id="invite-filter" placeholder="Filter Players" /><input type="hidden" id="cl-player-id" value="{}" /></div>'
-        table += '<table class="table table-hover">'
+        table = '<table class="table table-hover table-condensed compact stripe" id="invite-filter">'
         table += '<thead><tr><th>Player Name</th><th> </th></tr></thead><tbody id="invite-filter-table">'
 
         is_player_available = False
@@ -4318,7 +4319,10 @@ class PromotionalRelegationLeagueSeason(Tournament):
             is_player_available = True
             # player wasn't invited to this tournament
             # check if it's us, if it is, skip
-            table += '<tr><td>'
+            clan_name = ""
+            if player.clan:
+                clan_name = '{}'.format(player.clan.name)
+            table += '<tr><td data-search="{} {}">'.format(clan_name, player.name)
             table += get_player_data(player)
 
             table += '</td>'
@@ -5083,8 +5087,7 @@ class ClanLeague(Tournament):
 
     def get_invited_players_inverse_table(self, creator_token, request_data, viewer_token):
         # get all the players, and only add the players we care about (excluding invited players) to the html
-        table = '<div class="row"><input type="text" id="invite-filter" placeholder="Filter Players" /><input type="hidden" id="cl-player-id" value="{}" /></div>'
-        table += '<table class="table table-hover">'
+        table = '<table class="table table-hover table-condensed compact stripe" id="invite-filter">'
         table += '<thead><tr><th>Player Name</th><th> </th></tr></thead><tbody id="invite-filter-table">'
 
         print("Request data to generate CL player list: {}".format(request_data))
@@ -5096,7 +5099,10 @@ class ClanLeague(Tournament):
             is_player_available = True
             # player wasn't invited to this tournament
             # check if it's us, if it is, skip
-            table += '<tr><td>'
+            clan_name = ""
+            if player.clan:
+                clan_name = '{}'.format(player.clan.name)
+            table += '<tr><td data-search="{} {}">'.format(clan_name, player.name)
             if player.clan is not None:
                 table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                     player.clan.icon_link, player.clan.image_path, player.clan.name)

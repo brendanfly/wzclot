@@ -201,6 +201,12 @@ class TestResponse():
     def json(self):
         return self.response_dict
 
+    def text(self):
+        return self.response_dict
+
+    def status_code(self):
+        return "200"
+
 
 class API_TEST(API2):
 
