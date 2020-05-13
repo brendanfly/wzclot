@@ -87,7 +87,6 @@ class ProcessGameLog(Logger):
     def __str__(self):
         return "[Time: {} Level: {}]: GameID: {}".format(self.timestamp, self.level, self.game.gameid)
 
-
 class ProcessNewGamesLog(Logger):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
 
