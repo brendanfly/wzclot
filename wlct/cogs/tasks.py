@@ -285,7 +285,7 @@ class Tasks(commands.Cog, name="tasks"):
                     msg += log.msg
                     msg = msg[:1999]
                     await cc.send(msg)
-                    await asyncio.sleep(0.21)
+                    await asyncio.sleep(1)
                     log.bot_seen = True
                     log.save()
 
