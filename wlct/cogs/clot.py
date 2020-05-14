@@ -255,6 +255,18 @@ class Clot(commands.Cog, name="clot"):
                         await ctx.send("Tournament {} does not exist.")
                 else:
                     await ctx.send("Please enter a numeric id.")
+            elif cmd == "process":
+                if not option.isnumeric():
+                    await ctx.send("Please enter a valid tournament id")
+                    return
+                tournament = find_tournament_by_id(int(option), True)
+                if not has_tournament_admin_access(ctx.message.author.id, tournament):
+                    await ctx.send("Only tournament admins can use this command.")
+                    return
+                if tournament:
+                    self.bot.process_queue.append(tournament.id)
+                    await ctx.send("Successfully queued up {} to be processed".format(tournament.name))
+                    return
             elif cmd == "add":
                 if not is_clotadmin(ctx.message.author.id):
                     await ctx.send("Only CLOT admins can use this command.")

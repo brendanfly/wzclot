@@ -268,6 +268,14 @@ class Tasks(commands.Cog, name="tasks"):
                     child_tournament.save()
             gc.collect()
 
+    async def handle_process_queue(self):
+        for i in range(0, len(self.bot.process_queue)):
+            t = find_tournament_by_id(self.bot.process_queue[i], True)
+            if t:
+                print("Processing data for {}".format(t.name))
+                t.process_new_games()
+                self.bot.process_queue.pop(i)
+
     async def handle_cache_queue(self):
         for i in range(0, len(self.bot.cache_queue)):
             t = find_tournament_by_id(self.bot.cache_queue[i], True)
@@ -355,6 +363,10 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_cache_queue()
         end = datetime.datetime.utcnow()
         self.bot.perf_counter("Cache queue took {} total seconds".format((end-start).total_seconds()))
+        start = datetime.datetime.utcnow()
+        await self.handle_process_queue()
+        end = datetime.datetime.utcnow()
+        self.bot.perf_counter("Process queue took {} total seconds".format((end-start).total_seconds()))
         start = datetime.datetime.utcnow()
         await self.handle_discord_tournament_updates()
         end = datetime.datetime.utcnow()
