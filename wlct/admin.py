@@ -131,8 +131,8 @@ class SeededTournamentAdmin(admin.ModelAdmin):
 admin.site.register(SeededTournament, SeededTournamentAdmin)
 
 class GroupStageTournamentAdmin(admin.ModelAdmin):
-    raw_id_fields = ['parent_tournament', 'winning_team', 'first_place', 'second_place']
-    
+    raw_id_fields = ['winning_team', 'created_by']
+
 
 admin.site.register(GroupStageTournament, GroupStageTournamentAdmin)
 
