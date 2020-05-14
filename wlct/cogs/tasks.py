@@ -274,8 +274,12 @@ class Tasks(commands.Cog, name="tasks"):
             t = find_tournament_by_id(self.bot.process_queue[i], True)
             if t:
                 print("Processing data for {}".format(t.name))
-                t.process_games()
-                gc.collect()
+                games = TournamentGame.objects.filter(is_finished=False, tournament=t)
+                for game in games.iterator():
+                    # process the game
+                    # query the game status
+                    t.process_game(game)
+                    gc.collect()
                 t.process_new_games()
                 self.bot.process_queue.pop(i)
 
