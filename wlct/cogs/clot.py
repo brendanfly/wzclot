@@ -850,6 +850,10 @@ class Clot(commands.Cog, name="clot"):
             if mtc_id == "0":
                 mtc_id = "22"
 
+            if not mtc_id.isnumeric():
+                await ctx.send("You've entered and invalid MTC league id.")
+                return
+
             tournament = MonthlyTemplateRotation.objects.filter(id=int(mtc_id))
             if tournament:
                 await ctx.send("Gathering Monthly Template Rotation data....")
