@@ -270,6 +270,7 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_process_queue(self):
         for i in range(0, len(self.bot.process_queue)):
+            gc.collect()
             t = find_tournament_by_id(self.bot.process_queue[i], True)
             if t:
                 print("Processing data for {}".format(t.name))
@@ -278,6 +279,7 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_cache_queue(self):
         for i in range(0, len(self.bot.cache_queue)):
+            gc.collect()
             t = find_tournament_by_id(self.bot.cache_queue[i], True)
             if t:
                 print("Caching data for {}".format(t.name))
