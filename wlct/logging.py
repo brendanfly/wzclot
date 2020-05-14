@@ -192,6 +192,8 @@ class LogManager():
             logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.clean_logs:
             logs = Logger.objects.filter(**self.kwargs)
+        if self.type == LogLevel.api:
+            logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.tournament:
             logs = TournamentLog.objects.filter(**self.kwargs)
         if self.type == LogLevel.game:
