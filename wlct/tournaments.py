@@ -2071,14 +2071,18 @@ class GroupStageTournament(Tournament):
         self.groups = int(self.max_teams / self.player_per_group)
         self.save()
 
+        games_at_once = 1
+        if self.multi_day:
+            games_at_once = 2
+
         # now create the groups, and for each group add the teams to them
         for i in range(1, self.groups+1):
             index = str(i)
-            print("Creating group {}".format(index))
+            print("Creating group {} with {} games at once".format(index, games_at_once))
             # create the round robin tournament for this group first
             number_teams = len(group_buckets[index])
             tournament_name = "{}: Group {} Round Robin".format(self.name, i)
-            rr_tourney = RoundRobinTournament(name=tournament_name, games_at_once=2, max_players=number_teams*self.players_per_team, number_rounds=number_teams-1, multi_day=self.multi_day,start_option_when_full=False,private=True,description=self.description,template=self.template,template_settings=self.template_settings, teams_per_game=self.teams_per_game,created_by=self.created_by,players_per_team=self.players_per_team, parent_tournament=self)
+            rr_tourney = RoundRobinTournament(name=tournament_name, games_at_once=games_at_once, max_players=number_teams*self.players_per_team, number_rounds=number_teams-1, multi_day=self.multi_day,start_option_when_full=False,private=True,description=self.description,template=self.template,template_settings=self.template_settings, teams_per_game=self.teams_per_game,created_by=self.created_by,players_per_team=self.players_per_team, parent_tournament=self)
             rr_tourney.save()
             group = GroupStageTournamentGroup(tournament=self, group_number=i, round_robin_tournament=rr_tourney)
             group.save()
