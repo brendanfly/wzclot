@@ -2114,6 +2114,7 @@ class GroupStageTournament(Tournament):
             game_data += '<br/><h5>{}</h5>'.format(group.get_name())
             child_tournament = find_tournament_by_id(group.round_robin_tournament, True)
             if child_tournament:
+                child_tournament.update_bracket_game_data()
                 game_data += child_tournament.get_bracket_game_data()
             game_data += '<br/><br/>'
         self.bracket_game_data = game_data
