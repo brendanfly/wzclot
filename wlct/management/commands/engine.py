@@ -72,6 +72,7 @@ def process_mdl_games():
 
     data = json.loads(content)
     for index, game_data in enumerate(data['games']):
+        gc.collect()
         # first check to see if the game has already been processed
         game = TournamentGame.objects.filter(tournament=ladder, gameid=game_data['game_id'])
         if not game:
@@ -153,6 +154,7 @@ def process_team_vacations():
         log("Starting process team vacation: {}".format(start_time), LogLevel.engine)
         tournaments = Tournament.objects.filter(is_finished=False, has_started=True)
         for t in tournaments:
+            gc.collect()
             t = find_tournament_by_id(t.id, True)
             teams = TournamentTeam.objects.filter(tournament=t)
             for team in teams:

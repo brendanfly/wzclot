@@ -108,8 +108,10 @@ class API2:
                             else:
                                 fmt = '{0.days} days {0.hours} hours'
 
-                            ret['directBoot'] = fmt.format(rd(minutes=directbootTimeMinutes))
-                            ret['autoBoot'] = fmt.format(rd(minutes=autobootTimeMinutes))
+                            if directbootTimeMinutes is not 'none':
+                                ret['directBoot'] = fmt.format(rd(minutes=directbootTimeMinutes))
+                            if autobootTimeMinutes is not 'none':
+                                ret['autoBoot'] = fmt.format(rd(minutes=autobootTimeMinutes))
             else:
                 # not good, error, TODO: Log???
                 if 'error' in gameInfo:
@@ -198,6 +200,12 @@ class TestResponse():
 
     def json(self):
         return self.response_dict
+
+    def text(self):
+        return self.response_dict
+
+    def status_code(self):
+        return "200"
 
 
 class API_TEST(API2):

@@ -14,6 +14,7 @@ import json
 from wlct.clotbook import DiscordChannelCLOTBookLink, get_clotbook, BetGameOdds, BetTeamOdds, Bet
 from channels.db import database_sync_to_async
 import gc
+import asyncio
 
 class Tasks(commands.Cog, name="tasks"):
     def __init__(self, bot):
@@ -52,14 +53,14 @@ class Tasks(commands.Cog, name="tasks"):
                     game.save()
                     return
                 emb.add_field(name="Game", value=data, inline=True)
-                if player1:
+                if player1 and player1.discord_member:
                     user = self.bot.get_user(player1.discord_member.memberid)
                     if user:
                         try:
                             await user.send(embed=emb)
                         except:
                             log_bot_msg("Could not send RTL game msg to {} ".format(player1.name))
-                if player2:
+                if player2 and player2.discord_member:
                     user = self.bot.get_user(player2.discord_member.memberid)
                     if user:
                         try:
@@ -267,8 +268,24 @@ class Tasks(commands.Cog, name="tasks"):
                     child_tournament.save()
             gc.collect()
 
+    async def handle_process_queue(self):
+        for i in range(0, len(self.bot.process_queue)):
+            gc.collect()
+            t = find_tournament_by_id(self.bot.process_queue[i], True)
+            if t:
+                print("Processing data for {}".format(t.name))
+                games = TournamentGame.objects.filter(is_finished=False, tournament=t)
+                for game in games.iterator():
+                    # process the game
+                    # query the game status
+                    t.process_game(game)
+                    gc.collect()
+                t.process_new_games()
+                self.bot.process_queue.pop(i)
+
     async def handle_cache_queue(self):
         for i in range(0, len(self.bot.cache_queue)):
+            gc.collect()
             t = find_tournament_by_id(self.bot.cache_queue[i], True)
             if t:
                 print("Caching data for {}".format(t.name))
@@ -284,6 +301,7 @@ class Tasks(commands.Cog, name="tasks"):
                     msg += log.msg
                     msg = msg[:1999]
                     await cc.send(msg)
+                    await asyncio.sleep(1)
                     log.bot_seen = True
                     log.save()
 
@@ -353,6 +371,10 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_cache_queue()
         end = datetime.datetime.utcnow()
         self.bot.perf_counter("Cache queue took {} total seconds".format((end-start).total_seconds()))
+        start = datetime.datetime.utcnow()
+        await self.handle_process_queue()
+        end = datetime.datetime.utcnow()
+        self.bot.perf_counter("Process queue took {} total seconds".format((end-start).total_seconds()))
         start = datetime.datetime.utcnow()
         await self.handle_discord_tournament_updates()
         end = datetime.datetime.utcnow()

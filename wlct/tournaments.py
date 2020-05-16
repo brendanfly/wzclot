@@ -30,7 +30,14 @@ def is_player_allowed_join_by_token(token, templateid):
     allowed_join = False
     api = API()
     apirequest = api.api_validate_token_for_template(token, templateid)
-    apirequestJson = apirequest.json()
+    try:
+        apirequestJson = apirequest.json()
+    except:
+        log("IsPlayerAllowedJoinByToken: {}, {}, {}, {}".format(token, templateid, apirequest.text,
+                                                                apirequest.status_code), LogLevel.critical)
+        return False
+
+    log("IsPlayerAllowedJoinByToken: {}, {}, {}".format(token, templateid, apirequestJson), LogLevel.api)
 
     if "tokenIsValid" not in apirequestJson:
         log("Invalid token in is_player_allowed_join token: {}".format(token), LogLevel.informational)
@@ -579,8 +586,7 @@ class Tournament(models.Model):
 
     def get_invited_players_inverse_table(self, creator_token, request_data, viewer_token):
         # get all the players, and only add the players we care about (excluding invited players) to the html
-        table = '<div class="row"><input type="text" id="invite-filter" placeholder="Filter Players" /></div>'
-        table += '<table class="table table-hover">'
+        table = '<table class="table table-hover table-condensed compact stripe" id="invite-filter">'
         table += '<thead><tr><th>Player Name</th><th> </th></tr></thead><tbody id="invite-filter-table">'
 
         is_player_available = False
@@ -595,7 +601,10 @@ class Tournament(models.Model):
                 # player wasn't invited to this tournament
                 # check if it's us, if it is, skip
                 if player.token != viewer_token and player.token != creator_token:
-                    table += '<tr><td>'
+                    clan_name = ""
+                    if player.clan:
+                        clan_name = '{}'.format(player.clan.name)
+                    table += '<tr><td data-search="{} {}">'.format(clan_name, player.name)
                     if player.clan is not None:
                         table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                             player.clan.icon_link, player.clan.image_path, player.clan.name)
@@ -760,7 +769,6 @@ class Tournament(models.Model):
         for player in players:
             apirequest = api.api_validate_invite_token(player.player.token)
             apirequestJson = apirequest.json()
-            log("IsTeamOnVacation: {}".format(apirequestJson), LogLevel.informational)
             if 'onVacationUntil' in apirequestJson:
                 return True
 
@@ -1209,6 +1217,19 @@ class Tournament(models.Model):
                 return "{} seconds ago".format(seconds)
             else:
                 return "{} second ago".format(seconds)
+
+    @property
+    def spots_left_count(self):
+        try:
+            players_in_tournament = TournamentPlayer.objects.filter(tournament=self)
+            if players_in_tournament:
+                return self.max_players - players_in_tournament.count()
+            else:
+                return self.max_players
+        except:
+            log_exception()
+        finally:
+            return 0
 
     @property
     def spots_left(self):
@@ -2050,14 +2071,18 @@ class GroupStageTournament(Tournament):
         self.groups = int(self.max_teams / self.player_per_group)
         self.save()
 
+        games_at_once = 1
+        if self.multi_day:
+            games_at_once = 2
+
         # now create the groups, and for each group add the teams to them
         for i in range(1, self.groups+1):
             index = str(i)
-            print("Creating group {}".format(index))
+            print("Creating group {} with {} games at once".format(index, games_at_once))
             # create the round robin tournament for this group first
             number_teams = len(group_buckets[index])
             tournament_name = "{}: Group {} Round Robin".format(self.name, i)
-            rr_tourney = RoundRobinTournament(name=tournament_name, games_at_once=2, max_players=number_teams*self.players_per_team, number_rounds=number_teams-1, multi_day=self.multi_day,start_option_when_full=False,private=True,description=self.description,template=self.template,template_settings=self.template_settings, teams_per_game=self.teams_per_game,created_by=self.created_by,players_per_team=self.players_per_team, parent_tournament=self)
+            rr_tourney = RoundRobinTournament(name=tournament_name, games_at_once=games_at_once, max_players=number_teams*self.players_per_team, number_rounds=number_teams-1, multi_day=self.multi_day,start_option_when_full=False,private=True,description=self.description,template=self.template,template_settings=self.template_settings, teams_per_game=self.teams_per_game,created_by=self.created_by,players_per_team=self.players_per_team, parent_tournament=self)
             rr_tourney.save()
             group = GroupStageTournamentGroup(tournament=self, group_number=i, round_robin_tournament=rr_tourney)
             group.save()
@@ -2089,6 +2114,7 @@ class GroupStageTournament(Tournament):
             game_data += '<br/><h5>{}</h5>'.format(group.get_name())
             child_tournament = find_tournament_by_id(group.round_robin_tournament, True)
             if child_tournament:
+                child_tournament.update_bracket_game_data()
                 game_data += child_tournament.get_bracket_game_data()
             game_data += '<br/><br/>'
         self.bracket_game_data = game_data
@@ -4292,8 +4318,7 @@ class PromotionalRelegationLeagueSeason(Tournament):
 
     def get_invited_players_inverse_table(self, creator_token, request_data, viewer_token):
         # get all the players, and only add the players we care about (excluding invited players) to the html
-        table = '<div class="row"><input type="text" id="invite-filter" placeholder="Filter Players" /><input type="hidden" id="cl-player-id" value="{}" /></div>'
-        table += '<table class="table table-hover">'
+        table = '<table class="table table-hover table-condensed compact stripe" id="invite-filter">'
         table += '<thead><tr><th>Player Name</th><th> </th></tr></thead><tbody id="invite-filter-table">'
 
         is_player_available = False
@@ -4304,7 +4329,10 @@ class PromotionalRelegationLeagueSeason(Tournament):
             is_player_available = True
             # player wasn't invited to this tournament
             # check if it's us, if it is, skip
-            table += '<tr><td>'
+            clan_name = ""
+            if player.clan:
+                clan_name = '{}'.format(player.clan.name)
+            table += '<tr><td data-search="{} {}">'.format(clan_name, player.name)
             table += get_player_data(player)
 
             table += '</td>'
@@ -5069,8 +5097,7 @@ class ClanLeague(Tournament):
 
     def get_invited_players_inverse_table(self, creator_token, request_data, viewer_token):
         # get all the players, and only add the players we care about (excluding invited players) to the html
-        table = '<div class="row"><input type="text" id="invite-filter" placeholder="Filter Players" /><input type="hidden" id="cl-player-id" value="{}" /></div>'
-        table += '<table class="table table-hover">'
+        table = '<table class="table table-hover table-condensed compact stripe" id="invite-filter">'
         table += '<thead><tr><th>Player Name</th><th> </th></tr></thead><tbody id="invite-filter-table">'
 
         print("Request data to generate CL player list: {}".format(request_data))
@@ -5082,7 +5109,10 @@ class ClanLeague(Tournament):
             is_player_available = True
             # player wasn't invited to this tournament
             # check if it's us, if it is, skip
-            table += '<tr><td>'
+            clan_name = ""
+            if player.clan:
+                clan_name = '{}'.format(player.clan.name)
+            table += '<tr><td data-search="{} {}">'.format(clan_name, player.name)
             if player.clan is not None:
                 table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
                     player.clan.icon_link, player.clan.image_path, player.clan.name)
@@ -5141,7 +5171,10 @@ class RealTimeLadder(Tournament):
     max_vetoes = models.IntegerField(default=1)
 
     def get_active_team_count(self):
-        return TournamentTeam.objects.filter(tournament=self, active=True).count()
+        num_teams = TournamentTeam.objects.filter(tournament=self, active=True).count()
+        self.number_players = num_teams
+        self.save()
+        return num_teams
 
     def get_active_teams(self):
         return TournamentTeam.objects.filter(tournament=self, active=True)
@@ -5238,7 +5271,6 @@ class RealTimeLadder(Tournament):
     def get_player_from_teamid(self, team):
         tplayer = TournamentPlayer.objects.filter(team=int(team))
         if tplayer:
-            print("Got player")
             return tplayer[0].player
 
     def remove_template(self, templateid):
@@ -5706,17 +5738,19 @@ class RealTimeLadder(Tournament):
             current_team = start + 1
 
             data = "__**Ladder Rankings**__ - Viewing Rankings {}-{}\n".format(current_team, end)
-        if len(teams) > 0:
-            for team in teams:
-                if team.ranked:
-                    ranked_text = "{}".format(current_team)
-                else:
-                    ranked_text = "Unranked"
-                data += "{} | {} | {}\n".format(ranked_text, team.rating, get_team_data_no_clan(team))
-                current_team += 1
-            return data
+            if len(teams) > 0:
+                for team in teams:
+                    if team.ranked:
+                        ranked_text = "{}".format(current_team)
+                    else:
+                        ranked_text = "Unranked"
+                    data += "{} | {} | {}\n".format(ranked_text, team.rating, get_team_data_no_clan(team))
+                    current_team += 1
+                return data
+            else:
+                return data + "There are no players/rankings to view."
         else:
-            return data + "There are no players/rankings to view."
+            return "The page to view must be numeric."
 
     def get_current_templates(self):
         data = ""

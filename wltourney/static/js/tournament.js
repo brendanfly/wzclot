@@ -64,6 +64,7 @@ function handle_request(url, data, onSuccessFunc, onErrorFunc, onAlwaysFunc, onF
 {
     $.ajax({
         type:"POST",
+        type:"POST",
         url: url,
         headers: {'X-CSRFToken': Cookies.get('csrftoken')},
         data: data,
@@ -118,12 +119,7 @@ function hook_invite_players()
                     // now create a filter on the table to hide/show rows based on the filter text
                     $("#tournament_invites_text").html(data.invited_players_inverse);
 
-                    $("#invite-filter").on("keyup", function() {
-                        var value = $(this).val().toLowerCase();
-                        $("#invite-filter-table tr").filter(function() {
-                            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
-                        });
-                    });
+                    $("#invite-filter").DataTable({ "pageLength": 100 });
 
                     if (data.can_start_tourney)
                     {

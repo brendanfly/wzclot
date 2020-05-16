@@ -22,6 +22,7 @@ class LogLevel:
     process_game = "Process Game"
     process_new_games = "Process New Games"
     clotbook = "CLOTBook"
+    api = "API"
 
 def log_exception():
     log(traceback.format_exc(), LogLevel.critical)
@@ -85,7 +86,6 @@ class ProcessGameLog(Logger):
 
     def __str__(self):
         return "[Time: {} Level: {}]: GameID: {}".format(self.timestamp, self.level, self.game.gameid)
-
 
 class ProcessNewGamesLog(Logger):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
@@ -191,6 +191,8 @@ class LogManager():
         if self.type == LogLevel.engine:
             logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.clean_logs:
+            logs = Logger.objects.filter(**self.kwargs)
+        if self.type == LogLevel.api:
             logs = Logger.objects.filter(**self.kwargs)
         if self.type == LogLevel.tournament:
             logs = TournamentLog.objects.filter(**self.kwargs)
