@@ -183,7 +183,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 return
 
             team_odds = team_odds[0]
-            if not wager.isnumeric():
+            if not wager.isnumeric() or int(wager) < 1:
                 await ctx.send("{} is not a valid wager. Please enter a valid wager amount.".format(wager))
                 return
 
