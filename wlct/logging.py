@@ -30,7 +30,7 @@ def log_exception():
 def log(msg, level):
     logger = Logger(msg=msg, level=level)
 
-    if settings.DEBUG:
+    if settings.DEBUG or level == LogLevel.clean_logs or level == LogLevel.engine:
         print("{} log level: {}".format(level, msg))
 
     logger.save()
@@ -205,6 +205,7 @@ class LogManager():
         if self.type == LogLevel.process_new_games:
             logs = ProcessNewGamesLog.objects.filter(**self.kwargs)
 
+        print("Pruning {} {} logs".format(logs.count(), self.type))
         if logs:
             for l in logs.iterator():
                 l.delete()
