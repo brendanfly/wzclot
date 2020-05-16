@@ -1,8 +1,8 @@
 from django.db import models
 from django.utils import timezone
-from wlct.models import Player
 from django.contrib import admin
 from wlct.logging import log_cb_msg, log_exception
+from wlct.models import Player
 
 def get_team_data_no_clan_player_list(list):
     team_data = ""

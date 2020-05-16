@@ -59,12 +59,12 @@ class DiscordTournamentUpdate(models.Model):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, blank=True, null=True)
     bot_send = models.BooleanField(default=False)
 
-# class to track clan filters for game log updates and the clotbook
+# class to track clan filters for game log updates
 class DiscordChannelClanFilter(models.Model):
     link = models.ForeignKey('DiscordChannelTournamentLink', on_delete=models.DO_NOTHING, blank=True, null=True)
     clan = models.ForeignKey('Clan', on_delete=models.CASCADE, blank=True, null=True)
 
-# class to track player filters for game log updates and the clotbook
+# class to track player filters for game log updates
 class DiscordChannelPlayerFilter(models.Model):
     link = models.ForeignKey('DiscordChannelTournamentLink', on_delete=models.DO_NOTHING, blank=True, null=True)
     player = models.ForeignKey('Player', on_delete=models.CASCADE, blank=True, null=True)

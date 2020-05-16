@@ -296,11 +296,11 @@ class Clot(commands.Cog, name="clot"):
     @commands.command(
         brief="Creates filters for game logs to only show games fulfilling criteria.",
         usage='''
-                Hint: Any option with [] is optional. Excluding tournament_ids will apply filter to all games
+                Hint: Any parameter with [] is optional. Excluding [tournament_id]s will apply filter to all games
                 bb!filter -a -c clan_id [tournament_id] - adds filters for the channel to show logs from a clan
                 bb!filter -r -c clan_id [tournament_id] - removes clan filters from the channel
                 bb!filter -a -p player_token [tournament_id] - adds filters for the channel to show logs from a player
-                bb!filter -r -p player_token [tournament_id] - removes player filters from the channel
+                bb!filter -r -p player_token [tournament_id] - removes player filters from the channel           
                 bb!filter -rall - removes all filters from the channel
                 ''',
         category="clot")
@@ -333,7 +333,7 @@ class Clot(commands.Cog, name="clot"):
             if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
                 # user is a server admin, process to create the channel -> tournament link
                 if tournament_id:
-                    tournament = find_tournament_by_id(int(tournament_id))
+                    tournament = find_tournament_by_id(int(tournament_id), True)
                     if not tournament:
                         await ctx.send("Unable to find tournament with id {}. Use ``bb!tournaments`` to see list of tournaments.".format(tournament_id))
                         return
@@ -350,8 +350,7 @@ class Clot(commands.Cog, name="clot"):
                 if arg2 == "-c":
                     clan = Clan.objects.filter(id=int(id))
                     if not clan:
-                        await ctx.send(
-                            "Unable to find clan with id {}. Use ``bb!clans`` to see list of clans.".format(id))
+                        await ctx.send("Unable to find clan with id {}. Use ``bb!clans`` to see list of clans.".format(id))
                         return
                     clan = clan[0]
                 elif arg2 == "-p":
@@ -371,44 +370,46 @@ class Clot(commands.Cog, name="clot"):
                                 await ctx.send("Filter for {} and {} already exists. Use ``bb!links`` to see all links and filters.".format(clan.name, cl.tournament.name))
                                 continue
                             new_filter = DiscordChannelClanFilter(link=cl, clan=clan)
-                        else:
+                        elif arg2 == "-p":
                             # Adds player filters to the channel
                             discord_channel_filter = DiscordChannelPlayerFilter.objects.filter(link=cl, player=player)
                             if discord_channel_filter:
                                 await ctx.send("Filter for {} and {} already exists. Use ``bb!links`` to see all links and filters.".format(player.name, cl.tournament.name))
                                 continue
                             new_filter = DiscordChannelPlayerFilter(link=cl, player=player)
+
                         new_filter.save()
                         total_filters_added += 1
 
                     await ctx.send("Successfully added {} filters to this channel.".format(total_filters_added))
                 else:
                     total_filters_removed = 0
-                    for cl in discord_channel_link:
-                        if arg == "-rall":
-                            # Remove all filters from the channel
-                            clan_filters = DiscordChannelClanFilter.objects.filter(link=cl)
-                            player_filters = DiscordChannelPlayerFilter.objects.filter(link=cl)
-                            for cf in clan_filters:
-                                cf.delete()
-                                total_filters_removed += 1
-                            for pf in player_filters:
-                                pf.delete()
-                                total_filters_removed += 1
 
-                        elif arg2 == "-c":
-                            # Remove all filters applying to the channel, clan and (optionally) tournament
-                            discord_channel_filter = DiscordChannelClanFilter.objects.filter(link=cl, clan=clan)
-                            if discord_channel_filter:
-                                discord_channel_filter[0].delete()
-                                total_filters_removed += 1
+                    if arg == "-rall":
+                        # Remove all filters from the channel
+                        clan_filters = DiscordChannelClanFilter.objects.filter(link__channelid=ctx.message.channel.id)
+                        player_filters = DiscordChannelPlayerFilter.objects.filter(link__channelid=ctx.message.channel.id)
+                        for cf in clan_filters:
+                            cf.delete()
+                            total_filters_removed += 1
+                        for pf in player_filters:
+                            pf.delete()
+                            total_filters_removed += 1
+                    else:
+                        for cl in discord_channel_link:
+                            if arg2 == "-c":
+                                # Remove all filters applying to the channel, clan and (optionally) tournament
+                                discord_channel_filter = DiscordChannelClanFilter.objects.filter(link=cl, clan=clan)
+                                if discord_channel_filter:
+                                    discord_channel_filter[0].delete()
+                                    total_filters_removed += 1
+                            elif arg2 == "-p":
+                                # Remove all filters applying to the channel, player and (optionally) tournament
+                                discord_channel_filter = DiscordChannelPlayerFilter.objects.filter(link=cl, player=player)
+                                if discord_channel_filter:
+                                    discord_channel_filter[0].delete()
+                                    total_filters_removed += 1
 
-                        else:
-                            # Remove all filters applying to the channel, player and (optionally) tournament
-                            discord_channel_filter = DiscordChannelPlayerFilter.objects.filter(link=cl, player=player)
-                            if discord_channel_filter:
-                                discord_channel_filter[0].delete()
-                                total_filters_removed += 1
                     if total_filters_removed:
                         await ctx.send("Successfully removed {} filters from the channel".format(total_filters_removed))
                     else:
@@ -642,7 +643,7 @@ class Clot(commands.Cog, name="clot"):
                             discord_channel_link.delete()
                             await ctx.send("You've removed the link from this channel and {} filters".format(total_filters_removed))
                         else:
-                            await ctx.send("There is no existing link for tournament {} and this channel.")
+                            await ctx.send("There is no existing link for tournament {} and this channel.".format(tournament.name))
                 else:
                     await ctx.send("Please enter a valid tournament or league id to link to this channel.")
             else:

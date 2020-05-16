@@ -1,5 +1,5 @@
 import discord
-from wlct.models import Clan, Player, DiscordUser, DiscordChannelTournamentLink
+from wlct.models import Clan, Player, DiscordUser
 from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry, get_team_data_no_clan_player_list
 from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
