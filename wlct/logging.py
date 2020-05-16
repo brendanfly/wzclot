@@ -205,8 +205,8 @@ class LogManager():
         if self.type == LogLevel.process_new_games:
             logs = ProcessNewGamesLog.objects.filter(**self.kwargs)
 
-        print("Pruning {} {} logs".format(logs.count(), self.type))
         if logs:
+            print("Pruning {} {} logs".format(logs.count(), self.type))
             for l in logs.iterator():
                 l.delete()
         end = datetime.datetime.utcnow() - start
