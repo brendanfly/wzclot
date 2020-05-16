@@ -1,11 +1,10 @@
 import discord
-from wlct.models import Clan, Player, DiscordUser, DiscordChannelClanFilter, DiscordChannelPlayerFilter, DiscordChannelTournamentFilter, DiscordChannelTournamentLink, TournamentAdministrator
+from wlct.models import Clan, Player, DiscordUser, DiscordChannelClanFilter, DiscordChannelPlayerFilter, DiscordChannelTournamentLink, TournamentAdministrator
 from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry
 from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
 from django.conf import settings
 from wlct.cogs.common import is_clotadmin, has_tournament_admin_access
-from wlct.clotbook import DiscordChannelCLOTBookLink
 
 
 class PlayerStats:
@@ -301,9 +300,7 @@ class Clot(commands.Cog, name="clot"):
                 bb!filter -a -c clan_id [tournament_id] - adds filters for the channel to show logs from a clan
                 bb!filter -r -c clan_id [tournament_id] - removes clan filters from the channel
                 bb!filter -a -p player_token [tournament_id] - adds filters for the channel to show logs from a player
-                bb!filter -r -p player_token [tournament_id] - removes player filters from the channel
-                bb!filter -a -t tournament_id - (CLOTBOOK) adds filters for the channel to show bets from a tournament
-                bb!filter -r -t tournament_id - (CLOTBOOK) removes tournament filters from the channel                
+                bb!filter -r -p player_token [tournament_id] - removes player filters from the channel           
                 bb!filter -rall - removes all filters from the channel
                 ''',
         category="clot")
@@ -319,15 +316,15 @@ class Clot(commands.Cog, name="clot"):
                 await ctx.send("Please enter a valid option (-a or -r or -rall). Use ``bb!help filter`` to see commands.")
                 return
 
-            if arg != "-rall" and (arg2 == "invalid_cmd" or arg2 != "-c" and arg2 != "-p" and arg2 != "-t"):
-                await ctx.send("Please enter a valid option (-c or -p or -t). Use ``bb!help filter`` to see commands.")
+            if arg != "-rall" and (arg2 == "invalid_cmd" or arg2 != "-c" and arg2 != "-p"):
+                await ctx.send("Please enter a valid option (-c or -p). Use ``bb!help filter`` to see commands.")
                 return
 
             if arg != "-rall" and (id == "invalid_id" or not id.isnumeric()):
                 await ctx.send("Please enter a valid id. Use ``bb!help filter`` to see commands.")
                 return
 
-            if (arg != "-rall" and arg2 != "-t") and tournament_id and not tournament_id.isnumeric():
+            if arg != "-rall" and tournament_id and not tournament_id.isnumeric():
                 await ctx.send("Please enter a valid tournament ID (or exclude to filter all applicable games). Use ``bb!help tournaments`` to see tournaments.")
                 return
 
@@ -335,9 +332,7 @@ class Clot(commands.Cog, name="clot"):
             # validate that here
             if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
                 # user is a server admin, process to create the channel -> tournament link
-
-                discord_clotbook_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id)
-                if tournament_id and arg2 != "-t":
+                if tournament_id:
                     tournament = find_tournament_by_id(int(tournament_id), True)
                     if not tournament:
                         await ctx.send("Unable to find tournament with id {}. Use ``bb!tournaments`` to see list of tournaments.".format(tournament_id))
@@ -345,23 +340,10 @@ class Clot(commands.Cog, name="clot"):
 
                     discord_channel_link = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id,
                                                                                        tournament=tournament)
-                elif arg2 == "-t":
-                    tournament = find_tournament_by_id(int(id), True)
-                    if not tournament:
-                        await ctx.send(
-                            "Unable to find tournament with id {}. Use ``bb!tournaments`` to see list of tournaments.".format(id))
-                        return
-
-                    if not discord_clotbook_link:
-                        await ctx.send("There is no CLOTBook link in this channel. Use ``bb!help cb`` to check CB commands.")
-                        return
                 else:
                     discord_channel_link = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id)
 
-                if discord_clotbook_link:
-                    discord_clotbook_link = discord_clotbook_link[0]
-
-                if not discord_channel_link and not discord_clotbook_link:
+                if not discord_channel_link:
                     await ctx.send("There were no links found in this channel satisfying the command. Use ``bb!help linkt`` to see commands to link.")
                     return
 
@@ -388,7 +370,6 @@ class Clot(commands.Cog, name="clot"):
                                 await ctx.send("Filter for {} and {} already exists. Use ``bb!links`` to see all links and filters.".format(clan.name, cl.tournament.name))
                                 continue
                             new_filter = DiscordChannelClanFilter(link=cl, clan=clan)
-
                         elif arg2 == "-p":
                             # Adds player filters to the channel
                             discord_channel_filter = DiscordChannelPlayerFilter.objects.filter(link=cl, player=player)
@@ -400,37 +381,6 @@ class Clot(commands.Cog, name="clot"):
                         new_filter.save()
                         total_filters_added += 1
 
-                    if discord_clotbook_link:
-                        if arg2 == "-t":
-                            # Adds tournament filters to the channel (CLOTBOOK ONLY)
-                            tournament_filters = DiscordChannelTournamentFilter.objects.filter(clotbook_link=discord_clotbook_link, tournament=tournament)
-                            if tournament_filters:
-                                await ctx.send(
-                                    "Filter for {} and {} already exists. Use ``bb!links`` to see all links and filters.".format(
-                                        tournament.name, ctx.message.channel.name))
-                            else:
-                                new_filter = DiscordChannelTournamentFilter(clotbook_link=discord_clotbook_link, tournament=tournament)
-                                new_filter.save()
-                                total_filters_added += 1
-                        elif arg2 == "-c":
-                            # Adds clan filters to the clotbook channel
-                            clotbook_filter = DiscordChannelClanFilter.objects.filter(clotbook_link=discord_clotbook_link, clan=clan)
-                            if not clotbook_filter:
-                                new_filter = DiscordChannelClanFilter(clotbook_link=discord_clotbook_link, clan=clan)
-                                new_filter.save()
-                                total_filters_added += 1
-                            elif not total_filters_added:
-                                await ctx.send("Link for {} and the CLOTBook already exists in this channel".format(clan.name))
-                        else:
-                            # Adds players filters to the clotbook channel
-                            clotbook_filter = DiscordChannelPlayerFilter.objects.filter(clotbook_link=discord_clotbook_link, player=player)
-                            if not clotbook_filter:
-                                new_filter = DiscordChannelPlayerFilter(clotbook_link=discord_clotbook_link, player=player)
-                                new_filter.save()
-                                total_filters_added += 1
-                            elif not total_filters_added:
-                                await ctx.send("Link for {} and the CLOTBook already exists in this channel".format(player.name))
-
                     await ctx.send("Successfully added {} filters to this channel.".format(total_filters_added))
                 else:
                     total_filters_removed = 0
@@ -438,9 +388,7 @@ class Clot(commands.Cog, name="clot"):
                     if arg == "-rall":
                         # Remove all filters from the channel
                         clan_filters = DiscordChannelClanFilter.objects.filter(link__channelid=ctx.message.channel.id)
-                        clan_filters |= DiscordChannelClanFilter.objects.filter(clotbook_link__channelid=ctx.message.channel.id)
                         player_filters = DiscordChannelPlayerFilter.objects.filter(link__channelid=ctx.message.channel.id)
-                        player_filters |= DiscordChannelPlayerFilter.objects.filter(clotbook_link__channelid=ctx.message.channel.id)
                         for cf in clan_filters:
                             cf.delete()
                             total_filters_removed += 1
@@ -461,28 +409,6 @@ class Clot(commands.Cog, name="clot"):
                                 if discord_channel_filter:
                                     discord_channel_filter[0].delete()
                                     total_filters_removed += 1
-
-                        if discord_clotbook_link:
-                            if arg2 == "-c":
-                                discord_channel_filter = DiscordChannelClanFilter.objects.filter(clotbook_link=discord_clotbook_link, clan=clan)
-                            elif arg2 == "-p":
-                                discord_channel_filter = DiscordChannelPlayerFilter.objects.filter(clotbook_link=discord_clotbook_link, player=player)
-                            if discord_channel_filter:
-                                discord_channel_filter[0].delete()
-                                total_filters_removed += 1
-
-                    if discord_clotbook_link:
-                        # Removes tournament filters to the channel (CLOTBOOK ONLY)
-                        if arg == "-rall":
-                            discord_channel_filter = DiscordChannelTournamentFilter.objects.filter(clotbook_link=discord_clotbook_link)
-                        elif arg2 == "-t":
-                            discord_channel_filter = DiscordChannelTournamentFilter.objects.filter(clotbook_link=discord_clotbook_link, tournament=tournament)
-                            if not discord_channel_filter:
-                                await ctx.send("Filter for {} and {} don't exist. Use ``bb!links`` to see all links and filters.".format(
-                                    tournament.name, ctx.message.channel.name))
-                        for tf in discord_channel_filter:
-                            tf.delete()
-                            total_filters_removed += 1
 
                     if total_filters_removed:
                         await ctx.send("Successfully removed {} filters from the channel".format(total_filters_removed))
@@ -776,19 +702,6 @@ class Clot(commands.Cog, name="clot"):
                     message_data = ""
 
                 message_data += "{} (Token: {}) | {} (ID: {})\n".format(pf.player.name, pf.player.token, pf.link.tournament.name, pf.link.tournament.id)
-
-            # List all tournament filters
-            clotbook_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id)
-            if clotbook_link:
-                tournament_filters = DiscordChannelTournamentFilter.objects.filter(clotbook_link=clotbook_link[0])
-                message_data += "\nTournament Filters (CLOTBook):\n"
-                for tf in tournament_filters:
-                    if len(message_data) > 1500:
-                        await ctx.send(message_data)
-                        message_data = ""
-
-                    message_data += "{} (ID: {})\n".format(tf.tournament.name, tf.tournament.id)
-
 
             if message_data:
                 await ctx.send(message_data)
