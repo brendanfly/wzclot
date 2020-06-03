@@ -20,3 +20,6 @@ wltourney/settings_local.py
 .pydevproject
 128teamseeded.pdf
 *.code-workspace
+*.log
+web.config
+run_waitress_server.py
