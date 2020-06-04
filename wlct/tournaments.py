@@ -552,7 +552,7 @@ class Tournament(models.Model):
             tournament_game = TournamentGame(game_link=game_link, gameid=gameID,
                                              players_per_team=self.players_per_team,
                                              team_game=team_game, tournament=self, round=tournament_round,
-                                             teams=game, players=player_ids)
+                                             teams=game, players=player_ids, templateid=tid)
             tournament_game.save_with_entry()
             log_game(
                 "Game {} created in tournament {}. Teams: {}, gameID: {}, round: {}".format(gameID, self.id,
@@ -3106,8 +3106,8 @@ class TournamentGameEntry(models.Model):
     team = models.ForeignKey('TournamentTeam', on_delete=models.CASCADE, related_name='team')
     team_opp = models.ForeignKey('TournamentTeam', on_delete=models.DO_NOTHING, related_name='team_opp')
     game = models.ForeignKey('TournamentGame', on_delete=models.CASCADE, related_name='game', blank=True, null=True)
-    is_finished = models.BooleanField(default=False)
-    created_date = models.DateTimeField(default=timezone.now)
+    is_finished = models.BooleanField(default=False, db_index=True)
+    created_date = models.DateTimeField(default=timezone.now, db_index=True)
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, related_name='tournament', blank=True, null=True)
     round = models.ForeignKey('TournamentRound', on_delete=models.CASCADE, related_name='tournament_round', blank=True, null=True)
 
@@ -3121,7 +3121,7 @@ class TournamentGame(models.Model):
     team_game = models.BooleanField(default=False)
     players_per_team = models.IntegerField(default=1)
     game_link = models.CharField(max_length=255, null=True)
-    gameid = models.CharField(max_length=255, default="Invalid game id")
+    gameid = models.CharField(max_length=255, default="Invalid game id", db_index=True)
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
     teams = models.CharField(max_length=255, null=True, db_index=True)
     players = models.CharField(max_length=255, null=True, blank=True)
@@ -3138,6 +3138,7 @@ class TournamentGame(models.Model):
     game_log_sent = models.BooleanField(default=False, blank=True, null=True, db_index=True)
     no_winning_team_log_sent = models.BooleanField(default=False, blank=True, null=True)
     betting_open = models.BooleanField(default=True)
+    templateid = models.IntegerField(default=0)
 
     def __str__(self):
         return "Round {} game in {} between {}. Game ID ({}) Finished? {}".format(self.round.round_number, self.tournament.name, self.teams, self.gameid, self.is_finished)
@@ -3467,6 +3468,13 @@ class MonthlyTemplateRotation(Tournament):
                                     # last boot time was in this past week..remove player
                                     log_tournament("Removing player {} ({}) from MTC {}".format(player[0].player.name, player[0].player.token, self.name), self)
                                     player[0].team.active = False
+
+                                    # also set joined=False on the invite
+                                    invite = TournamentInvite.objects.filter(player=player[0], tournament=self)
+                                    if invite:
+                                        invite[0].joined = False
+                                        invite[0].save()
+
                             # regardless we need to log the current time
                             player[0].team.last_boot_time = datetime.datetime.utcnow()
                             player[0].team.save()
@@ -5401,6 +5409,32 @@ class RealTimeLadder(Tournament):
         self.bracket_game_data = table
         self.save()
 
+    def pick_template_for_game(self, team1, team2, templates_list):
+        # each team must get a different template than the last 2 games, and must be allowed to play it
+        templates_list_copy = templates_list.copy()
+
+        log_tournament("Template list before prune: {}".format(templates_list_copy), self)
+        # remove the last 2 templates each team played from the list
+        games1 = TournamentGameEntry.objects.filter(team=team1).order_by('-created_date')[:2]
+        for entry in games1:
+            if entry.game.templateid != 0 and entry.game.templateid in templates_list_copy:
+                templates_list_copy.remove(entry.game.templateid)
+
+        games2 = TournamentGameEntry.objects.filter(team=team2).order_by('-created_date')[:2]
+        for entry in games2:
+            if entry.game.templateid != 0 and entry.game.templateid in templates_list_copy:
+                templates_list_copy.remove(entry.game.templateid)
+
+        log_tournament("Template list after prune: {}".format(templates_list_copy), self)
+        while True:
+            shuffle(templates_list_copy)
+            for tid in templates_list_copy:
+                log_tournament("Picked new template out of the list: {}".format(tid), self)
+                if self.is_template_allowed(tid, team1) and self.is_template_allowed(tid, team2):
+                    log_tournament("Picked FINAL template for game: {}".format(tid), self)
+                    return tid
+
+
     def process_new_games(self):
         # handles creating new ladder games between players
         templates_list = []
@@ -5450,23 +5484,11 @@ class RealTimeLadder(Tournament):
                                 raise ContinueOnError
                             
                             log_tournament("# of teams joined but not in a game: {}".format(len(teams_find_games)), self)
-                            tid = templates_list[random.randint(0, len(templates_list)-1)]
+                            tid = self.pick_template_for_game(team1, team2, templates_list)
 
                             game_data = "{}.{}".format(team1.id, team2.id)
 
                             if get_games_against_since_hours(team1, team2, self, 1) == 0:
-                                # before we create we need to check template vetoes
-                                # and loop until we're in a good spot
-                                # to minimize the work done here we will check if both teams are in the top 10
-                                # then if only one of them are
-                                while True:
-                                    if self.is_template_allowed(tid.template, team1) and self.is_template_allowed(tid.template, team2):
-                                        log_tournament("Picked FINAL template for game: {}".format(tid.template), self)
-                                        break
-                                    else:
-                                        tid = templates_list[random.randint(0, len(templates_list) - 1)]
-                                        log_tournament("Picked new template out of the list: {}".format(tid.template), self)
-
                                 extra_settings = self.get_game_extra_settings()
                                 game = self.create_game_with_template_and_data(round, game_data, tid.template, extra_settings)
                                 if game:

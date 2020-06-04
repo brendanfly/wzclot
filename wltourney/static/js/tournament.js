@@ -904,6 +904,7 @@ $(function () {
                   // update the invited players and the inverse invited players (everyone not invited)
                   $("#invitetab").html(data.invited_players);
                   $("#tournament_invites_text").html(data.invited_players_inverse);
+                  $("#invite-filter").DataTable({ "pageLength": 100 });
                   $("#tournament_invites").modal('show');
                }
             },
