@@ -22,7 +22,8 @@ class LogFilter(SimpleListFilter):
             ('bot', 'Bot'),
             ('clean_logs', 'Log Cleanup'),
             ('clotbook', 'CLOTBook'),
-            ('api', 'API')
+            ('api', 'API'),
+            ('webhook', 'Webhook')
         ]
 
     def queryset(self, request, queryset):
@@ -49,6 +50,8 @@ class LogFilter(SimpleListFilter):
             return queryset.distinct().filter(level=LogLevel.tournament)
         if self.value() == 'api':
             return queryset.distinct().filter(level=LogLevel.api)
+        if self.value() == 'webhook':
+            return queryset.distinct().filter(level=LogLevel.webhook)
 
 class LogAdmin(admin.ModelAdmin):
     list_filter = (LogFilter, )

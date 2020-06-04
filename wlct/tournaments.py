@@ -409,8 +409,8 @@ class Tournament(models.Model):
 
     def get_full_public_link(self):
         if self.is_league:
-            return "http://wztourney.herokuapp.com/leagues/{}/".format(self.id)
-        return "http://wztourney.herokuapp.com/tournaments/{}/".format(self.id)
+            return "http://wzclot.eastus.cloudapp.azure.com/leagues/{}/".format(self.id)
+        return "http://wzclot.eastus.cloudapp.azure.com/tournaments/{}/".format(self.id)
 
     def should_process_in_engine(self):
         return True
@@ -5592,13 +5592,13 @@ class RealTimeLadder(Tournament):
             player = Player.objects.get(discord_member__memberid=discord_id)
             return self.join_leave_player(player, join, leave_after_game)
         except ObjectDoesNotExist:
-            return "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions."
+            return "Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions."
 
     def get_current_vetoes(self, discord_id):
         try:
             player = Player.objects.get(discord_member__memberid=discord_id)
         except ObjectDoesNotExist:
-            return "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions."
+            return "Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions."
         try:
             tp = TournamentPlayer.objects.get(player=player, tournament=self)
             data = ""
@@ -5649,7 +5649,7 @@ class RealTimeLadder(Tournament):
                     player = Player.objects.get(discord_member__memberid=discord_id)
                     tp = TournamentPlayer.objects.get(player=player, tournament=self)
                 except ObjectDoesNotExist:
-                    return "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions."
+                    return "Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions."
 
                 total_vetoes = RealTimeLadderVeto.objects.filter(ladder=self, team=tp.team)
                 if total_vetoes.count() == self.max_vetoes and not remove:
@@ -5768,7 +5768,7 @@ class RealTimeLadder(Tournament):
             player = Player.objects.get(discord_member__memberid=discord_id)
             tp = TournamentPlayer.objects.get(player=player, tournament=self)
         except ObjectDoesNotExist:
-            return (False, "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions. If you are linked to the CLOT you must join the ladder in order to use this command")
+            return (False, "Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions. If you are linked to the CLOT you must join the ladder in order to use this command")
 
         if tp:
             data += "Player: {}\nRating: {}\nTotal W-L: {}-{}\n\n".format(get_team_data_no_clan(tp.team), tp.team.rating, tp.team.wins, tp.team.losses)

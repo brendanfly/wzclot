@@ -7,11 +7,8 @@ from urllib.request import urlopen
 from wlct.models import Clan, Engine, Player
 from wlct.tournaments import ClanLeague, ClanLeagueTournament, find_tournament_by_id, Tournament, TournamentGame, TournamentPlayer, TournamentTeam, TournamentGameEntry, TournamentRound, get_multi_day_ladder
 from django.conf import settings
-from wlct.api import API
-from django import db
 import pytz
 import threading
-from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from apscheduler.schedulers.background import BlockingScheduler
 from apscheduler.jobstores.base import ConflictingIdError
 from django_apscheduler.jobstores import DjangoJobStore
@@ -20,34 +17,45 @@ import gc
 from django.utils import timezone
 import urllib.request
 import json
-import time
+import signal
 
 def get_run_time():
     return 180
 
+def signal_handler(sig, frame):
+    print('You pressed Ctrl+C!')
+
 class Command(BaseCommand):
     help = "Runs the engine for cleaning up logs and creating new tournament games every 180 seconds"
     def handle(self, *args, **options):
+
+        # set up sign int handling
+        signal.signal(signal.SIGINT, signal_handler)
         self.schedule_jobs()
 
     def schedule_jobs(self):
         # lookup the main scheduler, if it's not currently scheduled, add it every 3 min
         try:
+            print("Scheduling jobs")
             scheduler = BlockingScheduler()
             # If you want all scheduled jobs to use this store by default,
             # use the name 'default' instead of 'djangojobstore'.
             scheduler.add_jobstore(DjangoJobStore(), 'default')
             if not scheduler.running:
-                scheduler.add_job(tournament_engine, 'interval', seconds=get_run_time(), id='tournament_engine',
-                                  max_instances=1, coalesce=False)
-                scheduler.add_job(tournament_caching, 'interval', seconds=(get_run_time()*2), id='tournament_caching',
-                                  max_instances=1, coalesce=False)
+                scheduler.add_job(tournament_engine, 'interval', seconds=get_run_time()*10, id='tournament_engine',
+                                  max_instances=1, coalesce=True, replace_existing=True)
+                scheduler.add_job(tournament_engine_real_time, 'interval', seconds=get_run_time()/3, id='tournament_engine_real_time',
+                                  max_instances=1, coalesce=True, replace_existing=True)
+                scheduler.add_job(tournament_caching, 'interval', seconds=(get_run_time()*12), id='tournament_caching',
+                                  max_instances=1, coalesce=True, replace_existing=True)
+                scheduler.add_job(tournament_caching_real_time, 'interval', seconds=get_run_time(), id='tournament_caching_real_time',
+                                  max_instances=1, coalesce=True, replace_existing=True)
                 scheduler.add_job(process_team_vacations, 'interval', seconds=(get_run_time()*20), id='process_team_vacations',
-                                  max_instances=1, coalesce=False)
+                                  max_instances=1, coalesce=True, replace_existing=True)
                 scheduler.add_job(parse_and_update_clan_logo, 'interval', seconds=(get_run_time()*25), id='parse_and_update_clan_logo',
-                                  max_instances=1, coalesce=False)
+                                  max_instances=1, coalesce=True, replace_existing=True)
                 scheduler.add_job(process_mdl_games, 'interval', seconds=(get_run_time()*20), id='process_mdl_games',
-                                  max_instances=1, coalesce=False)
+                                  max_instances=1, coalesce=True, replace_existing=True)
                 scheduler.start()
         except ConflictingIdError:
             pass
@@ -218,8 +226,13 @@ def cache_games(**kwargs):
         if child_tournament:
             log("[CACHE]: Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
             try:
-                child_tournament.cache_data()
-                log("[CACHE]: Finished processing games for tournament {}".format(tournament.name), LogLevel.engine)
+                # we only need to cache if there are unfinished games
+                games = TournamentGame.objects.filter(tournament=child_tournament, is_finished=False)
+                if games.count() > 0:
+                    child_tournament.cache_data()
+                    log("[CACHE]: Finished processing games for tournament {}".format(tournament.name), LogLevel.engine)
+                else:
+                    print("Skipping {} due to no unfinished games".format(tournament.name))
             except Exception as e:
                 log_exception()
             finally:
@@ -228,7 +241,7 @@ def cache_games(**kwargs):
 
 def check_games(**kwargs):
     log("Running check_games on thread {}".format(threading.get_ident()), LogLevel.engine)
-    tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
+    tournaments = Tournament.objects.filter(**kwargs)
     for tournament in tournaments:
         child_tournament = find_tournament_by_id(tournament.id, True)
         if child_tournament and child_tournament.should_process_in_engine():
@@ -293,15 +306,36 @@ def update_elo_scores_500():
 
     print("Finished updating elo + 500")
 
+def tournament_caching_real_time():
+    try:
+        cache_games(has_started=True, multi_day=False)
+    except:
+        log_exception()
+
 def tournament_caching():
     try:
         cleanup_logs()
         if settings.DEBUG:
             cache_games(has_started=True)
         else:
-            cache_games(has_started=True, is_finished=False)
+            cache_games(has_started=True, multi_day=True)
     except Exception as e:
         log_exception()
+
+def tournament_engine_real_time():
+    try:
+        now_run_time = timezone.now()
+        check_games(has_started=True, multi_day=False)
+    except:
+        log_exception()
+    finally:
+        finished_time = timezone.now()
+        next_run = timezone.now() + datetime.timedelta(seconds=get_run_time()/3)
+        total_run_time = (finished_time - now_run_time).total_seconds()
+        log("RT Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time,
+                                                                                              total_run_time, next_run),
+            LogLevel.engine)
+        print("RT Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time, total_run_time, next_run))
 
 def tournament_engine():
     try:
@@ -326,7 +360,7 @@ def tournament_engine():
         # bulk of the logic, we handle all types of tournaments separately here
         # there must be logic for each tournament type, as the child class contains
         # the logic
-        check_games(type='process')
+        check_games(has_started=True, multi_day=True)
     except Exception as e:
         log_exception()
     finally:

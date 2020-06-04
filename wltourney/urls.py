@@ -57,5 +57,7 @@ urlpatterns = [
     path('pr/seasons/update/', wlct.views.pr_update_season, name="pr_update_season"),
     path('pr/season/<int:id>/', wlct.views.pr_view_season, name="pr_view_season"),
 
-    path('max_games_at_once/', wlct.views.update_max_games_at_once, name='update_max_games_at_once')
+    path('max_games_at_once/', wlct.views.update_max_games_at_once, name='update_max_games_at_once'),
+
+    path('github/webhook/', wlct.views.webhook_request, name='webhook_request')
 ]

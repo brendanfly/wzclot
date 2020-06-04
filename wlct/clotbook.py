@@ -141,7 +141,7 @@ class CLOTBook(models.Model):
 
     def finish_game(self, game):
         # pay out all bets for this game
-        if game.winning_team and game.is_finished:
+        if game.winning_team and game.is_finished and game.players:
             if game.winning_team.id == int(game.teams.split('.')[0]):
                 winning_players = game.players.split('-')[0]
             else:

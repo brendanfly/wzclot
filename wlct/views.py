@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from wlct.form_message_handling import FormError
 from wlct.api import API, get_account_token
 from wlct.models import Player, Clan
 from wlct.tournaments import SwissTournament, GroupStageTournament, SeededTournament, TournamentInvite, TournamentPlayer, find_tournament_by_id, Tournament, find_league_by_id, is_player_allowed_join, TournamentGameEntry, get_matchup_data, RealTimeLadder, RoundRobinRandomTeams
 from wlct.forms import SwissTournamentForm, SeededTournamentForm, GroupTournamentForm, MonthlyTemplateCircuitForm, PromotionRelegationLeagueForm, ClanLeagueForm, RoundRobinRandomTeamsForm
 from django.http import JsonResponse
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+from django.views.decorators.http import require_POST
 from django.core.exceptions import ObjectDoesNotExist
 from wlct.logging import log, LogLevel, log_exception
 import traceback
@@ -17,7 +18,7 @@ from django_apscheduler.jobstores import DjangoJobStore
 from wlct.management.commands.engine import tournament_engine, tournament_caching
 import string
 import random
-import math
+import json
 from django.core.paginator import Paginator
 
 def schedule_jobs():
@@ -879,6 +880,17 @@ def index(request):
 
         return render(request, 'mytourneys.html', context)
 
+@require_POST
+@csrf_exempt
+def webhook_request(request):
+    try:
+        if request.method == 'POST':
+            data = json.loads(request.body)
+            log(json.dumps(data), LogLevel.webhook)
+    except:
+        log_exception()
+    finally:
+        return HttpResponse('pong')
 
 # The main Login View of the site
 def login_view(request):

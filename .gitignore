@@ -23,3 +23,4 @@ wltourney/settings_local.py
 *.log
 web.config
 run_waitress_server.py
+wlct/management/commands/server.py

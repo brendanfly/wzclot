@@ -237,7 +237,7 @@ class Tasks(commands.Cog, name="tasks"):
             msg += "**Games finished with no winning team found**"
         for game in games:
             for cc in self.bot.critical_error_channels:
-                msg += "\n{} | ID: {} \nLink: <{}> \nLogs: <http://wztourney.herokuapp.com/admin/wlct/processgamelog/?q={}>".format(game.tournament.name, game.gameid, game.game_link, game.gameid)
+                msg += "\n{} | ID: {} \nLink: <{}> \nLogs: <http://wzclot.eastus.cloudapp.azure.com/admin/wlct/processgamelog/?q={}>".format(game.tournament.name, game.gameid, game.game_link, game.gameid)
                 msg = msg[:1999]
                 await cc.send(msg)
                 game.no_winning_team_log_sent = True
@@ -395,7 +395,7 @@ class Tasks(commands.Cog, name="tasks"):
             emb.set_footer(text="Bot created and maintained by -B#0292")
             msg = "Hello {},\n\nI'm a homemade Warzone Discord Bot. \n\nI'm reaching out because your discord account".format(
                 member.name)
-            msg += " is not linked to the CLOT (custom ladder or tournament). Please see http://wztourney.herokuapp.com/me/ for instructions"
+            msg += " is not linked to the CLOT (custom ladder or tournament). Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions"
             msg += " on how to link the two accounts together.\n\nThis will allow you to participate in the bot's"
             msg += " new real-time-ladder, as well as help to become verified in the Warzone discord server."
             emb.add_field(name="Welcome", value=msg)

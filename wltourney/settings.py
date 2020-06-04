@@ -27,7 +27,7 @@ SECRET_KEY = 'i+acxn5(akgsn!sr4^qgf(^m&*@+g1@u^t@=8s@axc41ml*f=s'
 
 AUTH_USER_MODEL = 'wlct.User'
 
-ALLOWED_HOSTS = [".herokuapp.com"]
+ALLOWED_HOSTS = ["localhost", "0.0.0.0", "wzclot", "wzclot.com", "127.0.0.1", "40.117.82.60", ".azure.com", ".wzclot.com"]
 
 # Application definition
 

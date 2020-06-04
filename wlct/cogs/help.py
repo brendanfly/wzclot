@@ -25,7 +25,7 @@ def get_help_embed(cog):
         if len(cmds) > 0:
             emb.add_field(name="__**{} commands**__".format(cog.qualified_name), value="{}".format(cmds), inline=True)
 
-    emb.add_field(name="Useful Links:", value="[CLOT Website](http://wztourney.herokuapp.com)", inline=False)
+    emb.add_field(name="Useful Links:", value="[CLOT Website](http://wzclot.eastus.cloudapp.azure.com)", inline=False)
     return emb
 
 class Help(commands.HelpCommand):

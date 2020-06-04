@@ -64,7 +64,7 @@ class Common(commands.Cog, name="general"):
         try:
             url = ""
             if server == "clot" or server == "CLOT":
-                url = 'http://wztourney.herokuapp.com'
+                url = 'http://wzclot.eastus.cloudapp.azure.com'
                 r = requests.get(url)
             elif server == "wz" or server == "WZ":
                 url = 'https://www.warzone.com/MultiPlayer/'

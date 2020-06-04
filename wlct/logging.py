@@ -23,6 +23,7 @@ class LogLevel:
     process_new_games = "Process New Games"
     clotbook = "CLOTBook"
     api = "API"
+    webhook = "Webhook"
 
 def log_exception():
     log(traceback.format_exc(), LogLevel.critical)
@@ -71,12 +72,12 @@ def log_bot_msg(msg):
 class Logger(models.Model):
 
     msg = models.TextField()
-    timestamp = models.DateTimeField(default=timezone.now)
+    timestamp = models.DateTimeField(default=timezone.now, db_index=True)
     bot_seen = models.BooleanField(default=False)
 
     # free-form logging is the best kind, do not tie this to
     # another object so we can use any level we so choose
-    level = models.CharField(max_length=64, null=True)
+    level = models.CharField(max_length=64, null=True, db_index=True)
 
     def __str__(self):
         return "[Time: {} Level: {}]: {}".format(self.timestamp, self.level, self.msg)

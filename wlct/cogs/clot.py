@@ -504,7 +504,7 @@ class Clot(commands.Cog, name="clot"):
                                     continue
                         else:
                             await ctx.send(
-                                "Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+                                "Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions.")
                             return
                     if arg == "-a":
                         # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
@@ -613,7 +613,7 @@ class Clot(commands.Cog, name="clot"):
                                         "The creator of the tournament is the only one who can link private tournaments.")
                                     return
                         else:
-                            await ctx.send("Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+                            await ctx.send("Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions.")
                             return
                     if arg == "-a":
                         # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
@@ -749,7 +749,7 @@ class Clot(commands.Cog, name="clot"):
                         await ctx.send("You've successfully linked your discord account to the CLOT.")
                 else:
                     await ctx.send(
-                        "Bot token is invalid. Please visit http://wztourney.herokuapp.com/me to retrieve your token.")
+                        "Bot token is invalid. Please visit http://wzclot.eastus.cloudapp.azure.com/me to retrieve your token.")
             else:
                 await ctx.send("You cannot use the !linkme command unless you are privately messaging the bot.")
         except:
@@ -824,7 +824,7 @@ class Clot(commands.Cog, name="clot"):
                         await ctx.send(tournament_data)
                         tournament_data = ""
 
-                    link_text = "http://wztourney.herokuapp.com/"
+                    link_text = "http://wzclot.eastus.cloudapp.azure.com/"
                     if child_tournament.is_league:
                         link_text += "leagues/{}".format(child_tournament.id)
                     else:
@@ -965,7 +965,7 @@ class Clot(commands.Cog, name="clot"):
                     player = player[0]
                     await ctx.send("{} | <http://wzclot.com/stats/{}> | <https://warzone.com/Profile?p={}>".format(player.name, player.token, player.token))
                 else:
-                    await ctx.send("Your discord account is not linked to the CLOT. Please see http://wztourney.herokuapp.com/me/ for instructions.")
+                    await ctx.send("Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions.")
             else:
                 await ctx.send("Searching the CLOT for players starting with {}...".format(option))
                 players = Player.objects.filter(name__istartswith=option)
