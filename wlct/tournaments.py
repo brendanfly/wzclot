@@ -3477,7 +3477,7 @@ class MonthlyTemplateRotation(Tournament):
                                     player[0].team.active = False
 
                                     # also set joined=False on the invite
-                                    invite = TournamentInvite.objects.filter(player=player[0], tournament=self)
+                                    invite = TournamentInvite.objects.filter(player=player[0].player, tournament=self)
                                     if invite:
                                         invite[0].joined = False
                                         invite[0].save()
