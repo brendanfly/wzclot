@@ -5447,7 +5447,7 @@ class RealTimeLadder(Tournament):
         templates_list = []
         templates = RealTimeLadderTemplate.objects.filter(ladder=self)
         for t in templates:
-            templates_list.append(t)
+            templates_list.append(t.template)
 
         round = TournamentRound.objects.filter(tournament=self, round_number=1)
         if not round:
