@@ -160,5 +160,3 @@ class Command(BaseCommand):
                 bot.run(os.environ['WZ_BOT_TOKEN'])
         except:
             log_exception()
-        finally:
-            bot.close()
