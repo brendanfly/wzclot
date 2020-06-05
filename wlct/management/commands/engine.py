@@ -36,7 +36,7 @@ class Command(BaseCommand):
         print('Waiting for all jobs to finish and shutting process down...')
         if self.scheduler is not None and self.scheduler.running:
             print("Scheduler is running...shutting down")
-            self.scheduler.shutdown()
+            self.scheduler.shutdown(wait=True)
 
     def schedule_jobs(self):
         # lookup the main scheduler, if it's not currently scheduled, add it every 3 min
