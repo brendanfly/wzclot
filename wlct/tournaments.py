@@ -226,6 +226,13 @@ def did_teams_play_in_round(teamid1, teamid2, round):
         return True
     return False
 
+def did_teams_play_last_games(teamid1, teamid2, num_games_since):
+    games1 = TournamentGameEntry.objects.filter(team=teamid1, team_opp=teamid2).order_by('-created_date')[:num_games_since]
+    if games1.count() > 0:
+        # teams played each other in the last 3
+        return True
+    return False
+
 def get_games_for_team(teamid, tournament):
     games_played = TournamentGameEntry.objects.filter(team=teamid, tournament=tournament)
     if games_played:
@@ -3138,7 +3145,7 @@ class TournamentGame(models.Model):
     game_log_sent = models.BooleanField(default=False, blank=True, null=True, db_index=True)
     no_winning_team_log_sent = models.BooleanField(default=False, blank=True, null=True)
     betting_open = models.BooleanField(default=True)
-    templateid = models.IntegerField(default=0)
+    templateid = models.IntegerField(default=0, blank=True, null=True)
 
     def __str__(self):
         return "Round {} game in {} between {}. Game ID ({}) Finished? {}".format(self.round.round_number, self.tournament.name, self.teams, self.gameid, self.is_finished)
@@ -3683,7 +3690,7 @@ class MonthlyTemplateRotation(Tournament):
                             # check the opp for 2 games, and make sure we didn't already play this player in this round
                             num_games_opp = get_games_unfinished_for_team(team_opp.id, current_circuit_month.tournament)
                             processNewGamesLog += "Team_opp {} has {} games currently ".format(team_opp.id, num_games_opp)
-                            if num_games_opp < team_opp.max_games_at_once and not did_teams_play_in_round(team.id, team_opp.id, current_circuit_month):
+                            if num_games_opp < team_opp.max_games_at_once and not did_teams_play_in_round(team.id, team_opp.id, current_circuit_month) and not did_teams_play_last_games(team.id, team_opp.id, 3):
                                 # create the game, increase num_games so we bail out of the while loop for this team
                                 processNewGamesLog += "Teams {} and {} did not play in round {} ".format(team.id, team_opp.id, current_circuit_month.id)
                                 game_data = "{}.{}".format(team.id, team_opp.id)
@@ -3693,7 +3700,7 @@ class MonthlyTemplateRotation(Tournament):
                         else:
                             continue  # comparing the same teams, move on
 
-                    if num_games < team.max_games_at_once:  # break if we have less than 2 game regardless, it's ok to only have 1 at this time
+                    if num_games < team.max_games_at_once:  # break if we have less than what we want that is fine, we will try again
                         break
         pngl = ProcessNewGamesLog(tournament=self, msg=processNewGamesLog, level=LogLevel.process_new_games)
         pngl.save()
