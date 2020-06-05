@@ -43,6 +43,7 @@ class WZBot(commands.AutoShardedBot):
         self.clot_server = None
         self.executions = 0
         self.performance_counter = False
+        self.running = True
 
         signal.signal(signal.SIGINT, self.signal_handler)
 
@@ -57,7 +58,13 @@ class WZBot(commands.AutoShardedBot):
     def signal_handler(self, sig, frame):
         print('Handling sig_int')
         print('Logging out...')
-        sys.exit(0)
+        cog = self.get_cog("tasks")
+        if cog:
+            cog.bg_task.stop()
+        try:
+            self.close()
+        except:
+            pass
 
     def perf_counter(self, msg):
         if self.performance_counter:
