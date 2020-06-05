@@ -188,7 +188,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 return
 
             cb = get_clotbook()
-            if cb.calculate_decimal_odds_winnings(team_odds.decimal_odds, wager) < 1:
+            if cb.calculate_decimal_odds_winnings(team_odds.decimal_odds, int(wager)) < 1:
                 await ctx.send("You must bet enough to win at least 1 coin. Please enter a different wager amount.")
                 return
 
