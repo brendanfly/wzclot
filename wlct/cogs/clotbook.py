@@ -187,11 +187,6 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 await ctx.send("{} is not a valid wager. Please enter a valid wager amount.".format(wager))
                 return
 
-            cb = get_clotbook()
-            if cb.calculate_decimal_odds_winnings(team_odds.decimal_odds, int(wager)) < 1:
-                await ctx.send("You must bet enough to win at least 1 coin. Please enter a different wager amount.")
-                return
-
             # check to see if the player has enough coins to bet
             wager = int(wager)
             if player.bankroll < wager:
@@ -210,6 +205,10 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
 
             # we have the game, tournament team and player with the wager...
             # go ahead and create the bet
+            cb = get_clotbook()
+            if cb.calculate_decimal_odds_winnings(team_odds.decimal_odds, wager) < 1:
+                await ctx.send("You must bet enough to win at least 1 coin. Please enter a different wager amount.")
+                return
 
             bet = cb.create_new_bet(wager, player, team_odds)
             team_players = get_team_data_no_clan_player_list(team_odds.players.split('.'))
