@@ -58,7 +58,7 @@ class WZBot(commands.AutoShardedBot):
         print('Handling sig_int')
         print('Logging out...')
         try:
-            self.close()
+            await self.close()
         except:
             pass
         sys.exit(0)
