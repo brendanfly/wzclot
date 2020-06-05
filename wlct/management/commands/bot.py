@@ -6,6 +6,7 @@ from wlct.logging import log_exception
 import signal
 import discord
 import os
+import sys
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -41,6 +42,7 @@ class WZBot(commands.AutoShardedBot):
         self.process_queue = []
         self.clot_server = None
         self.executions = 0
+        self.performance_counter = False
 
         signal.signal(signal.SIGINT, self.signal_handler)
 
@@ -55,7 +57,11 @@ class WZBot(commands.AutoShardedBot):
     def signal_handler(self, sig, frame):
         print('Handling sig_int')
         print('Logging out...')
-        self.logout()
+        try:
+            self.close()
+        except:
+            pass
+        sys.exit(0)
 
     def perf_counter(self, msg):
         if self.performance_counter:
