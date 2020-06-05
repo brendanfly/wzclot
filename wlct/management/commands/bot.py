@@ -1,18 +1,11 @@
 from discord.ext import commands, tasks
 from django.core.management.base import BaseCommand
 from django.conf import settings
-import datetime
 from django.utils import timezone
-from wlct.tournaments import RealTimeLadder, TournamentGame, get_team_data_sameline, get_team_data_no_clan, get_real_time_ladder
-from wlct.models import Engine, Player, DiscordUser, DiscordChannelTournamentLink
 from wlct.logging import log_exception
-import asyncio
+import signal
 import discord
 import os
-import logging
-from apscheduler.schedulers.background import BlockingScheduler
-from apscheduler.jobstores.base import ConflictingIdError
-from django_apscheduler.jobstores import DjangoJobStore
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -49,7 +42,7 @@ class WZBot(commands.AutoShardedBot):
         self.clot_server = None
         self.executions = 0
 
-        self.performance_counter = False
+        signal.signal(signal.SIGINT, self.signal_handler)
 
         # deltas for when the bot does stuff
         self.discord_link_text = "Your discord account is not linked to the CLOT. Please see <http://wzclot.eastus.cloudapp.azure.com/me/> for instructions."
@@ -58,6 +51,11 @@ class WZBot(commands.AutoShardedBot):
         for ext in EXTENSIONS:
             self.load_extension(ext)
             print("Loaded extension: {}".format(ext))
+
+    def signal_handler(self, sig, frame):
+        print('Handling sig_int')
+        print('Logging out...')
+        self.logout()
 
     def perf_counter(self, msg):
         if self.performance_counter:
@@ -151,9 +149,14 @@ class WZBot(commands.AutoShardedBot):
 class Command(BaseCommand):
     help = "Runs the CLOT Bot"
     def handle(self, *args, **options):
-        if settings.DEBUG:
-            bot = WZBot()
-            bot.run(os.environ['WZ_TEST_BOT_TOKEN'])
-        else:
-            bot = WZBot()
-            bot.run(os.environ['WZ_BOT_TOKEN'])
+        try:
+            if settings.DEBUG:
+                bot = WZBot()
+                bot.run(os.environ['WZ_TEST_BOT_TOKEN'])
+            else:
+                bot = WZBot()
+                bot.run(os.environ['WZ_BOT_TOKEN'])
+        except:
+            log_exception()
+        finally:
+            bot.close()

@@ -22,19 +22,22 @@ import signal
 def get_run_time():
     return 180
 
-def signal_handler(sig, frame):
-    print('You pressed Ctrl+C!')
 
 class Command(BaseCommand):
     help = "Runs the engine for cleaning up logs and creating new tournament games every 180 seconds"
     def handle(self, *args, **options):
-
         # set up sign int handling
-        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGINT, self.signal_handler)
         self.schedule_jobs()
+
+    def signal_handler(self, sig, frame):
+        print('Handling sig_int')
+        print('Waiting for all jobs to finish and shutting process down...')
+        self.scheduler.shutdown()
 
     def schedule_jobs(self):
         # lookup the main scheduler, if it's not currently scheduled, add it every 3 min
+        self.jobs = []
         try:
             print("Scheduling jobs")
             scheduler = BlockingScheduler()
@@ -42,21 +45,22 @@ class Command(BaseCommand):
             # use the name 'default' instead of 'djangojobstore'.
             scheduler.add_jobstore(DjangoJobStore(), 'default')
             if not scheduler.running:
-                scheduler.add_job(tournament_engine, 'interval', seconds=get_run_time()*10, id='tournament_engine',
-                                  max_instances=1, coalesce=True, replace_existing=True)
-                scheduler.add_job(tournament_engine_real_time, 'interval', seconds=get_run_time()/3, id='tournament_engine_real_time',
-                                  max_instances=1, coalesce=True, replace_existing=True)
-                scheduler.add_job(tournament_caching, 'interval', seconds=(get_run_time()*12), id='tournament_caching',
-                                  max_instances=1, coalesce=True, replace_existing=True)
-                scheduler.add_job(tournament_caching_real_time, 'interval', seconds=get_run_time(), id='tournament_caching_real_time',
-                                  max_instances=1, coalesce=True, replace_existing=True)
-                scheduler.add_job(process_team_vacations, 'interval', seconds=(get_run_time()*20), id='process_team_vacations',
-                                  max_instances=1, coalesce=True, replace_existing=True)
-                scheduler.add_job(parse_and_update_clan_logo, 'interval', seconds=(get_run_time()*25), id='parse_and_update_clan_logo',
-                                  max_instances=1, coalesce=True, replace_existing=True)
-                scheduler.add_job(process_mdl_games, 'interval', seconds=(get_run_time()*20), id='process_mdl_games',
-                                  max_instances=1, coalesce=True, replace_existing=True)
+                self.jobs.append(scheduler.add_job(tournament_engine, 'interval', seconds=get_run_time()*10, id='tournament_engine',
+                                  max_instances=1, coalesce=True, replace_existing=True))
+                self.jobs.append(scheduler.add_job(tournament_engine_real_time, 'interval', seconds=get_run_time()/3, id='tournament_engine_real_time',
+                                  max_instances=1, coalesce=True, replace_existing=True))
+                self.jobs.append(scheduler.add_job(tournament_caching, 'interval', seconds=(get_run_time()*12), id='tournament_caching',
+                                  max_instances=1, coalesce=True, replace_existing=True))
+                self.jobs.append(scheduler.add_job(tournament_caching_real_time, 'interval', seconds=get_run_time(), id='tournament_caching_real_time',
+                                  max_instances=1, coalesce=True, replace_existing=True))
+                self.jobs.append(scheduler.add_job(process_team_vacations, 'interval', seconds=(get_run_time()*20), id='process_team_vacations',
+                                  max_instances=1, coalesce=True, replace_existing=True))
+                self.jobs.append(scheduler.add_job(parse_and_update_clan_logo, 'interval', seconds=(get_run_time()*25), id='parse_and_update_clan_logo',
+                                  max_instances=1, coalesce=True, replace_existing=True))
+                self.jobs.append(scheduler.add_job(process_mdl_games, 'interval', seconds=(get_run_time()*20), id='process_mdl_games',
+                                  max_instances=1, coalesce=True, replace_existing=True))
                 scheduler.start()
+            self.scheduler = scheduler
         except ConflictingIdError:
             pass
 
@@ -287,25 +291,6 @@ def cleanup_logs():
                 LogManager(value, timestamp__lt=enddate, level=value).prune()
         gc.collect()
 
-def update_elo_scores_500():
-    print("Updating ELO for TournamentTeam")
-    teams = TournamentTeam.objects.all()
-    for t in teams:
-        t.rating += 500
-        t.save()
-    print("Updating ELO for TournamentPlayer")
-    players = TournamentPlayer.objects.all()
-    for p in players:
-        p.rating += 500
-        p.save()
-    print("Updating ELO for Player")
-    players = Player.objects.all()
-    for p in players:
-        p.rating += 500
-        p.save()
-
-    print("Finished updating elo + 500")
-
 def tournament_caching_real_time():
     try:
         cache_games(has_started=True, multi_day=False)
@@ -351,11 +336,6 @@ def tournament_engine():
             engine.save()
 
         print("Process Games Starting...")
-
-        if not engine.update_elo_scores_500:
-            update_elo_scores_500()
-            engine.update_elo_scores_500 = True
-            engine.save()
 
         # bulk of the logic, we handle all types of tournaments separately here
         # there must be logic for each tournament type, as the child class contains
