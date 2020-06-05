@@ -5497,7 +5497,7 @@ class RealTimeLadder(Tournament):
 
                             if get_games_against_since_hours(team1, team2, self, 1) == 0:
                                 extra_settings = self.get_game_extra_settings()
-                                game = self.create_game_with_template_and_data(round, game_data, tid.template, extra_settings)
+                                game = self.create_game_with_template_and_data(round, game_data, tid, extra_settings)
                                 if game:
                                     # the two lists are being handled as we're iterating...
                                     # this means if team1 gets a game against team2 we need to remove
