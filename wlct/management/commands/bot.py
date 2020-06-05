@@ -57,10 +57,6 @@ class WZBot(commands.AutoShardedBot):
     def signal_handler(self, sig, frame):
         print('Handling sig_int')
         print('Logging out...')
-        try:
-            await self.close()
-        except:
-            pass
         sys.exit(0)
 
     def perf_counter(self, msg):
