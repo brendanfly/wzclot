@@ -29,15 +29,19 @@ class Command(BaseCommand):
         # set up sign int handling
         signal.signal(signal.SIGINT, self.signal_handler)
         self.schedule_jobs()
+        self.scheduler = None
 
     def signal_handler(self, sig, frame):
         print('Handling sig_int')
         print('Waiting for all jobs to finish and shutting process down...')
-        self.scheduler.shutdown()
+        scheduler = BlockingScheduler()
+        scheduler.add_jobstore(DjangoJobStore(), 'default')
+        if scheduler.running:
+            print("Scheduler is running...shutting down")
+            scheduler.shutdown()
 
     def schedule_jobs(self):
         # lookup the main scheduler, if it's not currently scheduled, add it every 3 min
-        self.jobs = []
         try:
             print("Scheduling jobs")
             scheduler = BlockingScheduler()
@@ -60,7 +64,6 @@ class Command(BaseCommand):
                 self.jobs.append(scheduler.add_job(process_mdl_games, 'interval', seconds=(get_run_time()*20), id='process_mdl_games',
                                   max_instances=1, coalesce=True, replace_existing=True))
                 scheduler.start()
-            self.scheduler = scheduler
         except ConflictingIdError:
             pass
 
