@@ -1019,8 +1019,10 @@ class Tournament(models.Model):
             game.save()
 
             if not len(teams_won) and len(teams_lost):
+                processGameLog += "\nPatching up teams won list, with team {} already lost.".format(teams_lost[0])
                 for team_id in teams_in_game:
                     if team_id not in teams_lost:
+                        processGameLog += "\nTeam {} not in teams_lost, adding to teams won".format(team_id)
                         teams_won.append(team_id)
 
             # now loop through the winners and losers and update their ratings accordingly
@@ -1031,6 +1033,7 @@ class Tournament(models.Model):
                     game.winning_team = tourney_team
                     game.finish_game_with_info(game_status)
                     game.save()
+                    processGameLog += "\nWinning team: {}, len(teams_won): {}".format(tourney_team.id, len(teams_won))
                     # there has to be a team that lost
                     if teams_lost[0] is not None:
                         tourney_team_lost = TournamentTeam.objects.filter(pk=int(teams_lost[0]))
@@ -1045,6 +1048,8 @@ class Tournament(models.Model):
                             tourney_team_lost.losses += 1
                             tourney_team_lost.buchholz += tourney_team.buchholz
                             tourney_team_lost.save()
+                            processGameLog += "\nWinning team: {}, len(teams_won): {}".format(tourney_team_lost.id,
+                                                                                            len(teams_lost))
                     else:
                         processGameLog += "Could not find a losing team when processing game...??"
         except Exception:
