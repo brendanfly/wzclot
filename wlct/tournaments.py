@@ -802,7 +802,10 @@ class Tournament(models.Model):
             game_info = test_content.team_game(teams[0], teams[1])
             api = API()
             game_status = api.api_query_game_feed(game.gameid, game_info)
-            game_status = game_status.json()
+            if game_status is not None:
+                game_status = game_status.json()
+            else:
+                processGameLog += "\nGame Status is None for tournament {}, game {}".format(self.id, game.id)
 
             if game_status:
                 if 'map' in game_status:
