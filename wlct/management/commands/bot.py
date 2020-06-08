@@ -162,5 +162,7 @@ class Command(BaseCommand):
             else:
                 bot = WZBot()
                 bot.run(os.environ['WZ_BOT_TOKEN'])
-        except:
+        except SystemExit:
+            pass
+        except Exception:
             log_exception()
