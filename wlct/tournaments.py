@@ -3698,7 +3698,9 @@ class MonthlyTemplateRotation(Tournament):
                             # check the opp for 2 games, and make sure we didn't already play this player in this round
                             num_games_opp = get_games_unfinished_for_team(team_opp.id, current_circuit_month.tournament)
                             processNewGamesLog += "Team_opp {} has {} games currently ".format(team_opp.id, num_games_opp)
-                            if num_games_opp < team_opp.max_games_at_once and not did_teams_play_in_round(team.id, team_opp.id, current_circuit_month) and not did_teams_play_last_games(team.id, team_opp.id, 3):
+                            # need to keep track of how many times we've "tried" to match up against a player...maybe loop twice with this condition?
+                            # and not did_teams_play_last_games(team.id, team_opp.id, 3)
+                            if num_games_opp < team_opp.max_games_at_once and not did_teams_play_in_round(team.id, team_opp.id, current_circuit_month):
                                 # create the game, increase num_games so we bail out of the while loop for this team
                                 processNewGamesLog += "Teams {} and {} did not play in round {} ".format(team.id, team_opp.id, current_circuit_month.id)
                                 game_data = "{}.{}".format(team.id, team_opp.id)
