@@ -27,7 +27,7 @@ class Command(BaseCommand):
     help = "Runs the engine for cleaning up logs and creating new tournament games every 180 seconds"
     def handle(self, *args, **options):
         # set up sign int handling
-        signal.signal(signal.CTRL_C_EVENT, self.signal_handler)
+        signal.signal(signal.SIGINT, self.signal_handler)
         self.schedule_jobs()
         self.scheduler = None
 

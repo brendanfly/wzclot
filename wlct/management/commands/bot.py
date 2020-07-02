@@ -45,7 +45,7 @@ class WZBot(commands.AutoShardedBot):
         self.performance_counter = False
         self.running = True
 
-        signal.signal(signal.CTRL_C_EVENT, self.signal_handler)
+        signal.signal(signal.SIGINT, self.signal_handler)
 
         # deltas for when the bot does stuff
         self.discord_link_text = "Your discord account is not linked to the CLOT. Please see <http://wzclot.eastus.cloudapp.azure.com/me/> for instructions."
