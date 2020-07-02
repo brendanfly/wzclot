@@ -148,6 +148,12 @@
                     </div>
 
                     <div class="form-group row">
+                        <label class="col-for-label" for="extra_rounds"><a href="#" class="badge badge-success">*new*</a>&nbsp;<b>Extra Rounds:</b>&nbsp;<span id="extra_rounds_text">0</span></label>
+                        <div class="input-group">
+                            <input type="range" min="0" max="3" value="0" class="slider" id="extra_rounds" name="extra_rounds" oninput="extraRoundsChanged();"/>
+                        </div>
+                    </div>
+                    <div class="form-group row">
                         <label class="col-form-label"><b>Auto start when tournament fills:</b></label>
                         <select name="start_options_when_full" id="start_option_when_full" class="form-control form-control-md rounded-0">
                             <option name="yes" selected="selected">yes</option>

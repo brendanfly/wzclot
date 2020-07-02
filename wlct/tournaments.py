@@ -431,6 +431,9 @@ class Tournament(models.Model):
     def should_show_max_games_option(self):
         return False
 
+    def show_tournament_details(self):
+        return False
+
     def has_force_vacation_interval(self):
         return False
 
@@ -1359,8 +1362,15 @@ class SwissTournament(Tournament):
     max_rating = models.IntegerField(default=0)
     min_rating = models.IntegerField(default=0)
     best_record = models.CharField(max_length=10, default="0-0")
+    extra_rounds = models.IntegerField(default=0, null=True, blank=True)
 
     min_teams = 4
+
+    def show_tournament_details(self):
+        return True
+
+    def tournament_details(self):
+        return "Extra Rounds: {}".format(self.extra_rounds)
 
     def process_new_games(self):
         # now that we have the team data committed, we mark the game as finished and continue on to the next round
@@ -1373,7 +1383,7 @@ class SwissTournament(Tournament):
         teams_look_for_games = defaultdict(int)  # dictionary of rounds for each eligible teams next game
 
         tournament_rounds_finished = TournamentRound.objects.filter(tournament=self, is_finished=True)
-        if tournament_rounds_finished and tournament_rounds_finished.count() == self.current_rounds:
+        if tournament_rounds_finished and tournament_rounds_finished.count() == (self.current_rounds + self.extra_rounds):
             # all round have been completed
             # mark the tournament finished, we're done
             log_tournament("Tournament is finished, ending", self)
@@ -1409,7 +1419,7 @@ class SwissTournament(Tournament):
                     # if this game is not completed, remove them from the list if they are already there
                     # this allows the list of teams
                     if game.is_finished:
-                        if round.round_number < self.current_rounds:
+                        if round.round_number < (self.current_rounds + self.extra_rounds):
                             teams_look_for_games[team] = round.round_number + 1
 
                     # this next piece is only done a single time
@@ -1445,28 +1455,39 @@ class SwissTournament(Tournament):
                         break
                     times_run_algo += 1
 
-                    # we have a list of buckets determined by teams_wins[x] where x is the list of teams with
-                    # that number of wins. What we want to do is copy that list, and run through them
-                    # trying to match-up players who haven't played each other.
-                    # if all buckets succeed, we're done.
-                    team_wins2 = copy(team_wins)
-                    for key, bucket in team_wins.items():
-                        team_bucket1 = team_wins[key]
-                        team_bucket2 = team_wins2[key]
-                        shuffle(team_bucket2)  # why not
-                        shuffle(team_bucket1)  # why not
-
-                        log_tournament("Processing bucket {} of {} teams".format(bucket, len(team_bucket1)), self)
+                    if round.round_number > self.number_rounds:
+                        # we're in extra rounds...handle this differently by creating two lists of
+                        # all the teams in reverse ranking order
+                        # clear team_bucket2 and team_bucket1 and instead make them the list of teams descending
+                        log_tournament("Processing extra round {} games".format(round.round_number), self)
                         # have both bucket, loop through the first and try to make pairs
-                        for team in team_bucket1:
-                            for team2 in team_bucket2:
+                        tournament_teams = TournamentTeam.objects.filter(tournament=self.id).order_by('-rating')
+                        team_list = []
+                        for team in tournament_teams:
+                            team_list.append(str(team.id))
+
+                        if times_run_algo >= 1:
+                            team_list.reverse()
+                            team_list2 = team_list.copy()
+                        elif times_run_algo >= 2:
+                            # it's unfortunate, but we need to shuffle the teams
+                            shuffle(team_list)
+                            team_list2 = team_list.copy()
+                            shuffle(team_list2)
+                        else:
+                            team_list2 = team_list.copy()
+
+                        for team in team_list:
+                            for team2 in team_list2:
                                 # first condition is they can't have played this team before, and we need to be looking for a game
                                 if team not in team_matchups[team2]:
                                     if team not in games_created_for:
                                         if team2 not in games_created_for:
                                             if team2 not in team_matchups[team]:
                                                 if teams_look_for_games[team2] == teams_look_for_games[team]:
-                                                    log_tournament("Creating game {} in round {} for {} and {}".format((len(games_created_for)/2)+1, teams_look_for_games[team], team, team2), self)
+                                                    log_tournament("Creating game {} in round {} for {} and {}".format(
+                                                        (len(games_created_for) / 2) + 1, teams_look_for_games[team],
+                                                        team, team2), self)
 
                                                     game = "{}.{};".format(team, team2)
                                                     game_data_grid += game
@@ -1476,6 +1497,38 @@ class SwissTournament(Tournament):
                                     break
                             if len(games_created_for) == len(teams_look_for_games):
                                 break
+                    else:
+                        # we have a list of buckets determined by teams_wins[x] where x is the list of teams with
+                        # that number of wins. What we want to do is copy that list, and run through them
+                        # trying to match-up players who haven't played each other.
+                        # if all buckets succeed, we're done.
+                        team_wins2 = copy(team_wins)
+                        for key, bucket in team_wins.items():
+                            team_bucket1 = team_wins[key]
+                            team_bucket2 = team_wins2[key]
+                            shuffle(team_bucket2)  # why not
+                            shuffle(team_bucket1)  # why not
+
+                            log_tournament("Processing bucket {} of {} teams".format(bucket, len(team_bucket1)), self)
+                            # have both bucket, loop through the first and try to make pairs
+                            for team in team_bucket1:
+                                for team2 in team_bucket2:
+                                    # first condition is they can't have played this team before, and we need to be looking for a game
+                                    if team not in team_matchups[team2]:
+                                        if team not in games_created_for:
+                                            if team2 not in games_created_for:
+                                                if team2 not in team_matchups[team]:
+                                                    if teams_look_for_games[team2] == teams_look_for_games[team]:
+                                                        log_tournament("Creating game {} in round {} for {} and {}".format((len(games_created_for)/2)+1, teams_look_for_games[team], team, team2), self)
+
+                                                        game = "{}.{};".format(team, team2)
+                                                        game_data_grid += game
+                                                        games_created_for.append(team)
+                                                        games_created_for.append(team2)
+                                    if len(games_created_for) == len(teams_look_for_games):
+                                        break
+                                if len(games_created_for) == len(teams_look_for_games):
+                                    break
 
                     # we've built a list of the games we've "created", now, we need to see if this matches the total
                     # number of games we'd expect
@@ -1490,7 +1543,6 @@ class SwissTournament(Tournament):
                             print("Creating game: {}".format(game))
                         round.save()
                         log_tournament("Calculated all match-ups for round {}: Game Data: {}".format(round.round_number, round.games), self)
-                        print("Returning from function")
                         return
 
     def update_game_log(self):
@@ -1582,7 +1634,7 @@ class SwissTournament(Tournament):
                                                                                       self.number_players,
                                                                                       self.current_rounds),
             LogLevel.informational)
-        for i in range(1, self.number_rounds + 1):
+        for i in range(1, self.number_rounds + self.extra_rounds + 1):
             # create a new round
             # construct the game list by looping through all the players and putting the first two together, second two, and so forth
             # we only know the games on the very first go at it

@@ -138,14 +138,22 @@ class SwissTournamentForm(TournamentForm):
 
     def __init__(self, formdata):
         self.tournament_type = "Swiss"
-
+        self.extra_rounds = int(formdata['extra_rounds'])
+        print("Found extra rounds for swiss tournamnent: {}".format(self.extra_rounds))
         super(SwissTournamentForm, self).__init__(formdata, SwissTournament.min_teams)
+
+    def is_valid(self):
+        print("Checking validity of swiss tournament...")
+        if self.extra_rounds < 0 or self.extra_rounds > 3:
+            self.errors = FormError({'error': "Extra rounds must be between 0-3."})
+            return False
+        return super(SwissTournamentForm, self).is_valid()
 
     def create_and_save(self, player):
         # django query sets and model writes will do the right thing with regards to
         # SQL Injection
         # determine multi-day or real-time
-        tournament = SwissTournament(name=self.name,multi_day=self.multi_day,start_option_when_full=self.start_when_full,private=self.private,description=self.description,template=self.template,template_settings=self.template_settings,max_players=self.number_players,teams_per_game=self.teams_per_game,created_by=player,players_per_team=self.players_per_team,number_rounds=self.number_rounds, number_players=0)
+        tournament = SwissTournament(name=self.name,multi_day=self.multi_day,start_option_when_full=self.start_when_full,private=self.private,description=self.description,template=self.template,template_settings=self.template_settings,max_players=self.number_players,teams_per_game=self.teams_per_game,created_by=player,players_per_team=self.players_per_team,number_rounds=self.number_rounds, number_players=0, extra_rounds=self.extra_rounds)
         tournament.save()
 
         # create all the team objects associated with this tournament

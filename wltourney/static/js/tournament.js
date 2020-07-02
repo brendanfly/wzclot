@@ -1542,6 +1542,7 @@ function numberOfTeamsChanged()
             var maxPlayers = numberOfTeams * playersPerTeam;
             $('#number_players_text').text(maxPlayers);
             $('#number_players').val(maxPlayers);
+
             break;
         }
 
@@ -1580,6 +1581,11 @@ function numberOfTeamsChanged()
     // regardless, there are even teams in every tournament
     $('#number_teams_text').text(numberOfTeams);
     $('#number_teams').val(numberOfTeams);
+
+    if ($('#extra_rounds').length)
+    {
+        extraRoundsChanged();
+    }
 }
 
 // Players per teams only influences the max players in the tournament
@@ -1613,5 +1619,36 @@ function playersPerTeamChanged()
         {
             break;
         }
+    }
+}
+
+function extraRoundsChanged()
+{
+    // Grab the total number of teams...and forcibly only allow extra rounds
+    // In cases where we know we can give them
+    // Teams = 4, Extra Rounds Max = 0
+    // Teams = 8, Extra Rounds Max = 1
+    // Teams = 16, Extra Rounds Max = 2
+    // Teams >= 32, All Extra rounds
+    var numberOfTeams = $('#number_teams').val();
+    var extraRounds = $('#extra_rounds').val();
+    if ((numberOfTeams == 4) && (extraRounds > 0))
+    {
+        $('#extra_rounds_text').text('0');
+        $('#extra_rounds').val(0);
+    }
+    else if ((numberOfTeams == 8) && (extraRounds > 1))
+    {
+        $('#extra_rounds_text').text('1');
+        $('#extra_rounds').val(1);
+    }
+    else if ((numberOfTeams == 16) && (extraRounds > 2))
+    {
+        $('#extra_rounds_text').text('2');
+        $('#extra_rounds').val(2);
+    }
+    else
+    {
+        $('#extra_rounds_text').text($('#extra_rounds').val());
     }
 }
