@@ -55,13 +55,16 @@ class WZBot(commands.AutoShardedBot):
             self.load_extension(ext)
             print("Loaded extension: {}".format(ext))
 
-    def signal_handler(self, sig, frame):
+    def handle_terminate(self):
         print('Handling sig_int')
         print('Logging out...')
         cog = self.get_cog("tasks")
         if cog:
             cog.bg_task.stop()
         sys.exit(0)
+
+    def signal_handler(self, sig, frame):
+        self.handle_terminate()
 
     def perf_counter(self, msg):
         if self.performance_counter:
@@ -72,9 +75,9 @@ class WZBot(commands.AutoShardedBot):
         return self.get_user(self.owner_id)
 
     async def on_disconnect(self):
-        for channel in self.rtl_channels:
-            # await channel.send("Updating my code...be right back...")
-            pass
+        for channel in self.critical_error_channels:
+            await channel.send("Disconnecting...trying to restart")
+        self.handle_terminate()
 
     async def on_message(self, msg):
         if not self.is_ready() or msg.author.bot:

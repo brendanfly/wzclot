@@ -365,10 +365,10 @@ class BetGameOdds(models.Model):
     decimal_odds = models.CharField(max_length=255, default="")
     american_odds = models.CharField(max_length=255, default="")
     created_time = models.DateTimeField(default=timezone.now)
-    initial = models.BooleanField(default=False)
+    initial = models.BooleanField(default=False, db_index=True)
     probability = models.CharField(max_length=255, default="")
-    sent_created_notification = models.BooleanField(default=False)
-    sent_finished_notification = models.BooleanField(default=False)
+    sent_created_notification = models.BooleanField(default=False, db_index=True)
+    sent_finished_notification = models.BooleanField(default=False, db_index=True)
 
     def __str__(self):
         return "Players: {}, Decimal Odds: {}, initial: {}, created_notify: {}, finished_notify: {}".format(self.players, self.decimal_odds, self.initial, self.sent_created_notification, self.sent_finished_notification)
