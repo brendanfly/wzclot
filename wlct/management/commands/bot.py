@@ -60,7 +60,7 @@ class WZBot(commands.AutoShardedBot):
         print('Reading input from stdin...')
         while True:
             inp = sys.stdin.readline()
-            print("[INPUT RECEIVED]: {}".format(inp))
+            print("[INPUT RECEIVED]:{}".format(inp))
             break
         cog = self.get_cog("tasks")
         if cog:
