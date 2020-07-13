@@ -57,7 +57,7 @@ class WZBot(commands.AutoShardedBot):
             time.sleep(5)
 
     def handle_stdin(self):
-        print('Reading input...')
+        print('Reading input from stdin...')
         while True:
             inp = sys.stdin.readline()
             print("[INPUT RECEIVED]: {}".format(inp))
