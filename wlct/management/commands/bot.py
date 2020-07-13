@@ -7,6 +7,8 @@ import signal
 import discord
 import os
 import sys
+import threading
+import time
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -55,16 +57,21 @@ class WZBot(commands.AutoShardedBot):
             self.load_extension(ext)
             print("Loaded extension: {}".format(ext))
 
-    def handle_terminate(self):
-        print('Handling sig_int')
-        print('Logging out...')
+        print("Creating communication thread...")
+        thread = threading.Thread(target=self.handle_stdin)
+        thread.start()
+
+    def handle_stdin(self):
+        print('Reading input...')
+        while True:
+            input = sys.stdin.readline()
+            print("[INPUT RECEIVED]: {}".format(input))
+            break
         cog = self.get_cog("tasks")
         if cog:
             cog.bg_task.stop()
+        self.close()
         sys.exit(0)
-
-    def signal_handler(self, sig, frame):
-        self.handle_terminate()
 
     def perf_counter(self, msg):
         if self.performance_counter:

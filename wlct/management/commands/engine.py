@@ -16,8 +16,7 @@ from django.core.management.base import BaseCommand
 import gc
 from django.utils import timezone
 import urllib.request
-import json
-import signal
+import sys, threading, signal, json
 
 def get_run_time():
     return 180
@@ -31,7 +30,17 @@ class Command(BaseCommand):
         self.schedule_jobs()
         self.scheduler = None
 
-    def signal_handler(self, sig, frame):
+        print("Creating communication thread...")
+        thread = threading.Thread(target=self.handle_stdin)
+        thread.start()
+
+    def handle_stdin(self):
+        print('Reading input...')
+        while True:
+            input = sys.stdin.readline()
+            print("[INPUT RECEIVED]: {}".format(input))
+            break
+
         print('Handling sig_int')
         print('Waiting for all jobs to finish and shutting process down...')
         if self.scheduler is not None and self.scheduler.running:
