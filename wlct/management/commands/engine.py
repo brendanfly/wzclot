@@ -16,7 +16,7 @@ from django.core.management.base import BaseCommand
 import gc
 from django.utils import timezone
 import urllib.request
-import sys, threading, signal, json
+import sys, threading, json, time
 
 def get_run_time():
     return 180
@@ -30,8 +30,19 @@ class Command(BaseCommand):
         self.scheduler = None
 
         print("Creating communication thread...")
-        thread = threading.Thread(target=self.handle_stdin)
-        thread.start()
+        self.comm_thread = threading.Thread(target=self.handle_stdin)
+        self.comm_thread.start()
+
+        self.shutdown = False
+
+        self.flush_thread = threading.Thread(target=self.flush_thread)
+        self.flush_thread.start()
+
+    def flush(self):
+        while True and not self.shutdown:
+            sys.stdout.flush()
+            sys.stderr.flush()
+            time.sleep(5)
 
     def handle_stdin(self):
         print('Reading input...')
@@ -44,6 +55,8 @@ class Command(BaseCommand):
         print('Waiting for all jobs to finish and shutting process down...')
         if self.scheduler is not None and self.scheduler.running:
             print("Scheduler is running...shutting down")
+            self.shutdown = True
+            self.flush_thread.join()
             self.scheduler.shutdown(wait=True)
 
     def schedule_jobs(self):

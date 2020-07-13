@@ -58,8 +58,19 @@ class WZBot(commands.AutoShardedBot):
             print("Loaded extension: {}".format(ext))
 
         print("Creating communication thread...")
-        thread = threading.Thread(target=self.handle_stdin)
-        thread.start()
+        self.comm_thread = threading.Thread(target=self.handle_stdin)
+        self.comm_thread.start()
+
+        print("Creating flushing thread")
+        self.shutdown = False
+        self.flush_thread = threading.Thread(target=self.flush)
+        self.flush_thread.start()
+
+    def flush(self):
+        while True and not self.shutdown:
+            sys.stdout.flush()
+            sys.stdout.flush()
+            time.sleep(5)
 
     def handle_stdin(self):
         print('Reading input...')
