@@ -57,15 +57,6 @@ class WZBot(commands.AutoShardedBot):
             self.load_extension(ext)
             print("Loaded extension: {}".format(ext))
 
-        print("Creating communication thread...")
-        self.comm_thread = threading.Thread(target=self.handle_stdin)
-        self.comm_thread.start()
-
-        print("Creating flushing thread")
-        self.shutdown = False
-        self.flush_thread = threading.Thread(target=self.flush)
-        self.flush_thread.start()
-
     def flush(self):
         while True and not self.shutdown:
             sys.stdout.flush()
@@ -141,6 +132,16 @@ class WZBot(commands.AutoShardedBot):
                         self.critical_error_channels.append(channel)
             if not hasattr(self, 'uptime'):
                 self.uptime = timezone.now()
+
+            print("Creating communication thread...")
+            self.comm_thread = threading.Thread(target=self.handle_stdin)
+            self.comm_thread.start()
+
+            print("Creating flushing thread")
+            self.shutdown = False
+            self.flush_thread = threading.Thread(target=self.flush)
+            self.flush_thread.start()
+
         except Exception as e:
             log_exception()
 
