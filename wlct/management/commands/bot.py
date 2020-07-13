@@ -3,12 +3,7 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.utils import timezone
 from wlct.logging import log_exception
-import signal
-import discord
-import os
-import sys
-import threading
-import time
+import time, threading, sys, os, discord
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -47,8 +42,6 @@ class WZBot(commands.AutoShardedBot):
         self.performance_counter = False
         self.running = True
 
-        signal.signal(signal.SIGINT, self.signal_handler)
-
         # deltas for when the bot does stuff
         self.discord_link_text = "Your discord account is not linked to the CLOT. Please see <http://wzclot.eastus.cloudapp.azure.com/me/> for instructions."
         self.discord_link_text_user = "That user's discord account is not linked to the CLOT."
@@ -66,8 +59,8 @@ class WZBot(commands.AutoShardedBot):
     def handle_stdin(self):
         print('Reading input...')
         while True:
-            input = sys.stdin.readline()
-            print("[INPUT RECEIVED]: {}".format(input))
+            inp = sys.stdin.readline()
+            print("[INPUT RECEIVED]: {}".format(inp))
             break
         cog = self.get_cog("tasks")
         if cog:
@@ -86,7 +79,6 @@ class WZBot(commands.AutoShardedBot):
     async def on_disconnect(self):
         for channel in self.critical_error_channels:
             await channel.send("Disconnecting...trying to restart")
-        self.handle_terminate()
 
     async def on_message(self, msg):
         if not self.is_ready() or msg.author.bot:
