@@ -78,7 +78,7 @@ class WZBot(commands.AutoShardedBot):
 
     async def on_disconnect(self):
         for channel in self.critical_error_channels:
-            await channel.send("Disconnecting...trying to restart")
+            print("Disconnecting...trying to restart")
 
     async def on_message(self, msg):
         if not self.is_ready() or msg.author.bot:
