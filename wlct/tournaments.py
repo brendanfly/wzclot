@@ -2684,22 +2684,24 @@ class RoundRobinTournament(Tournament):
 
     def get_team_table(self, allow_buttons, logged_in, request_player):
         if not self.has_started:
-            return super(RoundRobinTournament, self).get_team_table(allow_buttons, logged_in, request_player)
+            return super(Tournament, self).get_team_table(allow_buttons, logged_in, request_player)
         else:
             table = '<table class="table table-hover"><tr><th>Player</th><th>Record</th></tr>'
-            team_players = TournamentPlayer.objects.filter(tournament=self.parent_tournament).order_by('-wins')
-            for player in team_players:
-                table += '<tr><td>'
-                if player.player.clan is not None:
-                    table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
-                        player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
+            teams = TournamentTeam.objects.filter(round_robin_tournament=self).order_by('-wins')
+            for team in teams:
+                team_players = TournamentPlayer.objects.filter(team=team)
+                for player in team_players:
+                    table += '<tr><td>'
+                    if player.player.clan is not None:
+                        table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
+                            player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
 
-                table += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
-                    player.player.token, player.player.name)
+                    table += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
+                        player.player.token, player.player.name)
 
-                table += '<td>{}-{}</td>'.format(player.wins, player.losses)
+                    table += '<td>{}-{}</td>'.format(player.wins, player.losses)
 
-                table += '</tr>'
+                    table += '</tr>'
             table += "</table>"
             return table
 

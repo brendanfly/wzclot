@@ -117,6 +117,8 @@ class Tasks(commands.Cog, name="tasks"):
                             if emb:
                                 await channel.send(embed=emb)
                             odds_finished_sent.append(bo)
+                        else:
+                            print("Game {} does not have a winning team, skipping".format(bo.game.gameid))
         except Exception:
             log_exception()
         finally:
