@@ -721,31 +721,42 @@ class Tournament(models.Model):
         tournamentteams = TournamentTeam.objects.filter(tournament=self.id).order_by('-wins', 'team_index')
         if tournamentteams:
             table += '<table class="table table-hover">'
+            team_indent = ''
             if self.has_started:
-                table += '<tr><th>Team</th><th>Record</th></tr>'
+                if self.players_per_team > 1:
+                    team_indent = 'style="margin-left:1em"'
+                    table += '<tr><th>Team</th><th>Record</th></tr>'
+                else:
+                    table += '<tr><th>Player</th><th>Record</th></tr>'
             for team in tournamentteams:
                 if self.players_per_team > 1:
-                    table += "<tr><td><b>Team {} </b></td></tr>".format(team.team_index)
-
+                    table += "<tr><td><b>Team {} </b></td>".format(team.team_index)
+                    if self.has_started:
+                        table += "<td>{}-{}</td>".format(team.wins, team.losses)
+                    else:
+                        table += "<td></td>"
+                    table += "</tr>"
                 total_players = 0
                 team_players = TournamentPlayer.objects.filter(team=team)
                 if team_players:
                     for player in team_players:
                         table += '<tr><td>'
                         if player.player.clan is not None:
-                            table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
-                                player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
-
-                        table += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
-                            player.player.token, player.player.name)
+                            table += '<a href="https://warzone.com{}" target="_blank" {}><img src="{}" alt="{}" /></a>'.format(
+                                player.player.clan.icon_link, team_indent, player.player.clan.image_path, player.player.clan.name)
+                            table += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
+                                player.player.token, player.player.name)
+                        else:
+                            table += '<a href="/stats/{}" target="_blank" {}>{}</a>&nbsp;'.format(
+                                player.player.token, team_indent, player.player.name)
+                        if self.players_per_team == 1 and self.has_started:
+                            table += "<td>{}-{}</td>".format(team.wins, team.losses)
 
                         if logged_in and player is not None and player.player.token == request_player.token and not self.has_started and not self.start_locked:
                             # the player viewing the page is the one in this row, so we need to give the player the option to leave their slot
                             if self.has_started:
                                 table += '<td>'
                             table += '<button class="btn btn-primary" name="slot" id="decline">Leave Slot</button>'
-                        elif self.has_started:
-                            table += '<td>{}-{}</td>'.format(team.wins, team.losses)
 
                         table += '</tr>'
 
@@ -2670,6 +2681,27 @@ class RoundRobinTournament(Tournament):
             self.create_games(game_data1, game_data2, round[0])
         else:
             self.create_games(game_data1, game_data2, round[0])
+
+    def get_team_table(self, allow_buttons, logged_in, request_player):
+        if not self.has_started:
+            return super(RoundRobinTournament, self).get_team_table(allow_buttons, logged_in, request_player)
+        else:
+            table = '<table class="table table-hover"><tr><th>Player</th><th>Record</th></tr>'
+            team_players = TournamentPlayer.objects.filter(tournament=self.parent_tournament).order_by('-wins')
+            for player in team_players:
+                table += '<tr><td>'
+                if player.player.clan is not None:
+                    table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
+                        player.player.clan.icon_link, player.player.clan.image_path, player.player.clan.name)
+
+                table += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
+                    player.player.token, player.player.name)
+
+                table += '<td>{}-{}</td>'.format(player.wins, player.losses)
+
+                table += '</tr>'
+            table += "</table>"
+            return table
 
     def create_games(self, game_data1, game_data2, round):
         # we have reached the point where we have enough games to create...create them, whatever we have
@@ -4675,6 +4707,27 @@ class ClanLeagueTournament(RoundRobinTournament):
                     print("Game {} recreated".format(game.id))
         except Exception:
             log_exception()
+
+    def get_team_table(self, allow_buttons, logged_in, request_player):
+        if not self.has_started:
+            return super(RoundRobinTournament, self).get_team_table(allow_buttons, logged_in, request_player)
+        else:
+            table = '<table class="table table-hover"><tr><th>Clan</th><th>Record</th></tr>'
+            teams = TournamentTeam.objects.filter(round_robin_tournament=self).order_by('-wins')
+            for team in teams:
+                table += '<tr><td>'
+                if team.clan_league_clan is not None and team.clan_league_clan.clan is not None:
+                    table += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
+                        team.clan_league_clan.clan.icon_link, team.clan_league_clan.clan.image_path,
+                        team.clan_league_clan.clan.name)
+
+                table += ' {}&nbsp;'.format(team.clan_league_clan.clan.name)
+
+                table += '<td>{}-{}</td>'.format(team.wins, team.losses)
+
+                table += '</tr>'
+            table += "</table>"
+            return table
 
     def start(self):
         print("Starting Clan League Tournament, with template {}".format(self.clan_league_template.name))
