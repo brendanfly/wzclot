@@ -70,7 +70,6 @@ class Command(BaseCommand):
                 time.sleep(10)
                 sys.stdout.flush()
 
-            print('Handling server stopping')
             print('Waiting for all jobs to finish and shutting process down...')
             if self.shutdown is True:
                 if self.scheduler is not None and self.scheduler.running:
