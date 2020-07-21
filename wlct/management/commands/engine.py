@@ -16,7 +16,7 @@ from django.core.management.base import BaseCommand
 import gc
 from django.utils import timezone
 import urllib.request
-import sys, threading, json, time
+import sys, threading, json, time, traceback
 
 def get_run_time():
     return 180
@@ -30,7 +30,7 @@ class Command(BaseCommand):
         self.scheduler = None
 
         print("Creating communication thread...")
-        self.comm_thread = threading.Thread(target=self.handle_stdin)
+        self.comm_thread = threading.Thread(target=self.handle_git)
         self.comm_thread.start()
 
         self.shutdown = False
@@ -38,26 +38,48 @@ class Command(BaseCommand):
         self.flush_thread = threading.Thread(target=self.flush_thread)
         self.flush_thread.start()
 
+        self.last_known_commit = ""
+
     def flush(self):
         while True and not self.shutdown:
             sys.stdout.flush()
             sys.stderr.flush()
             time.sleep(5)
 
-    def handle_stdin(self):
-        print('Reading input...')
-        while True:
-            input = sys.stdin.readline()
-            print("[INPUT RECEIVED]: {}".format(input))
-            break
+    def handle_git(self):
+        try:
+            # grab the latest commit the database knows about
+            logger = Logger.objects.filter(level=LogLevel.webhook)[:1]  # only care about the last one
+            if logger:
+                logger = logger[0]
+                if logger.msg is not None and len(logger.msg) > 0:
+                    webhook_dict = json.loads('''{}'''.format(logger.msg))
+                    if 'ref' in webhook_dict and 'before' in webhook_dict and 'after' in webhook_dict:
+                        if webhook_dict['ref'] == 'refs/heads/master':
+                            if webhook_dict['after'] != self.last_known_commit and self.last_known_commit is not "":
+                                print("[ENGINE]: Found commit to the master branch...processing")
+                                print("Commit is new, shutting down engine")
+                                self.shutdown = True
+                            self.last_known_commit = webhook_dict['after']
+                            print(
+                                "[ENGINE] Last known good commit: {}".format(self.last_known_commit))
+        except:
+            print(traceback.format_exc())
+        finally:
+            # sleep for 30 seconds before checking again
+            print("Sleeping for 10 seconds, running? {}. Last known commit: {}".format(self.running,
+                                                                                       self.last_known_commit))
+            time.sleep(10)
+            sys.stdout.flush()
 
-        print('Handling sig_int')
+        print('Handling server stopping')
         print('Waiting for all jobs to finish and shutting process down...')
-        if self.scheduler is not None and self.scheduler.running:
-            print("Scheduler is running...shutting down")
-            self.shutdown = True
-            self.flush_thread.join()
-            self.scheduler.shutdown(wait=True)
+        if self.shutdown is True:
+            if self.scheduler is not None and self.scheduler.running:
+                print("Scheduler is running...shutting down")
+                self.flush_thread.join()
+                self.scheduler.shutdown(wait=True)
+                sys.exit(0)
 
     def schedule_jobs(self):
         # lookup the main scheduler, if it's not currently scheduled, add it every 3 min
