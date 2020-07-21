@@ -59,36 +59,37 @@ class WZBot(commands.AutoShardedBot):
             time.sleep(5)
 
     def handle_git(self):
-        try:
-            # grab the latest commit the database knows about
-            logger = Logger.objects.filter(level=LogLevel.webhook)[:1]  # only care about the last one
-            if logger:
-                logger = logger[0]
-                if logger.msg is not None and len(logger.msg) > 0:
-                    webhook_dict = json.loads('''{}'''.format(logger.msg))
-                    if 'ref' in webhook_dict and 'before' in webhook_dict and 'after' in webhook_dict:
-                        if webhook_dict['ref'] == 'refs/heads/master':
-                            if webhook_dict['after'] != self.last_known_commit and self.last_known_commit is not "":
-                                print("[ENGINE]: Found commit to the master branch...processing")
-                                print("Commit is new, shutting down engine")
-                                self.shutdown = True
-                            self.last_known_commit = webhook_dict['after']
-                            print(
-                                "[ENGINE] Last known good commit: {}".format(self.last_known_commit))
-        except:
-            print(traceback.format_exc())
-        finally:
-            # sleep for 30 seconds before checking again
-            print("Sleeping for 10 seconds, running? {}. Last known commit: {}".format(self.running,
-                                                                                       self.last_known_commit))
-            time.sleep(10)
-            sys.stdout.flush()
-        if self.shutdown is True:
-            cog = self.get_cog("tasks")
-            if cog:
-                cog.bg_task.stop()
-            self.close()
-            sys.exit(0)
+        while not self.shutdown:
+            try:
+                # grab the latest commit the database knows about
+                logger = Logger.objects.filter(level=LogLevel.webhook)[:1]  # only care about the last one
+                if logger:
+                    logger = logger[0]
+                    if logger.msg is not None and len(logger.msg) > 0:
+                        webhook_dict = json.loads('''{}'''.format(logger.msg))
+                        if 'ref' in webhook_dict and 'before' in webhook_dict and 'after' in webhook_dict:
+                            if webhook_dict['ref'] == 'refs/heads/master':
+                                if webhook_dict['after'] != self.last_known_commit and self.last_known_commit is not "":
+                                    print("[ENGINE]: Found commit to the master branch...processing")
+                                    print("Commit is new, shutting down engine")
+                                    self.shutdown = True
+                                self.last_known_commit = webhook_dict['after']
+                                print(
+                                    "[ENGINE] Last known good commit: {}".format(self.last_known_commit))
+            except:
+                print(traceback.format_exc())
+            finally:
+                # sleep for 30 seconds before checking again
+                print("Sleeping for 10 seconds, running? {}. Last known commit: {}".format(self.running,
+                                                                                           self.last_known_commit))
+                time.sleep(10)
+                sys.stdout.flush()
+            if self.shutdown is True:
+                cog = self.get_cog("tasks")
+                if cog:
+                    cog.bg_task.stop()
+                self.close()
+                sys.exit(0)
 
     def perf_counter(self, msg):
         if self.performance_counter:
