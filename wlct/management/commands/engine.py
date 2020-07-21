@@ -78,9 +78,6 @@ class Command(BaseCommand):
                     self.scheduler.remove_all_jobs()
                     print("Waiting for outstanding work to finish")
                     self.scheduler.shutdown(wait=True)
-
-                    self.flush_thread.join()
-                    print("Flush thread shutdown")
                     sys.exit(0)
 
     def schedule_jobs(self):
