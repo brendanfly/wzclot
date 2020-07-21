@@ -2699,7 +2699,7 @@ class RoundRobinTournament(Tournament):
                     table += '<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(
                         player.player.token, player.player.name)
 
-                    table += '<td>{}-{}</td>'.format(player.wins, player.losses)
+                    table += '<td>{}-{}</td>'.format(team.wins, team.losses)
 
                     table += '</tr>'
             table += "</table>"
