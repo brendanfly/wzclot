@@ -46,6 +46,8 @@ class WZBot(commands.AutoShardedBot):
         self.discord_link_text = "Your discord account is not linked to the CLOT. Please see <http://wzclot.eastus.cloudapp.azure.com/me/> for instructions."
         self.discord_link_text_user = "That user's discord account is not linked to the CLOT."
 
+        self.last_known_commit = ""
+
         for ext in EXTENSIONS:
             self.load_extension(ext)
             print("Loaded extension: {}".format(ext))
