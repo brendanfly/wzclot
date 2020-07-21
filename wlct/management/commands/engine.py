@@ -74,12 +74,13 @@ class Command(BaseCommand):
             if self.shutdown is True:
                 if self.scheduler is not None and self.scheduler.running:
                     print("Scheduler is running...shutting down")
-                    self.flush_thread.join()
-                    print("Flush thread shutdown")
                     print("Removing all jobs")
                     self.scheduler.remove_all_jobs()
                     print("Waiting for outstanding work to finish")
                     self.scheduler.shutdown(wait=True)
+                    
+                    self.flush_thread.join()
+                    print("Flush thread shutdown")
                     sys.exit(0)
 
     def schedule_jobs(self):
