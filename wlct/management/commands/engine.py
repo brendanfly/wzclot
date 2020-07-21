@@ -29,16 +29,15 @@ class Command(BaseCommand):
         self.schedule_jobs()
         self.scheduler = None
 
+        self.last_known_commit = ""
+        self.shutdown = False
+
         print("Creating communication thread...")
         self.comm_thread = threading.Thread(target=self.handle_git)
         self.comm_thread.start()
 
-        self.shutdown = False
-
         self.flush_thread = threading.Thread(target=self.flush_thread)
         self.flush_thread.start()
-
-        self.last_known_commit = ""
 
     def flush(self):
         while True and not self.shutdown:
@@ -58,12 +57,11 @@ class Command(BaseCommand):
                         if 'ref' in webhook_dict and 'before' in webhook_dict and 'after' in webhook_dict:
                             if webhook_dict['ref'] == 'refs/heads/master':
                                 if webhook_dict['after'] != self.last_known_commit and self.last_known_commit is not "":
-                                    print("[ENGINE]: Found commit to the master branch...processing")
+                                    print("Found commit to the master branch...processing")
                                     print("Commit is new, shutting down engine")
                                     self.shutdown = True
                                 self.last_known_commit = webhook_dict['after']
-                                print(
-                                    "[ENGINE] Last known good commit: {}".format(self.last_known_commit))
+                                print("Last known good commit: {}".format(self.last_known_commit))
             except:
                 print(traceback.format_exc())
             finally:
