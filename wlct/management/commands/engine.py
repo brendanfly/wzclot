@@ -33,7 +33,7 @@ class Command(BaseCommand):
         self.comm_thread = threading.Thread(target=self.handle_git)
         self.comm_thread.start()
 
-        self.flush_thread = threading.Thread(target=self.flush_thread)
+        self.flush_thread = threading.Thread(target=self.flush)
         self.flush_thread.start()
 
         self.schedule_jobs()
@@ -66,8 +66,7 @@ class Command(BaseCommand):
                 print(traceback.format_exc())
             finally:
                 # sleep for 30 seconds before checking again
-                print("Sleeping for 10 seconds, running? {}. Last known commit: {}".format(self.running,
-                                                                                           self.last_known_commit))
+                print("Sleeping for 10 seconds. Last known commit: {}".format(self.last_known_commit))
                 time.sleep(10)
                 sys.stdout.flush()
 
