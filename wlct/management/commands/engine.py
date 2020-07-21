@@ -70,8 +70,8 @@ class Command(BaseCommand):
                 time.sleep(10)
                 sys.stdout.flush()
 
-            print('Waiting for all jobs to finish and shutting process down...')
             if self.shutdown is True:
+                print('Waiting for all jobs to finish and shutting process down...')
                 if self.scheduler is not None and self.scheduler.running:
                     print("Scheduler is running...shutting down")
                     print("Removing all jobs")
