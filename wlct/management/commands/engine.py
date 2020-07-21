@@ -25,10 +25,7 @@ def get_run_time():
 class Command(BaseCommand):
     help = "Runs the engine for cleaning up logs and creating new tournament games every 180 seconds"
     def handle(self, *args, **options):
-        # set up sign int handling
-        self.schedule_jobs()
-        self.scheduler = None
-
+        # set up git/restart handling
         self.last_known_commit = ""
         self.shutdown = False
 
@@ -38,6 +35,9 @@ class Command(BaseCommand):
 
         self.flush_thread = threading.Thread(target=self.flush_thread)
         self.flush_thread.start()
+
+        self.schedule_jobs()
+        self.scheduler = None
 
     def flush(self):
         while True and not self.shutdown:
