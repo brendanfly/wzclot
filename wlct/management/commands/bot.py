@@ -148,12 +148,12 @@ class WZBot(commands.AutoShardedBot):
             if not hasattr(self, 'uptime'):
                 self.uptime = timezone.now()
 
+            self.shutdown = False
             print("Creating communication thread...")
             self.comm_thread = threading.Thread(target=self.handle_git)
             self.comm_thread.start()
 
             print("Creating flushing thread")
-            self.shutdown = False
             self.flush_thread = threading.Thread(target=self.flush)
             self.flush_thread.start()
 
