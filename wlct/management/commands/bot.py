@@ -88,7 +88,6 @@ class WZBot(commands.AutoShardedBot):
                 cog = self.get_cog("tasks")
                 if cog:
                     cog.bg_task.stop()
-                self.close()
                 sys.exit(0)
 
     def perf_counter(self, msg):

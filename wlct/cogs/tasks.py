@@ -326,6 +326,9 @@ class Tasks(commands.Cog, name="tasks"):
         # calculate the time different here
         # determine if we need hours run or 4 hours run
         # for 1 hour, executions should be 360
+        if self.bot.shutdown:
+           await self.bot.logout()
+           return
         start = datetime.datetime.utcnow()
         hours = (self.executions % 360 == 0)
         hours4 = (self.executions % (360*4) == 0)
