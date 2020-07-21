@@ -76,6 +76,7 @@ class Command(BaseCommand):
                     print("Scheduler is running...shutting down")
                     self.flush_thread.join()
                     print("Flush thread shutdown...just waiting on jobs")
+                    self.scheduler.remove_all_jobs()
                     self.scheduler.shutdown(wait=True)
                     sys.exit(0)
 
