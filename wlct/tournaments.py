@@ -148,7 +148,7 @@ def get_team_data_no_clan(team):
     team_data = ""
     tournament_players = TournamentPlayer.objects.filter(team=team)
     for tournament_player in tournament_players:
-        team_data += '{} '.format(tournament_player.player.name.encode('utf-8'))
+        team_data += '{} '.format(tournament_player.player.name)
     return team_data
 
 def get_team_data_no_clan_player_list(list):
