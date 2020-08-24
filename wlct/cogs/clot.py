@@ -922,6 +922,13 @@ class Clot(commands.Cog, name="clot"):
                         if current_player % 10 == 0:
                             emb.add_field(name=field_name, value=player_data)
                             player_data = ""  # reset this for the next embed
+
+                        if len(emb) > 5000:
+                            await ctx.send(embed=emb)
+                            emb = discord.Embed(color=self.bot.embed_color)
+                            emb.title = "{}".format(clan_obj[0].name)
+                            emb.set_thumbnail(url=clan_obj[0].image_path)
+
                     if len(player_data) > 0:
                         emb.add_field(name=field_name, value=player_data)
                     await ctx.send(embed=emb)
