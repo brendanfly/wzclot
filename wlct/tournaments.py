@@ -5008,8 +5008,8 @@ class ClanLeague(Tournament):
             data += '</tr>'
 
             need_start_buttons = False
-            game_allocation_date = "N/A"
             for template in templates:
+                game_allocation_date = "N/A"
                 # do we need to show the editable controls?
                 tournaments = ClanLeagueTournament.objects.filter(clan_league_template=template)
                 for tourney in tournaments:

@@ -235,7 +235,7 @@ def parse_and_update_clan_logo():
             try:
                 clan_id = link.attrs["href"].split('=')[1]
                 clan_href = link.attrs["href"]
-                if '/Clans' in clan_href:
+                if '/Clans' and '/Icon' in clan_href:
                     clan_name = link.contents[2].strip()
                     image = link.findAll("img")[0].attrs["src"]
                     clan_exist = Clan.objects.filter(name=clan_name)
@@ -276,11 +276,8 @@ def cache_games(**kwargs):
             try:
                 # we only need to cache if there are unfinished games
                 games = TournamentGame.objects.filter(tournament=child_tournament, is_finished=False)
-                if games.count() > 0:
-                    child_tournament.cache_data()
-                    log("[CACHE]: Finished processing games for tournament {}".format(tournament.name), LogLevel.engine)
-                else:
-                    print("Skipping {} due to no unfinished games".format(tournament.name))
+                child_tournament.cache_data()
+                log("[CACHE]: Finished processing games for tournament {}".format(tournament.name), LogLevel.engine)
             except Exception as e:
                 log_exception()
             finally:
