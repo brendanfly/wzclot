@@ -148,7 +148,7 @@ def get_team_data_no_clan(team):
     team_data = ""
     tournament_players = TournamentPlayer.objects.filter(team=team)
     for tournament_player in tournament_players:
-        team_data += '{} '.format(tournament_player.player.name.encode('utf-8'))
+        team_data += '{} '.format(tournament_player.player.name)
     return team_data
 
 def get_team_data_no_clan_player_list(list):
@@ -796,6 +796,8 @@ class Tournament(models.Model):
     def get_url(self):
         if self.is_league:
             return "/leagues/{}/".format(self.id)
+        elif hasattr(self, "season_template"):
+            return "/pr/season/{}/".format(self.id)
         return "/tournaments/{}/".format(self.id)
 
     def are_vacations_supported(self):
@@ -4282,6 +4284,11 @@ class PromotionalRelegationLeagueSeason(Tournament):
                 tplayer = TournamentPlayer.objects.get(id=int(playerid))
                 templateid = self.season_template.templateid
                 player = Player.objects.get(id=int(request_data['data_attrib[swapid]']))
+
+                # Check if the player is already in the tournament (only applies if not empty seat -- ie token != "1")
+                if player.token != "1" and TournamentPlayer.objects.filter(player=player, tournament=self):
+                    raise Exception("{} is already invited.".format(player.name))
+
                 if is_player_allowed_join(player, templateid):
                     log_tournament(
                         "Swapped {} [{}] with {} [{}]".format(tplayer.player.name, tplayer.player.token, player.name,

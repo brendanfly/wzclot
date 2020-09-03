@@ -58,6 +58,13 @@
                 <br/><br/>
                 {% endif %}
                 <p class="card-text h7">
+                    {% if tournament.clan_league_template %}
+                        <b>Clan League:</b> <a class="badge badge-primary" href="/leagues/{{ tournament.parent_tournament.id }}">{{ tournament.parent_tournament.name }}</a>
+                        <br/>
+                    {% elif tournament.parent_tournament %}
+                        <b>Season:</b> <a class="badge badge-primary" href="/pr/season/{{ tournament.parent_tournament.id }}">{{ tournament.parent_tournament.name }}</a>
+                        <br/>
+                    {% endif %}
                     <b>Tournament Description</b>&nbsp;<a
                         href="https://warzone.com/MultiPlayer?TemplateID={{ tournament.template }}" target="_blank"
                         class="badge badge-primary">Click to create game with template settings</a>

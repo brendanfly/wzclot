@@ -3,7 +3,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from wlct.form_message_handling import FormError
 from wlct.api import API, get_account_token
 from wlct.models import Player, Clan
-from wlct.tournaments import SwissTournament, GroupStageTournament, SeededTournament, TournamentInvite, TournamentPlayer, find_tournament_by_id, Tournament, find_league_by_id, is_player_allowed_join, TournamentGameEntry, get_matchup_data, RealTimeLadder, RoundRobinRandomTeams
+from wlct.tournaments import SwissTournament, GroupStageTournament, SeededTournament, PromotionalRelegationLeagueSeason, TournamentInvite, TournamentPlayer, find_tournament_by_id, Tournament, find_league_by_id, is_player_allowed_join, TournamentGameEntry, get_matchup_data, RealTimeLadder, RoundRobinRandomTeams
 from wlct.forms import SwissTournamentForm, SeededTournamentForm, GroupTournamentForm, MonthlyTemplateCircuitForm, PromotionRelegationLeagueForm, ClanLeagueForm, RoundRobinRandomTeamsForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
@@ -756,6 +756,14 @@ def mytourneys_view(request):
                 if child_league and league.id not in leagues_found:
                     league_list.append(child_league)
                     leagues_found.append(child_league.id)
+
+            # Get PR seasons that players are in (but not the creator)
+            seasons = PromotionalRelegationLeagueSeason.objects.all();
+            for season in seasons:
+                # If player did not create the league and is in a season, add season to list
+                if season.created_by != player and season.id not in leagues_found and TournamentPlayer.objects.filter(tournament=season, player=player):
+                    league_list.append(season)
+                    leagues_found.append(season)
 
             context.update({'leagues': league_list})
             context.update({'tournaments': result_list})

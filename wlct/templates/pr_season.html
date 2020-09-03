@@ -33,6 +33,10 @@
             <div class="card-body">
                 <input type="hidden" id="template-warning">
                 <input type="hidden" value="{{ tournament.id }}" id="tournamentid">
+                {% if tournament.pr_tournament %}
+                    <b>League:</b> <a class="badge badge-primary" href="/leagues/{{ tournament.pr_tournament.id }}">{{ tournament.pr_tournament.name }}</a>
+                    <br/><br/>
+                {% endif %}
                 {% if tournament.created_by.token == request.session.token %}
                 {% if not tournament.has_started %}
                 {% if tournament.can_start_tourney %}
