@@ -1,7 +1,7 @@
 import discord
 from wlct.models import Clan, Player, DiscordUser, DiscordChannelClanFilter, DiscordChannelPlayerFilter, DiscordChannelTournamentLink, TournamentAdministrator
 from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry, TournamentRound
-from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
+from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_command_exception
 from discord.ext import commands
 from django.conf import settings
 from wlct.cogs.common import is_clotadmin, has_tournament_admin_access
@@ -16,6 +16,13 @@ class PlayerStats:
         self.win_pct = win_pct
         self.rating = rating
 
+# Handles any command errors
+def handle_command_exception(ctx):
+    msg_channel = ctx.message.channel
+    msg_info = "Channel/Server: " + msg_channel.name + "/" + msg_channel.guild.name
+    msg_info += "\nUser: " + ctx.message.author.name
+    # Logs user and channel info to backend
+    log_command_exception(msg_info)
 
 class Clot(commands.Cog, name="clot"):
     def __init__(self, bot):
@@ -122,7 +129,10 @@ class Clot(commands.Cog, name="clot"):
             else:
                 await ctx.send("You must enter a valid option to the command. Use ``bb!help stats`` to see options.")
         except Exception as e:
-            log_exception()
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
     @commands.command(brief="Admin commands to manage and debug CLOT",
                       usage='''
@@ -344,9 +354,11 @@ class Clot(commands.Cog, name="clot"):
             else:
                 await ctx.send("Please enter a valid command. Use ``bb!help admin`` to see commands.")
 
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
     @commands.command(
         brief="Creates filters for game logs to only show games fulfilling criteria.",
@@ -472,9 +484,11 @@ class Clot(commands.Cog, name="clot"):
             else:
                 await ctx.send("Sorry, you must be a server administrator to use this command.")
                 return
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
 
     '''
@@ -604,9 +618,11 @@ class Clot(commands.Cog, name="clot"):
             elif total_successfully_updated and arg == "-r":
                 await ctx.send("You've removed the link to this channel for {} out of {} tournaments and {} filters.".format(
                     total_successfully_updated, len(tournaments), total_filters_removed))
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
     @commands.command(
         brief="Links a channel on your server to a tournament on the CLOT. You must be the tournament creator to succesfully link the tournament.",
@@ -703,9 +719,11 @@ class Clot(commands.Cog, name="clot"):
                     await ctx.send("Please enter a valid tournament or league id to link to this channel.")
             else:
                 await ctx.send("Sorry, you must be a server administrator to use this command.")
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
     @commands.command(
         brief="Shows all links and filters for the channel.",
@@ -761,9 +779,11 @@ class Clot(commands.Cog, name="clot"):
             if message_data:
                 await ctx.send(message_data)
 
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
     @commands.command(
         brief="Links your discord account with your CLOT/Warzone account for use with creating games and bot ladders.",
@@ -807,9 +827,11 @@ class Clot(commands.Cog, name="clot"):
                         "Bot token is invalid. Please visit http://wzclot.eastus.cloudapp.azure.com/me to retrieve your token.")
             else:
                 await ctx.send("You cannot use the !linkme command unless you are privately messaging the bot.")
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
     @commands.command(brief="Displays division data from the CLOT",
                       usage='''
@@ -831,9 +853,11 @@ class Clot(commands.Cog, name="clot"):
                 division_data += "{} | Id: {}\n".format(division.title, division.id)
 
             await ctx.send(division_data)
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
     @commands.command(brief="Displays tournament data from the CLOT",
                       usage='''
@@ -902,9 +926,11 @@ class Clot(commands.Cog, name="clot"):
                                 tournament_data += "{} (Id: {})\n".format(cl_tourney.name, cl_tourney.id)
             if len(tournament_data) > 0:
                 await ctx.send(tournament_data)
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
     @commands.command(brief="Displays the MTC top ten on the CLOT. Optional arguments to show any MTC top 10.",
                       usage="""
@@ -940,9 +966,12 @@ class Clot(commands.Cog, name="clot"):
                 await ctx.send(tournament_data)
             else:
                 await ctx.send("You've entered an invalid MTC league id.")
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
     @commands.command(brief="Displays all registered clan members on the CLOT",
                       usage='''
@@ -991,9 +1020,11 @@ class Clot(commands.Cog, name="clot"):
                     await ctx.send("No players are registered on the CLOT for {}".format(clan_obj[0].name))
             else:
                 await ctx.send("Clan with id {} not found. Please use bb!clans to show valid clans.".format(clanid))
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
     @commands.command(brief="Displays all clans on the CLOT")
     async def clans(self, ctx):
@@ -1009,9 +1040,11 @@ class Clot(commands.Cog, name="clot"):
                         clans_data = ""
                     clans_data += "{}: {}\n".format(clan.id, clan.name)
             await ctx.send(clans_data)
-        except:
-            log_exception()
-            ctx.send("An error has occurred, unable to process command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
     @commands.command(brief="Display your Warzone Profile Link and Searches for others",
                       usage='''
@@ -1042,9 +1075,11 @@ class Clot(commands.Cog, name="clot"):
                             data = ""
                 if data != "" and len(data) > 0:
                     await ctx.send(data)
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e))
 
 
 def setup(bot):
