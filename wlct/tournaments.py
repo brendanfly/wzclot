@@ -3180,7 +3180,7 @@ class TournamentTeam(models.Model):
 
     def get_max_games_at_once_option(self):
         data = '<select id="max_games">'
-        for i in range(2, self.tournament.get_max_games_at_once()+1):
+        for i in range(1, self.tournament.get_max_games_at_once()+1):
             if i == self.max_games_at_once:
                 data += '<option value="{}" data-games="{}" data-team="{}" selected>{} games</option>'.format(i, i, self.id, i)
             else:

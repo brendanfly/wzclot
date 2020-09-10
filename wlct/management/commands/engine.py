@@ -9,7 +9,7 @@ from wlct.tournaments import ClanLeague, ClanLeagueTournament, find_tournament_b
 from django.conf import settings
 import pytz
 import threading
-from apscheduler.schedulers.background import BlockingScheduler
+from apscheduler.schedulers.background import BlockingScheduler, BackgroundScheduler
 from apscheduler.jobstores.base import ConflictingIdError
 from django_apscheduler.jobstores import DjangoJobStore
 from django.core.management.base import BaseCommand
@@ -84,7 +84,7 @@ class Command(BaseCommand):
         # lookup the main scheduler, if it's not currently scheduled, add it every 3 min
         try:
             print("Scheduling jobs")
-            scheduler = BlockingScheduler()
+            scheduler = BackgroundScheduler()
             # If you want all scheduled jobs to use this store by default,
             # use the name 'default' instead of 'djangojobstore'.
             scheduler.add_jobstore(DjangoJobStore(), 'default')
