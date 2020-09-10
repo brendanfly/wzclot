@@ -19,6 +19,8 @@ import urllib.request
 import os
 import sys, threading, json, time, traceback
 
+engine_shutdown = False
+
 def get_run_time():
     return 180
 
@@ -60,6 +62,8 @@ class Command(BaseCommand):
                 f = open(path)
                 print("Found shutdown file...")
                 self.shutdown = True
+                global engine_shutdown
+                engine_shutdown = True
             except IOError:
                 print("Shutdown file does not exist...sleeping and trying again")
             finally:
@@ -141,7 +145,9 @@ class Command(BaseCommand):
             pass
 
 def process_mdl_games():
-
+    global engine_shutdown
+    if engine_shutdown:
+        return
     log("Starting process MDL Games {}".format(datetime.datetime.utcnow()), LogLevel.engine)
     mdl_url = "http://md-ladder.cloudapp.net/api/v1.0/games?topk=10"
 
@@ -302,6 +308,9 @@ def is_correct_player(player_token, player_team):
 def cache_games(**kwargs):
     tournaments = Tournament.objects.filter(**kwargs)
     for tournament in tournaments:
+        global engine_shutdown
+        if engine_shutdown:
+            return
         child_tournament = find_tournament_by_id(tournament.id, True)
         if child_tournament:
             log("[CACHE]: Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
@@ -320,6 +329,9 @@ def check_games(**kwargs):
     log("Running check_games on thread {}".format(threading.get_ident()), LogLevel.engine)
     tournaments = Tournament.objects.filter(**kwargs)
     for tournament in tournaments:
+        global engine_shutdown
+        if engine_shutdown:
+            return
         child_tournament = find_tournament_by_id(tournament.id, True)
         if child_tournament and child_tournament.should_process_in_engine():
             log("[PROCESS GAMES]: Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
