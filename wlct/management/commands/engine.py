@@ -16,6 +16,7 @@ from django.core.management.base import BaseCommand
 import gc
 from django.utils import timezone
 import urllib.request
+import os
 import sys, threading, json, time, traceback
 
 def get_run_time():
@@ -29,21 +30,48 @@ class Command(BaseCommand):
         self.last_known_commit = ""
         self.shutdown = False
 
-        print("Creating communication thread...")
-        self.comm_thread = threading.Thread(target=self.handle_git)
-        self.comm_thread.start()
+        print("Creating flushing and shutdown threads...")
+        #self.comm_thread = threading.Thread(target=self.handle_git)
+        #self.comm_thread.start()
 
         self.flush_thread = threading.Thread(target=self.flush)
         self.flush_thread.start()
 
-        self.schedule_jobs()
+        self.handle_shutdown_thread = threading.Thread(target=self.handle_shutdown)
+        self.handle_shutdown_thread.start()
+
         self.scheduler = None
+        self.schedule_jobs()
 
     def flush(self):
         while True and not self.shutdown:
             sys.stdout.flush()
             sys.stderr.flush()
             time.sleep(5)
+
+    def handle_shutdown(self):
+        path = os.getcwd()
+        path += "\\shutdown_file.txt"
+        while not self.shutdown:
+            # check for shutdown file to be written...
+            try:
+                f = open(path)
+                self.shutdown = True
+            except IOError:
+                print("Shutdown file does not exist...sleeping and trying again")
+            finally:
+                f.close()
+                time.sleep(5)
+
+        if self.shutdown is True:
+            print('Waiting for all jobs to finish and shutting process down...')
+            if self.scheduler is not None and self.scheduler.running:
+                print("Scheduler is running...shutting down")
+                print("Removing all jobs")
+                self.scheduler.remove_all_jobs()
+                print("Waiting for outstanding work to finish")
+                self.scheduler.shutdown(wait=True)
+                sys.exit(0)
 
     def handle_git(self):
         while not self.shutdown:
