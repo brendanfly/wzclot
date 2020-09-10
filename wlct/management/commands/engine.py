@@ -56,7 +56,9 @@ class Command(BaseCommand):
         while not self.shutdown:
             # check for shutdown file to be written...
             try:
+                print("Looking for {} shutdown file".format(path))
                 f = open(path)
+                print("Found shutdown file...")
                 self.shutdown = True
             except IOError:
                 print("Shutdown file does not exist...sleeping and trying again")
