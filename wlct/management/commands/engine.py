@@ -66,7 +66,7 @@ class Command(BaseCommand):
                 print(traceback.format_exc())
             finally:
                 # sleep for 30 seconds before checking again
-                print("Sleeping for 10 seconds. Last known commit: {}".format(self.last_known_commit))
+                print("Sleeping for 10 seconds. Last known commit: {}, Shutdown: {}".format(self.last_known_commit, self.shutdown))
                 time.sleep(10)
                 sys.stdout.flush()
 
