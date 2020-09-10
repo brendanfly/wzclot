@@ -52,6 +52,7 @@ class Command(BaseCommand):
     def handle_shutdown(self):
         path = os.getcwd()
         path += "\\shutdown_file.txt"
+        f = None
         while not self.shutdown:
             # check for shutdown file to be written...
             try:
@@ -60,7 +61,8 @@ class Command(BaseCommand):
             except IOError:
                 print("Shutdown file does not exist...sleeping and trying again")
             finally:
-                f.close()
+                if f:
+                    f.close()
                 time.sleep(5)
 
         if self.shutdown is True:
