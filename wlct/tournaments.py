@@ -3174,7 +3174,7 @@ class TournamentTeam(models.Model):
 
     def update_max_games_at_once(self, games):
         print("Updating max games to {}".format(games))
-        if games.isnumeric() and int(games) <= self.tournament.get_max_games_at_once() and int(games) >= 2:
+        if games.isnumeric() and int(games) <= self.tournament.get_max_games_at_once() and int(games) >= 1:
             self.max_games_at_once = int(games)
             self.save()
 
