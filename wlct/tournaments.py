@@ -4750,7 +4750,7 @@ class ClanLeagueTournament(RoundRobinTournament):
         today = datetime.datetime.now()
         today_str = "{}.{}.{}".format(today.day, today.month, today.year)
 
-        print("Starting tournament on: {}/{}/{}".format(today.month, today.day, today.year))
+        log_tournament("Starting tournament on: {}/{}/{}".format(today.month, today.day, today.year), self)
 
         creation_dates = "{}.{}.{};".format(today.month, today.day, today.year)
         if self.players_per_team == 1:
@@ -4758,6 +4758,7 @@ class ClanLeagueTournament(RoundRobinTournament):
             for i in range(1, self.number_teams):
                 next_date = today + datetime.timedelta(days=10)
                 creation_dates += "{}.{}.{};".format(next_date.month, next_date.day, next_date.year)
+                log_tournament("Creation dates after iteration {}: {}".format(i, creation_dates), self)
                 today = next_date
         else:
             for i in range(1, self.number_teams):
@@ -4768,11 +4769,12 @@ class ClanLeagueTournament(RoundRobinTournament):
                     # increment 15
                     next_date = today + datetime.timedelta(days=15)
                 creation_dates += "{}.{}.{};".format(next_date.month, next_date.day, next_date.year)
+                log_tournament("Creation dates after iteration {}: {}".format(i, creation_dates), self)
                 today = next_date
 
         creation_dates = creation_dates[:-1]
         self.games_start_times = creation_dates
-        print("Game Start times: {}".format(self.games_start_times))
+        log_tournament("Game Start times: {}".format(self.games_start_times), self)
         self.save()
 
         super(ClanLeagueTournament, self).start()
@@ -4805,7 +4807,7 @@ class ClanLeagueTournament(RoundRobinTournament):
             month = today[1]
             year = today[2]
             next_start = start_times[0].split('.')
-            #print("Today is {}/{}/{} and next game creation is on {}/{}/{}".format(month, day, year, next_start[0], next_start[1], next_start[2]))
+            log_tournament("Today is {}/{}/{} and next game creation is on {}/{}/{}".format(month, day, year, next_start[0], next_start[1], next_start[2]), self)
             if int(next_start[0]) == month and int(next_start[1]) == day and int(next_start[2]) == year:
                 # we can start the game now...but before returning true, store the start times again
                 # with the first element missing
