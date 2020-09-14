@@ -110,10 +110,12 @@ class Command(BaseCommand):
                 print('Waiting for all jobs to finish and shutting process down...')
                 if self.scheduler is not None and self.scheduler.running:
                     print("Scheduler is running...shutting down")
-                    print("Waiting for outstanding work to finish")
-                    self.scheduler.shutdown(wait=True)
                     print("Removing all jobs")
+                    self.scheduler.print_jobs()
                     self.scheduler.remove_all_jobs()
+                    self.scheduler.print_jobs()
+                    self.scheduler.shutdown()
+                    print("Waiting for outstanding work to finish...sleeping for 30 seconds")
                     sys.exit(0)
 
     def schedule_jobs(self):
