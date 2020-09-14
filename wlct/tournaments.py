@@ -4784,15 +4784,23 @@ class ClanLeagueTournament(RoundRobinTournament):
         start_times = self.games_start_times.split(';')
         # always take the next (first) one
         if len(start_times[0]) >= 8:  # every start time is a day/month/year, and we need at least 8 characters
-                start_times.pop(0)
-                new_start_times = ""
-                for time in start_times:
-                    new_start_times += "{};".format(time)
+                # also, we only want to remove the date if it is today (meaning games should have gotten created)
+                today = datetime.datetime.now()
+                if len(start_times[0].split('.')) == 3:
+                    start_day = start_times[0].split('.')[0]
+                    start_month = start_times[0].split('.')[1]
+                    start_year = start_times[0].split('.')[2]
+                    if (int(today.day) == int(start_day)) and (int(today.month) == int(start_month)) and (int(today.year) == int(start_year)):
+                        log_tournament("Removing start time for: {}/{}/{}".format(today.month, today.day, today.year), self)
+                        start_times.pop(0)
+                        new_start_times = ""
+                        for time in start_times:
+                            new_start_times += "{};".format(time)
 
-                # remove the last character, and save
-                new_start_times = new_start_times[:-1]
-                self.games_start_times = new_start_times
-                self.save()
+                        # remove the last character, and save
+                        new_start_times = new_start_times[:-1]
+                        self.games_start_times = new_start_times
+                        self.save()
 
     def should_create_game(self):
         start_times = self.games_start_times.split(';')
