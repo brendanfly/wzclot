@@ -73,13 +73,15 @@ class Command(BaseCommand):
 
         if self.shutdown is True:
             print('Waiting for all jobs to finish and shutting process down...')
-            if self.scheduler is not None and self.scheduler.running:
-                print("Scheduler is running...shutting down")
-                print("Removing all jobs")
-                self.scheduler.remove_all_jobs()
-                print("Waiting for outstanding work to finish")
-                self.scheduler.shutdown(wait=True)
-                sys.exit(0)
+            if self.scheduler is not None:
+                print("Current scheduler state: {}".format(self.scheduler.state))
+                if self.scheduler.running:
+                    print("Scheduler is running...shutting down")
+                    print("Removing all jobs")
+                    self.scheduler.remove_all_jobs()
+                    print("Waiting for outstanding work to finish")
+                    self.scheduler.shutdown(wait=True)
+            sys.exit(0)
 
     def handle_git(self):
         while not self.shutdown:
