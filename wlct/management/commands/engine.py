@@ -116,6 +116,7 @@ class Command(BaseCommand):
                     self.scheduler.print_jobs()
                     self.scheduler.shutdown()
                     print("Waiting for outstanding work to finish...sleeping for 30 seconds")
+                    time.sleep(30)
                     sys.exit(0)
 
     def schedule_jobs(self):
