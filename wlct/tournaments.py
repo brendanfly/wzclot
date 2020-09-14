@@ -220,13 +220,29 @@ def get_clan_data(clan):
 
     return data
 
+# used to determine for a given tournament how many games since team1 has played team2
+# returns True if the teams have played in the last "games_since" games.
+# the list is ordered by game finish date
+def did_play_games_against_since_finished(team1, team2, tournament, games_since):
+    games_played = TournamentGameEntry.objects.filter(team=team1, tournament=tournament).order_by('-game__game_finished_time')
+    if games_played:
+        current_game = 0
+        for gameEntry in games_played:
+            if gameEntry.team_opp == team2.id:
+                # they've played in the game
+                return True
+            current_game += 1
+            if current_game == games_since:
+                break
+    return False
+
 def did_teams_play_in_round(teamid1, teamid2, round):
     game_played = TournamentGameEntry.objects.filter(team=teamid1, team_opp=teamid2, game__round=round)
     if game_played:
         return True
     return False
 
-def did_teams_play_last_games(teamid1, teamid2, num_games_since):
+def did_play_games_against_since_created(teamid1, teamid2, num_games_since):
     games1 = TournamentGameEntry.objects.filter(team=teamid1, team_opp=teamid2).order_by('-created_date')[:num_games_since]
     if games1.count() > 0:
         # teams played each other in the last 3
@@ -534,6 +550,8 @@ class Tournament(models.Model):
                         player_names.append(tournament_player.player.name)
                         # append the player names to the game name
                 tournament_team_ids.append(".".join(team_player_ids))
+                tournament_team.process_games_since_created = 0
+                tournament_team.save()
                 current_rating = current_rating / tournament_players.count()
                 ratings.append(current_rating)
             team_id += 1
@@ -3171,6 +3189,7 @@ class TournamentTeam(models.Model):
     last_boot_time = models.DateTimeField(blank=True, null=True)
     on_vacation = models.BooleanField(default=False)
     ranked = models.BooleanField(default=False)
+    process_games_since_created = models.IntegerField(default=0, blank=True, null=True)
 
     def update_max_games_at_once(self, games):
         print("Updating max games to {}".format(games))
@@ -3722,6 +3741,7 @@ class MonthlyTemplateRotation(Tournament):
         return ""
 
     def process_new_games(self):
+        print("Handling process new games for {}".format(self.name))
         self.ensure_6_months()
         # process new games for the circuit
         # max games by default is 2
@@ -3787,8 +3807,7 @@ class MonthlyTemplateRotation(Tournament):
                             num_games_opp = get_games_unfinished_for_team(team_opp.id, current_circuit_month.tournament)
                             processNewGamesLog += "Team_opp {} has {} games currently ".format(team_opp.id, num_games_opp)
                             # need to keep track of how many times we've "tried" to match up against a player...maybe loop twice with this condition?
-                            # and not did_teams_play_last_games(team.id, team_opp.id, 3)
-                            if num_games_opp < team_opp.max_games_at_once and not did_teams_play_in_round(team.id, team_opp.id, current_circuit_month):
+                            if num_games_opp < team_opp.max_games_at_once and not did_teams_play_in_round(team.id, team_opp.id, current_circuit_month) and not did_play_games_against_since_finished(team, team_opp, self, 3):
                                 # create the game, increase num_games so we bail out of the while loop for this team
                                 processNewGamesLog += "Teams {} and {} did not play in round {} ".format(team.id, team_opp.id, current_circuit_month.id)
                                 game_data = "{}.{}".format(team.id, team_opp.id)
