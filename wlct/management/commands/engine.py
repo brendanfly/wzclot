@@ -318,7 +318,7 @@ def cache_games(**kwargs):
             return
         child_tournament = find_tournament_by_id(tournament.id, True)
         if child_tournament:
-            log("[CACHE]: Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
+            log("[CACHE]: Checking games for tournament: {}, shutdown: {}".format(tournament.name, engine_shutdown), LogLevel.engine)
             try:
                 # we only need to cache if there are unfinished games
                 games = TournamentGame.objects.filter(tournament=child_tournament, is_finished=False)
@@ -339,7 +339,7 @@ def check_games(**kwargs):
             return
         child_tournament = find_tournament_by_id(tournament.id, True)
         if child_tournament and child_tournament.should_process_in_engine():
-            log("[PROCESS GAMES]: Checking games for tournament: {}".format(tournament.name), LogLevel.engine)
+            log("[PROCESS GAMES]: Checking games for tournament: {}, shutdown: {}".format(tournament.name, engine_shutdown), LogLevel.engine)
             try:
                 games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
                 log("[PROCESS GAMES]: Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.engine)
