@@ -4806,8 +4806,8 @@ class ClanLeagueTournament(RoundRobinTournament):
             # also, we only want to remove the date if it is today (meaning games should have gotten created)
             today = datetime.datetime.now()
             if len(start_times[0].split('.')) == 3:
-                start_day = start_times[0].split('.')[0]
-                start_month = start_times[0].split('.')[1]
+                start_month = start_times[0].split('.')[0]
+                start_day = start_times[0].split('.')[1]
                 start_year = start_times[0].split('.')[2]
                 if (int(today.day) == int(start_day)) and (int(today.month) == int(start_month)) and (int(today.year) == int(start_year)):
                     log_tournament("Removing start time for: {}/{}/{}".format(today.month, today.day, today.year), self)
