@@ -277,8 +277,7 @@ class Clot(commands.Cog, name="clot"):
                     await ctx.send("Please enter a valid tournament id")
                     return
                 tournament = find_tournament_by_id(int(option), True)
-                if tournament:
-                    tournament = tournament[0]
+                if tournament is not None:
                     if not tournament.has_started:
                         await ctx.send("You cannot create a game in a tournament that hasn't started.")
                         return
