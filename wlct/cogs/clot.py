@@ -1,6 +1,6 @@
 import discord
 from wlct.models import Clan, Player, DiscordUser, DiscordChannelClanFilter, DiscordChannelPlayerFilter, DiscordChannelTournamentLink, TournamentAdministrator
-from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry
+from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry, TournamentRound
 from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_exception
 from discord.ext import commands
 from django.conf import settings
@@ -134,9 +134,10 @@ class Clot(commands.Cog, name="clot"):
                           bb!admin rtl -r <discord_id> - removes player from RTL using Discord ID
                           bb!admin cache <tournament_id> - forcibly runs the cache on a tournament
                           bb!admin add <player_token> <tournament_id> - adds this player as an admin for the tournament
+                          bb!admin create_game <tournament_id> <round_number> <game_data> - creates a game with the game data in the specified round number
                           ''',
                       category="clot")
-    async def admin(self, ctx, cmd="", option="", arg=""):
+    async def admin(self, ctx, cmd="", option="", arg="", arg2=""):
         try:
             if cmd == "logs":
                 if not is_clotadmin(ctx.message.author.id):
@@ -267,6 +268,55 @@ class Clot(commands.Cog, name="clot"):
                     self.bot.process_queue.append(tournament.id)
                     await ctx.send("Successfully queued up {} to be processed".format(tournament.name))
                     return
+            elif cmd == "create_game":
+                if not is_clotadmin(ctx.message.author.id):
+                    await ctx.send("Only CLOT admins can use this command")
+                    return
+                await ctx.send("Validating data...")
+                if not option.isnumeric():
+                    await ctx.send("Please enter a valid tournament id")
+                    return
+                tournament = find_tournament_by_id(int(option), True)
+                if tournament:
+                    tournament = tournament[0]
+                    if not tournament.has_started:
+                        await ctx.send("You cannot create a game in a tournament that hasn't started.")
+                        return
+                    if tournament.is_finished:
+                        await ctx.send("You cannot create a game in a tournament that is finished.")
+                        return
+                    # check to make sure the round is valid
+                    if not arg.isnumeric():
+                        await ctx.send("Round number must be numeric")
+                        return
+                    round_number = int(arg)
+                    tournament_round = TournamentRound.objects.filter(tournament=tournament.id, round_number=round_number)
+                    if not tournament_round:
+                        await ctx.send("Could not find round {} in Tournament: {} Id: {}".format(round_number, tournament.name, tournament.id))
+                        return
+                    tournament_round = tournament_round[0]
+                    # check to make sure the game_data is valid for this tournament
+                    if (len(arg2) == 0) or (len(arg2.split('.')) is not 2):
+                        await ctx.send("You must specify game data in the format of Team1_Id.Team2_Id")
+                        return
+                    # validate the game data
+                    game_data = arg2.split('.')
+                    team1 = TournamentTeam.objects.filter(tournament=tournament.id, pk=int(game_data[0]))
+                    if not team1:
+                        await ctx.send("Could not find team {} in tournament: {}, id: {}".format(game_data[0], tournament.name, tournament.id))
+                        return
+                    team2 = TournamentTeam.objects.filter(tournament=tournament.id, pk=int(game_data[1]))
+                    if not team2:
+                        await ctx.send("Could not find team {} in tournament: {}, id: {}".format(game_data[1], tournament.name, tournament.id))
+                        return
+                    # at this point we've validated everything...go ahead and create the one-off game
+                    tournament_game = tournament.create_game(tournament_round, game_data)
+                    await ctx.send("Created game in {} between teams {} and {}. Game Link: {}".format(tournament.name, game_data[0], game_data[1], tournament_game.game_link))
+
+                else:
+                    await ctx.send("Tournament is not valid. Please enter a valid tournament #")
+                    return
+
             elif cmd == "add":
                 if not is_clotadmin(ctx.message.author.id):
                     await ctx.send("Only CLOT admins can use this command.")
