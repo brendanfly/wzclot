@@ -315,7 +315,7 @@ class Clot(commands.Cog, name="clot"):
                             await ctx.send("Could not find team {} in tournament: {}, id: {}".format(game_data[1], tournament.name, tournament.id))
                             return
                     # at this point we've validated everything...go ahead and create the one-off game
-                    tournament_game = tournament.create_game(tournament_round, game_data)
+                    tournament_game = tournament.create_game(tournament_round, arg2)
                     await ctx.send("Created game in {} between teams {} and {}. Game Link: {}".format(tournament.name, game_data[0], game_data[1], tournament_game.game_link))
 
                 else:
