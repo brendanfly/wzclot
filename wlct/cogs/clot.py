@@ -302,12 +302,18 @@ class Clot(commands.Cog, name="clot"):
                     game_data = arg2.split('.')
                     team1 = TournamentTeam.objects.filter(tournament=tournament.id, pk=int(game_data[0]))
                     if not team1:
-                        await ctx.send("Could not find team {} in tournament: {}, id: {}".format(game_data[0], tournament.name, tournament.id))
-                        return
+                        # try for the round_robin_tournament
+                        team1 = TournamentTeam.objects.filter(round_robin_tournament=tournament.id, pk=int(game_data[0]))
+                        if not team1:
+                            await ctx.send("Could not find team {} in tournament: {}, id: {}".format(game_data[0], tournament.name, tournament.id))
+                            return
                     team2 = TournamentTeam.objects.filter(tournament=tournament.id, pk=int(game_data[1]))
                     if not team2:
-                        await ctx.send("Could not find team {} in tournament: {}, id: {}".format(game_data[1], tournament.name, tournament.id))
-                        return
+                        # try for the round_robin_tournament
+                        team2 = TournamentTeam.objects.filter(round_robin_tournament=tournament.id, pk=int(game_data[1]))
+                        if not team2:
+                            await ctx.send("Could not find team {} in tournament: {}, id: {}".format(game_data[1], tournament.name, tournament.id))
+                            return
                     # at this point we've validated everything...go ahead and create the one-off game
                     tournament_game = tournament.create_game(tournament_round, game_data)
                     await ctx.send("Created game in {} between teams {} and {}. Game Link: {}".format(tournament.name, game_data[0], game_data[1], tournament_game.game_link))
