@@ -2673,7 +2673,8 @@ class RoundRobinTournament(Tournament):
         # while current_iteration < iterations and iterations < 50:
 
         doAllClansHaveGames = False;
-        while not doAllClansHaveGames:
+        iterations = 0
+        while not doAllClansHaveGames and iterations < 50:
             team_game_data_copy = team_game_data.copy()
             for matchup in possible_matchups:
                 if round:
@@ -2698,6 +2699,7 @@ class RoundRobinTournament(Tournament):
                         game_data2.append(team2)
                         log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
 
+            print("Teams in list: {}\nTeams created: {}".format(teams_list, games_created))
             # Check if enough games were found... Redo if not
             if len(teams_list) == len(games_created):
                 doAllClansHaveGames = True
@@ -2707,7 +2709,12 @@ class RoundRobinTournament(Tournament):
                 game_data1.clear()
                 game_data2.clear()
                 shuffle(possible_matchups)
-                log_tournament("Missing matchups found. Retrying matchups... Only {} games made containing the teams: {}".format(len(game_data1), games_created), self)
+                log_tournament("Missing matchups found. Retrying matchups... Only {} games were matched containing the teams: {}".format(len(game_data1), games_created), self)
+                iterations += 1
+
+        if iterations == 50:
+            # Was unable to find enough games for tournament... BAD
+            log_tournament("Unable to find game matchups after 50 iterations... Not creating any games", self)
 
         log_tournament("Teams with games created so far: {}, teams in division: {}, byes: {}".format(len(games_created), self.number_teams, self.uses_byes()), self)
         if self.uses_byes():
