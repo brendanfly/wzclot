@@ -602,7 +602,7 @@ class Tournament(models.Model):
         pass
 
     def create_game(self, tournament_round, game):
-        self.create_game_with_template_and_data(tournament_round, game, self.template, None)
+        return self.create_game_with_template_and_data(tournament_round, game, self.template, None)
 
     def get_game_name(self):
         if self.name:
