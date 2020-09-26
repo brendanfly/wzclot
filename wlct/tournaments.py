@@ -2671,28 +2671,43 @@ class RoundRobinTournament(Tournament):
         game_data2 = []
         round = TournamentRound.objects.filter(tournament=self, round_number=1)
         # while current_iteration < iterations and iterations < 50:
-        for matchup in possible_matchups:
-            if round:
-                team1 = matchup[0]
-                team2 = matchup[1]
-            else:
-                log("No round found for round robin tournament {}!".format(self.id), LogLevel.critical)
 
-            # see if both opponents have an available slot to play
-            log_tournament("Current games team {}: {}, team {}: {}".format(team1, len(team_game_data[team1]), team2, len(team_game_data[team2])), self)
-            if len(team_game_data[team1]) < self.games_at_once and len(team_game_data[team2]) < self.games_at_once:
-                # go ahead and create the new game
-                log_tournament("Games created for team {}: {}, team {}: {}".format(team1, games_created.count(team1), team2, games_created.count(team2)), self)
-                if games_created.count(team1) < self.games_created_at_once() and games_created.count(team2) < self.games_created_at_once():
-                    # need to update game lists with newly created games
-                    # otherwise teams will get too many games
-                    team_game_data[team1].append(team2)
-                    team_game_data[team2].append(team1)
-                    games_created.append(team1)
-                    games_created.append(team2)
-                    game_data1.append(team1)
-                    game_data2.append(team2)
-                    log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
+        doAllClansHaveGames = False;
+        while not doAllClansHaveGames:
+            team_game_data_copy = team_game_data.copy()
+            for matchup in possible_matchups:
+                if round:
+                    team1 = matchup[0]
+                    team2 = matchup[1]
+                else:
+                    log("No round found for round robin tournament {}!".format(self.id), LogLevel.critical)
+
+                # see if both opponents have an available slot to play
+                log_tournament("Current games team {}: {}, team {}: {}".format(team1, len(team_game_data_copy[team1]), team2, len(team_game_data_copy[team2])), self)
+                if len(team_game_data_copy[team1]) < self.games_at_once and len(team_game_data_copy[team2]) < self.games_at_once:
+                    # go ahead and create the new game
+                    log_tournament("Games created for team {}: {}, team {}: {}".format(team1, games_created.count(team1), team2, games_created.count(team2)), self)
+                    if games_created.count(team1) < self.games_created_at_once() and games_created.count(team2) < self.games_created_at_once():
+                        # need to update game lists with newly created games
+                        # otherwise teams will get too many games
+                        team_game_data_copy[team1].append(team2)
+                        team_game_data_copy[team2].append(team1)
+                        games_created.append(team1)
+                        games_created.append(team2)
+                        game_data1.append(team1)
+                        game_data2.append(team2)
+                        log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
+
+            # Check if enough games were found... Redo if not
+            if len(teams_list) == len(games_created):
+                doAllClansHaveGames = True
+            else:
+                # Not enough games were created... Redo the matchups
+                games_created.clear()
+                game_data1.clear()
+                game_data2.clear()
+                shuffle(possible_matchups)
+                log_tournament("Missing matchups found. Retrying matchups... Only {} games made containing the teams: {}".format(len(game_data1), games_created), self)
 
         log_tournament("Teams with games created so far: {}, teams in division: {}, byes: {}".format(len(games_created), self.number_teams, self.uses_byes()), self)
         if self.uses_byes():
