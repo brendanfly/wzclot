@@ -4,7 +4,7 @@ from django.db import models
 from django.contrib import admin
 import datetime
 from dateutil import tz
-from wlct.logging import log_exception, log, LogLevel, log_tournament, log_game, log_game_status, ProcessGameLog, ProcessNewGamesLog
+from wlct.logging import log_exception, log, LogLevel, log_tournament, log_game, log_game_status, ProcessGameLog, ProcessNewGamesLog,  log_critical_msg
 from wlct.models import Player, Clan
 from django.conf import settings
 import random
@@ -2714,7 +2714,7 @@ class RoundRobinTournament(Tournament):
 
         if iterations == 50:
             # Was unable to find enough games for tournament... BAD
-            log_tournament("Unable to find game matchups after 50 iterations... Not creating any games", self)
+            log_critical_msg("Unable to find game matchups after 50 iterations in {} [ID: {}]".format(self.name, self.id))
 
         log_tournament("Teams with games created so far: {}, teams in division: {}, byes: {}".format(len(games_created), self.number_teams, self.uses_byes()), self)
         if self.uses_byes():

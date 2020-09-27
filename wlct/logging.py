@@ -25,6 +25,9 @@ class LogLevel:
     api = "API"
     webhook = "Webhook"
 
+def log_critical_msg(msg):
+    log(msg, LogLevel.critical)
+
 def log_exception():
     log(traceback.format_exc(), LogLevel.critical)
 
