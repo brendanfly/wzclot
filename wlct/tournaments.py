@@ -2406,6 +2406,9 @@ class RoundRobinTournament(Tournament):
 
     min_teams = 4
 
+    def handle_no_games_created(self):
+        pass
+
     def uses_byes(self):
         return False
 
@@ -2713,7 +2716,7 @@ class RoundRobinTournament(Tournament):
 
         if iterations == 50:
             # Was unable to find enough games for tournament... BAD
-            log_critical_msg("Unable to find game matchups after 50 iterations in {} [ID: {}]".format(self.name, self.id))
+            self.handle_no_games_created()
 
         log_tournament("Teams with games created so far: {}, teams in division: {}, byes: {}".format(len(games_created), self.number_teams, self.uses_byes()), self)
         if self.uses_byes():
@@ -4708,6 +4711,9 @@ class ClanLeagueTournament(RoundRobinTournament):
     games_start_times = models.TextField(default="", blank=True, null=True)
     clan_league_template = models.ForeignKey('ClanLeagueTemplate', on_delete=models.DO_NOTHING, null=True, blank=True)
     vacation_force_interval = 20
+
+    def handle_no_games_created(self):
+        log("Unable to find game matchups after 50 iterations in {} [ID: {}]".format(self.name, self.id), LogLevel.warning)
 
     def are_vacations_supported(self):
         return True
