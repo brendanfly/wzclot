@@ -58,7 +58,7 @@ class WZBot(commands.AutoShardedBot):
             time.sleep(5)
 
     # Handles any command errors
-    def handle_command_exception(self, ctx, err_msg):
+    async def handle_command_exception(self, ctx, err_msg):
         msg_channel = ctx.message.channel
         msg_info = "Channel/Server: " + msg_channel.name + "/" + msg_channel.guild.name
         msg_info += "\nUser: " + ctx.message.author.name + "#" + ctx.message.author.discriminator
