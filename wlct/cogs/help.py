@@ -1,10 +1,10 @@
 import discord
 
 from discord.ext import commands
+from wlct.logging import log_command_exception
 
 def setup(bot):
     bot.help_command = Help()
-
 
 def get_help_embed(cog):
     # start by building an embed for the help
@@ -43,7 +43,10 @@ class Help(commands.HelpCommand):
 
     async def send_bot_help(self, mapping):
         emb = get_help_embed(self)
-        await self.context.send(embed=emb)
+        try:
+            await self.context.send(embed=emb)
+        except Exception as e:
+            self.bot.handle_command_exception(self.context, str(e))
 
     async def send_cog_help(self, cog):
         pass

@@ -5,13 +5,20 @@ import requests
 import json
 from bs4 import BeautifulSoup
 from wlct.models import Engine
-from wlct.logging import TournamentGameLog, ProcessGameLog, log_exception
+from wlct.logging import TournamentGameLog, ProcessGameLog, log_exception, log_command_exception
 from wlct.models import Player, TournamentAdministrator
 from wlct.cogs.help import get_help_embed
 from django.utils import timezone
 import datetime
 from django.core.paginator import Paginator
 
+# Handles any command errors
+def handle_command_exception(ctx):
+    msg_channel = ctx.message.channel
+    msg_info = "Channel/Server: " + msg_channel.name + "/" + msg_channel.guild.name
+    msg_info += "\nUser: " + ctx.message.author.name + "#" + ctx.message.author.discriminator
+    # Logs user and channel info to backend
+    log_command_exception(msg_info)
 
 def embed_list_special_delimiter():
     return "$%"
@@ -102,9 +109,11 @@ class Common(commands.Cog, name="general"):
                 if engine.next_run_time:
                     text += "Next run in {} minutes, {} seconds".format(self.get_minutes_seconds(time_to_run)[0], self.get_minutes_seconds(time_to_run)[1])
                 await ctx.send(text)
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e) + "\nAsk -B#0292 or JustinR17#9950")
 
 
     @commands.command(brief="[admin] Displays game logs for a tournament",
@@ -158,9 +167,11 @@ class Common(commands.Cog, name="general"):
                 current_player += 1
 
             await ctx.send(mdl_data)
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e) + "\nAsk -B#0292 or JustinR17#9950")
 
     @commands.command(brief="Displays all Warzone ladder rankings")
     async def ladders(self, ctx):
@@ -204,9 +215,11 @@ class Common(commands.Cog, name="general"):
                         found_table = False
                         await ctx.send("====================================================")
                         break
-        except:
-            log_exception()
-            await ctx.send("An error has occurred and was unable to process the command.")
+        except Exception as e:
+            handle_command_exception(ctx)
+
+            # Outputs error message to discord for user context
+            await ctx.send("An error has occurred:\n" + str(e) + "\nAsk -B#0292 or JustinR17#9950")
 
 
 def setup(bot):
