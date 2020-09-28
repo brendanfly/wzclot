@@ -121,7 +121,7 @@ class Clot(commands.Cog, name="clot"):
             else:
                 await ctx.send("You must enter a valid option to the command. Use ``bb!help stats`` to see options.")
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
     @commands.command(brief="Admin commands to manage and debug CLOT",
                       usage='''
@@ -344,7 +344,7 @@ class Clot(commands.Cog, name="clot"):
                 await ctx.send("Please enter a valid command. Use ``bb!help admin`` to see commands.")
 
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
     @commands.command(
         brief="Creates filters for game logs to only show games fulfilling criteria.",
@@ -471,7 +471,7 @@ class Clot(commands.Cog, name="clot"):
                 await ctx.send("Sorry, you must be a server administrator to use this command.")
                 return
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
 
     '''
@@ -602,7 +602,7 @@ class Clot(commands.Cog, name="clot"):
                 await ctx.send("You've removed the link to this channel for {} out of {} tournaments and {} filters.".format(
                     total_successfully_updated, len(tournaments), total_filters_removed))
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
     @commands.command(
         brief="Links a channel on your server to a tournament on the CLOT. You must be the tournament creator to succesfully link the tournament.",
@@ -700,7 +700,7 @@ class Clot(commands.Cog, name="clot"):
             else:
                 await ctx.send("Sorry, you must be a server administrator to use this command.")
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
     @commands.command(
         brief="Shows all links and filters for the channel.",
@@ -757,7 +757,7 @@ class Clot(commands.Cog, name="clot"):
                 await ctx.send(message_data)
 
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
     @commands.command(
         brief="Links your discord account with your CLOT/Warzone account for use with creating games and bot ladders.",
@@ -802,7 +802,7 @@ class Clot(commands.Cog, name="clot"):
             else:
                 await ctx.send("You cannot use the !linkme command unless you are privately messaging the bot.")
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
     @commands.command(brief="Displays division data from the CLOT",
                       usage='''
@@ -825,7 +825,7 @@ class Clot(commands.Cog, name="clot"):
 
             await ctx.send(division_data)
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
     @commands.command(brief="Displays tournament data from the CLOT",
                       usage='''
@@ -895,7 +895,7 @@ class Clot(commands.Cog, name="clot"):
             if len(tournament_data) > 0:
                 await ctx.send(tournament_data)
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
     @commands.command(brief="Displays the MTC top ten on the CLOT. Optional arguments to show any MTC top 10.",
                       usage="""
@@ -933,7 +933,7 @@ class Clot(commands.Cog, name="clot"):
                 await ctx.send("You've entered an invalid MTC league id.")
 
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
     @commands.command(brief="Displays all registered clan members on the CLOT",
                       usage='''
@@ -983,7 +983,7 @@ class Clot(commands.Cog, name="clot"):
             else:
                 await ctx.send("Clan with id {} not found. Please use bb!clans to show valid clans.".format(clanid))
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
     @commands.command(brief="Displays all clans on the CLOT")
     async def clans(self, ctx):
@@ -1000,7 +1000,7 @@ class Clot(commands.Cog, name="clot"):
                     clans_data += "{}: {}\n".format(clan.id, clan.name)
             await ctx.send(clans_data)
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
     @commands.command(brief="Display your Warzone Profile Link and Searches for others",
                       usage='''
@@ -1032,7 +1032,7 @@ class Clot(commands.Cog, name="clot"):
                 if data != "" and len(data) > 0:
                     await ctx.send(data)
         except Exception as e:
-            self.bot.handle_command_exception(ctx, str(e))
+            await self.bot.handle_command_exception(ctx, str(e))
 
 
 def setup(bot):
