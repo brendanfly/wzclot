@@ -2672,9 +2672,8 @@ class RoundRobinTournament(Tournament):
         round = TournamentRound.objects.filter(tournament=self, round_number=1)
         # while current_iteration < iterations and iterations < 50:
 
-        doAllClansHaveGames = False;
         iterations = 0
-        while not doAllClansHaveGames and iterations < 50:
+        while iterations < 50:
             team_game_data_copy = team_game_data.copy()
             for matchup in possible_matchups:
                 if round:
@@ -2702,7 +2701,7 @@ class RoundRobinTournament(Tournament):
             print("Teams in list: {}\nTeams created: {}".format(teams_list, games_created))
             # Check if enough games were found... Redo if not
             if len(teams_list) == len(games_created):
-                doAllClansHaveGames = True
+                break
             else:
                 # Not enough games were created... Redo the matchups
                 games_created.clear()
