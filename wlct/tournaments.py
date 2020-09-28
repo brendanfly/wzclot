@@ -602,7 +602,7 @@ class Tournament(models.Model):
         pass
 
     def create_game(self, tournament_round, game):
-        self.create_game_with_template_and_data(tournament_round, game, self.template, None)
+        return self.create_game_with_template_and_data(tournament_round, game, self.template, None)
 
     def get_game_name(self):
         if self.name:
@@ -5823,7 +5823,7 @@ class RealTimeLadder(Tournament):
             for t in templates:
                 allowed_join = is_player_allowed_join_by_token(player.token, t.template)
                 # we only need a single template valid to be able to play...
-                print("{} is {} allowed to play template {}".format(player.name, allowed_join, t.template))
+                print("{} is {} allowed to play template {}".format(player.name.encode('utf-8'), allowed_join, t.template))
                 if allowed_join:
                     return True
         return False

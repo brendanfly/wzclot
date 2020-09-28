@@ -1,10 +1,10 @@
 import discord
 
 from discord.ext import commands
+from wlct.logging import log_command_exception
 
 def setup(bot):
     bot.help_command = Help()
-
 
 def get_help_embed(cog):
     # start by building an embed for the help
@@ -28,6 +28,16 @@ def get_help_embed(cog):
     emb.add_field(name="Useful Links:", value="[CLOT Website](http://wzclot.eastus.cloudapp.azure.com)", inline=False)
     return emb
 
+async def handle_command_exception(ctx, err_msg):
+    msg_channel = ctx.message.channel
+    msg_info = "Channel/Server: " + msg_channel.name + "/" + msg_channel.guild.name
+    msg_info += "\nUser: " + ctx.message.author.name + "#" + ctx.message.author.discriminator
+    # Logs user and channel info to backend
+    log_command_exception(msg_info)
+
+    # Outputs error message to discord for user context
+    await ctx.send("An error has occurred:\n{}\nAsk -B#0292 or JustinR17#9950".format(err_msg))
+
 class Help(commands.HelpCommand):
 
     def __init__(self, *args, **kwargs):
@@ -43,7 +53,10 @@ class Help(commands.HelpCommand):
 
     async def send_bot_help(self, mapping):
         emb = get_help_embed(self)
-        await self.context.send(embed=emb)
+        try:
+            await self.context.send(embed=emb)
+        except Exception as e:
+            await handle_command_exception(self.context, str(e))
 
     async def send_cog_help(self, cog):
         pass

@@ -2,7 +2,7 @@ from discord.ext import commands, tasks
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.utils import timezone
-from wlct.logging import log_exception, Logger, LogLevel
+from wlct.logging import log_command_exception, log_exception, Logger, LogLevel
 import time, threading, sys, os, discord, traceback, json
 
 description = '''An example bot to showcase the discord.ext.commands extension
@@ -56,6 +56,17 @@ class WZBot(commands.AutoShardedBot):
             sys.stdout.flush()
             sys.stdout.flush()
             time.sleep(5)
+
+    # Handles any command errors
+    async def handle_command_exception(self, ctx, err_msg):
+        msg_channel = ctx.message.channel
+        msg_info = "Channel/Server: " + msg_channel.name + "/" + msg_channel.guild.name
+        msg_info += "\nUser: " + ctx.message.author.name + "#" + ctx.message.author.discriminator
+        # Logs user and channel info to backend
+        log_command_exception(msg_info)
+
+        # Outputs error message to discord for user context
+        await ctx.send("An error has occurred:\n{}\nAsk -B#0292 or JustinR17#9950".format(err_msg))
 
     def handle_shutdown(self):
         path = os.getcwd()
