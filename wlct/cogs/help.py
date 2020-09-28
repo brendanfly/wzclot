@@ -6,14 +6,6 @@ from wlct.logging import log_command_exception
 def setup(bot):
     bot.help_command = Help()
 
-# Handles any command errors
-def handle_command_exception(ctx):
-    msg_channel = ctx.message.channel
-    msg_info = "Channel/Server: " + msg_channel.name + "/" + msg_channel.guild.name
-    msg_info += "\nUser: " + ctx.message.author.name + "#" + ctx.message.author.discriminator
-    # Logs user and channel info to backend
-    log_command_exception(msg_info)
-
 def get_help_embed(cog):
     # start by building an embed for the help
     owner = cog.context.bot.owner
@@ -54,10 +46,7 @@ class Help(commands.HelpCommand):
         try:
             await self.context.send(embed=emb)
         except Exception as e:
-            handle_command_exception(self.context)
-
-            # Outputs error message to discord for user context
-            await self.context.send("An error has occurred:\n" + str(e) + "\nAsk -B#0292 or JustinR17#9950")
+            self.bot.handle_command_exception(self.context, str(e))
 
     async def send_cog_help(self, cog):
         pass
