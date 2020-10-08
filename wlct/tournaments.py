@@ -2406,8 +2406,44 @@ class RoundRobinTournament(Tournament):
 
     min_teams = 4
 
+    def find_new_game_matchups(self, possible_matchups, team_game_data, teams_list, round):
+        games_created = []
+        game_data1 = []
+        game_data2 = []
+        for matchup in possible_matchups:
+            if round:
+                team1 = matchup[0]
+                team2 = matchup[1]
+            else:
+                log("No round found for round robin tournament {}!".format(self.id), LogLevel.critical)
+                break
+
+            # see if both opponents have an available slot to play
+            log_tournament("Current games team {}: {}, team {}: {}".format(team1, len(team_game_data[team1]), team2, len(team_game_data[team2])), self)
+            if len(team_game_data[team1]) < self.games_at_once and len(team_game_data[team2]) < self.games_at_once:
+                # go ahead and create the new game
+                log_tournament("Games created for team {}: {}, team {}: {}".format(team1, games_created.count(team1),
+                                                                                   team2, games_created.count(team2)), self)
+                if games_created.count(team1) < self.games_created_at_once() and games_created.count(team2) < self.games_created_at_once():
+                    # need to update game lists with newly created games
+                    # otherwise teams will get too many games
+                    team_game_data[team1].append(team2)
+                    team_game_data[team2].append(team1)
+                    games_created.append(team1)
+                    games_created.append(team2)
+                    game_data1.append(team1)
+                    game_data2.append(team2)
+                    log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
+
+        log_tournament("Teams with matchups: {}... Teams list: {}".format(games_created, teams_list), self)
+
+        if len(possible_matchups) > 0 and len(games_created) != len(teams_list):
+            self.handle_no_games_created()
+
+        return [games_created, game_data1, game_data2]
+
     def handle_no_games_created(self):
-        pass
+        log("Unable to fully match teams in {} [ID: {}]".format(self.name, self.id), LogLevel.warning)
 
     def uses_byes(self):
         return False
@@ -2667,56 +2703,12 @@ class RoundRobinTournament(Tournament):
         log_tournament("Possible matchups in RR: {}".format(possible_matchups), self)
         # lookup the round for the round robin tournament
         # if there are an odd number of teams in the tournament, give out byes to a different team each round
-        log_tournament(
-            "Before grabbing round team_game_data: {}".format(team_game_data), self)
-        games_created = []
-        game_data1 = []
-        game_data2 = []
+        log_tournament("Before grabbing round team_game_data: {}".format(team_game_data), self)
         round = TournamentRound.objects.filter(tournament=self, round_number=1)
-        # while current_iteration < iterations and iterations < 50:
 
-        iterations = 0
-        while iterations < 50:
-            team_game_data_copy = team_game_data.copy()
-            for matchup in possible_matchups:
-                if round:
-                    team1 = matchup[0]
-                    team2 = matchup[1]
-                else:
-                    log("No round found for round robin tournament {}!".format(self.id), LogLevel.critical)
-
-                # see if both opponents have an available slot to play
-                log_tournament("Current games team {}: {}, team {}: {}".format(team1, len(team_game_data_copy[team1]), team2, len(team_game_data_copy[team2])), self)
-                if len(team_game_data_copy[team1]) < self.games_at_once and len(team_game_data_copy[team2]) < self.games_at_once:
-                    # go ahead and create the new game
-                    log_tournament("Games created for team {}: {}, team {}: {}".format(team1, games_created.count(team1), team2, games_created.count(team2)), self)
-                    if games_created.count(team1) < self.games_created_at_once() and games_created.count(team2) < self.games_created_at_once():
-                        # need to update game lists with newly created games
-                        # otherwise teams will get too many games
-                        team_game_data_copy[team1].append(team2)
-                        team_game_data_copy[team2].append(team1)
-                        games_created.append(team1)
-                        games_created.append(team2)
-                        game_data1.append(team1)
-                        game_data2.append(team2)
-                        log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
-
-            print("Teams in list: {}\nTeams created: {}".format(teams_list, games_created))
-            # Check if enough games were found... Redo if not
-            if len(teams_list) == len(games_created):
-                break
-            else:
-                # Not enough games were created... Redo the matchups
-                games_created.clear()
-                game_data1.clear()
-                game_data2.clear()
-                shuffle(possible_matchups)
-                log_tournament("Missing matchups found. Retrying matchups... Only {} games were matched containing the teams: {}".format(len(game_data1), games_created), self)
-                iterations += 1
-
-        if iterations == 50:
-            # Was unable to find enough games for tournament... BAD
-            self.handle_no_games_created()
+        # Find new games for RR tourney
+        # Sub-classed to allow iteration on CL tournaments only (where all teams require games in waves)
+        [games_created, game_data1, game_data2] = self.find_new_game_matchups(possible_matchups, team_game_data, teams_list, round)
 
         log_tournament("Teams with games created so far: {}, teams in division: {}, byes: {}".format(len(games_created), self.number_teams, self.uses_byes()), self)
         if self.uses_byes():
@@ -4711,6 +4703,59 @@ class ClanLeagueTournament(RoundRobinTournament):
     games_start_times = models.TextField(default="", blank=True, null=True)
     clan_league_template = models.ForeignKey('ClanLeagueTemplate', on_delete=models.DO_NOTHING, null=True, blank=True)
     vacation_force_interval = 20
+
+    def find_new_game_matchups(self, possible_matchups, team_game_data, teams_list, round):
+        games_created = []
+        game_data1 = []
+        game_data2 = []
+
+        # For CL, we must iterate until all teams have gotten matches
+        # If valid pairing not found after 50 iterations, send warning
+        iterations = 0
+        while iterations < 50:
+            team_game_data_copy = team_game_data.copy()
+            for matchup in possible_matchups:
+                if round:
+                    team1 = matchup[0]
+                    team2 = matchup[1]
+                else:
+                    log("No round found for round robin tournament {}!".format(self.id), LogLevel.critical)
+                    break
+
+                # see if both opponents have an available slot to play
+                log_tournament("Current games team {}: {}, team {}: {}".format(team1, len(team_game_data_copy[team1]), team2, len(team_game_data_copy[team2])), self)
+                if len(team_game_data_copy[team1]) < self.games_at_once and len(team_game_data_copy[team2]) < self.games_at_once:
+                    # go ahead and create the new game
+                    log_tournament("Games created for team {}: {}, team {}: {}".format(team1, games_created.count(team1), team2, games_created.count(team2)), self)
+                    if games_created.count(team1) < self.games_created_at_once() and games_created.count(team2) < self.games_created_at_once():
+                        # need to update game lists with newly created games
+                        # otherwise teams will get too many games
+                        team_game_data_copy[team1].append(team2)
+                        team_game_data_copy[team2].append(team1)
+                        games_created.append(team1)
+                        games_created.append(team2)
+                        game_data1.append(team1)
+                        game_data2.append(team2)
+                        log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
+
+            # Check if enough games were found... Redo if not
+            if len(teams_list) == len(games_created):
+                break
+            else:
+                # Not enough games were created... Redo the matchups
+                log_tournament("Retrying matchups... {} teams matched but {} teams in total".format(len(games_created), len(teams_list)), self)
+                games_created.clear()
+                game_data1.clear()
+                game_data2.clear()
+                shuffle(possible_matchups)
+                iterations += 1
+
+        log_tournament("Teams with matchups: {}... Teams list: {}".format(games_created, teams_list), self)
+        if iterations == 50:
+            # Was unable to find enough games for tournament... BAD
+            self.handle_no_games_created()
+
+        return [games_created, game_data1, game_data2]
 
     def handle_no_games_created(self):
         log("Unable to find game matchups after 50 iterations in {} [ID: {}]".format(self.name, self.id), LogLevel.warning)
