@@ -1085,7 +1085,7 @@ class Tournament(models.Model):
                             tourney_team_lost.losses += 1
                             tourney_team_lost.buchholz += tourney_team.buchholz
                             tourney_team_lost.save()
-                            processGameLog += "\nWinning team: {}, len(teams_won): {}".format(tourney_team_lost.id,
+                            processGameLog += "\nLosing team: {}, len(team_lost): {}".format(tourney_team_lost.id,
                                                                                             len(teams_lost))
                     else:
                         processGameLog += "Could not find a losing team when processing game...??"
@@ -2443,7 +2443,7 @@ class RoundRobinTournament(Tournament):
         return [games_created, game_data1, game_data2]
 
     def handle_no_games_created(self):
-        log("Unable to fully match teams in {} [ID: {}]".format(self.name, self.id), LogLevel.warning)
+        pass
 
     def uses_byes(self):
         return False
