@@ -2428,6 +2428,9 @@ class RoundRobinTournament(Tournament):
 
     min_teams = 4
 
+    def should_player_get_bye(self, team):
+        return not team.has_had_bye
+
     def find_new_game_matchups(self, possible_matchups, team_game_data, teams_list, round):
         games_created = []
         game_data1 = []
@@ -2558,7 +2561,7 @@ class RoundRobinTournament(Tournament):
             # remove one team from the shuffled list before proceeding to create games
             for i in range(0, len(shuffled_team_list_read_only)):
                 log_tournament("Looking at team: {}, with bye: {}".format(shuffled_team_list_read_only[i].id, shuffled_team_list_read_only[i].has_had_bye), self)
-                if not shuffled_team_list_read_only[i].has_had_bye and not found_bye:
+                if self.should_player_get_bye(shuffled_team_list_read_only[i]) and not found_bye:
                     bye_team = shuffled_team_list_read_only[i]
                     bye_team.has_had_bye = True
                     bye_team.save()
@@ -4758,64 +4761,83 @@ class ClanLeagueTournament(RoundRobinTournament):
     creation_interval = models.CharField(default="", blank=True, null=True, max_length=255)
     division = models.ForeignKey('ClanLeagueDivision', on_delete=models.CASCADE, null=True, blank=True)
     games_start_times = models.TextField(default="", blank=True, null=True)
+    tournament_team_order = models.TextField(default="", blank=True, null=True)
+    round_number = models.IntegerField(default=0)
     clan_league_template = models.ForeignKey('ClanLeagueTemplate', on_delete=models.DO_NOTHING, null=True, blank=True)
     vacation_force_interval = 20
+
+    def rotate_team_list(self, team_list: list, round_number):
+        # Used for matchmaking in rotating pairs by round
+        # Move last team to second index to rotate pairs
+        for i in range(round_number):
+            team_list.insert(1, team_list.pop())
+
+    def should_player_get_bye(self, team):
+        team_list = self.tournament_team_order.split(".")
+        # If list is even, no byes required
+        if len(team_list) == 0:
+            return False
+
+        # Rotate list to determine which player faces the bye
+        # If opponent of team_id is "-1", team_id gets bye
+        team_list.append("-1")
+        rotate_team_list(team_list, self.round_number)
+        return team_list[len(team_list) - team_list.index(str(team.id))] == "-1"
 
     def find_new_game_matchups(self, possible_matchups, team_game_data, teams_list, round):
         games_created = []
         game_data1 = []
         game_data2 = []
 
-        # For CL, we must iterate until all teams have gotten matches
-        # If valid pairing not found after 50 iterations, send warning
-        iterations = 0
-        while iterations < 50:
-            team_game_data_copy = team_game_data.copy()
-            for matchup in possible_matchups:
-                if round:
-                    team1 = matchup[0]
-                    team2 = matchup[1]
-                else:
-                    log("No round found for round robin tournament {}!".format(self.id), LogLevel.critical)
-                    break
+        if round:
+            team1 = matchup[0]
+            team2 = matchup[1]
+        else:
+            log("No round found for round robin tournament {}!".format(self.id), LogLevel.critical)
+            return [games_created, game_data1, game_data2]
 
-                # see if both opponents have an available slot to play
-                log_tournament("Current games team {}: {}, team {}: {}".format(team1, len(team_game_data_copy[team1]), team2, len(team_game_data_copy[team2])), self)
-                if len(team_game_data_copy[team1]) < self.games_at_once and len(team_game_data_copy[team2]) < self.games_at_once:
-                    # go ahead and create the new game
-                    log_tournament("Games created for team {}: {}, team {}: {}".format(team1, games_created.count(team1), team2, games_created.count(team2)), self)
-                    if games_created.count(team1) < self.games_created_at_once() and games_created.count(team2) < self.games_created_at_once():
-                        # need to update game lists with newly created games
-                        # otherwise teams will get too many games
-                        team_game_data_copy[team1].append(team2)
-                        team_game_data_copy[team2].append(team1)
-                        games_created.append(team1)
-                        games_created.append(team2)
-                        game_data1.append(team1)
-                        game_data2.append(team2)
-                        log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
+        # For CL, a deterministic approach is used for determining matchups to prevent invalid pairings
+        # Approach will systematically alternate pairings to prevent multiple iterations from being required
+        # https://en.wikipedia.org/wiki/Round-robin_tournament
 
-            # Check if enough games were found... Redo if not
-            if len(teams_list) == len(games_created):
-                break
-            else:
-                # Not enough games were created... Redo the matchups
-                log_tournament("Retrying matchups... {} teams matched but {} teams in total".format(len(games_created), len(teams_list)), self)
-                games_created.clear()
-                game_data1.clear()
-                game_data2.clear()
-                shuffle(possible_matchups)
-                iterations += 1
+        team_order = self.tournament_team_order.split(".")
+
+        # If list is odd, we must add a dummy 'competitor' to act as bye
+        if len(team_order) % 2:
+            team_order.append("-1")
+
+        # Rotate team list to reflect current round
+        self.rotate_team_list(team_order, self.round_number)
+
+        for i in range(len(team_order) / 2):
+            if team_order[i] == "-1" or team_order[(i*-1)-1] == "-1":
+                # Matchup contains bye... Skip
+                continue
+            # Matchup i'th member in list with n-i'th member
+            games_created.append(team_order[i])
+            games_created.append(team_order[(i*-1)-1])
+            game_data1.append(team_order[i])
+            game_data2.append(team_order[(i*-1)-1])
+
+
+        # Check if enough games were found
+        if len(teams_list) != len(games_created):
+            # Not enough games were created... Should never happen with format
+            log_tournament("Missing matchups in tournament... Game list 1: {}... Game list 2: {}... Round: {}".format(game_data1, game_data2, self.round_number), self)
+            self.handle_no_games_created()
+            games_created.clear()
+            game_data1.clear()
+            game_data2.clear()
+        else:
+            self.round_number += 1
+            self.save()
 
         log_tournament("Teams with matchups: {}... Teams list: {}".format(games_created, teams_list), self)
-        if iterations == 50:
-            # Was unable to find enough games for tournament... BAD
-            self.handle_no_games_created()
 
         return [games_created, game_data1, game_data2]
 
     def handle_no_games_created(self):
-        log("Unable to find game matchups after 50 iterations in {} [ID: {}]".format(self.name, self.id), LogLevel.warning)
+        log("Unable to find game matchups after 50 iterations in {} [ID: {}]".format(self.name, self.id), LogLevel.critical)
 
     def are_vacations_supported(self):
         return True
@@ -4933,6 +4955,17 @@ class ClanLeagueTournament(RoundRobinTournament):
         creation_dates = creation_dates[:-1]
         self.games_start_times = creation_dates
         log_tournament("Game Start times: {}".format(self.games_start_times), self)
+        self.round_number = 0
+
+        # Formulate order for matchmaking
+        teams = TournamentTeam.objects.filter(round_robin_tournament=self)
+        team_list = []
+        for team in teams:
+            team_list.append(str(team.id))
+        shuffle(team_list)
+        self.tournament_team_order = ".".join(team_list)
+        log_tournament("Team matchup order: {}".format(self.tournament_team_order), self)
+
         self.save()
 
         super(ClanLeagueTournament, self).start()
