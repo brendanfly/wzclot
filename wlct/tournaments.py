@@ -4766,7 +4766,7 @@ class ClanLeagueTournament(RoundRobinTournament):
     clan_league_template = models.ForeignKey('ClanLeagueTemplate', on_delete=models.DO_NOTHING, null=True, blank=True)
     vacation_force_interval = 20
 
-    def rotate_team_list(self, team_list: list, round_number):
+    def rotate_team_list(self, team_list, round_number):
         # Used for matchmaking in rotating pairs by round
         # Move last team to second index to rotate pairs
         for i in range(round_number):
@@ -4775,24 +4775,27 @@ class ClanLeagueTournament(RoundRobinTournament):
     def should_player_get_bye(self, team):
         team_list = self.tournament_team_order.split(".")
         # If list is even, no byes required
-        if len(team_list) == 0:
+        if len(team_list) % 2 == 0:
             return False
 
         # Rotate list to determine which player faces the bye
         # If opponent of team_id is "-1", team_id gets bye
         team_list.append("-1")
-        rotate_team_list(team_list, self.round_number)
+        self.rotate_team_list(team_list, self.round_number)
         return team_list[len(team_list) - team_list.index(str(team.id))] == "-1"
+
+    def validate_matchups(self, game_list1, game_list2, team_game_data):
+        for i in range(len(game_list1)):
+            if game_list2[i] in team_game_data[game_list1[i]]:
+                return False
+        return True
 
     def find_new_game_matchups(self, possible_matchups, team_game_data, teams_list, round):
         games_created = []
         game_data1 = []
         game_data2 = []
 
-        if round:
-            team1 = matchup[0]
-            team2 = matchup[1]
-        else:
+        if not round:
             log("No round found for round robin tournament {}!".format(self.id), LogLevel.critical)
             return [games_created, game_data1, game_data2]
 
@@ -4800,6 +4803,9 @@ class ClanLeagueTournament(RoundRobinTournament):
         # Approach will systematically alternate pairings to prevent multiple iterations from being required
         # https://en.wikipedia.org/wiki/Round-robin_tournament
 
+        if not self.tournament_team_order:
+            log("No tournament_team_order value found for {} [ID: {}]".format(self.name, self.id), LogLevel.critical)
+            return [games_created, game_data1, game_data2]
         team_order = self.tournament_team_order.split(".")
 
         # If list is odd, we must add a dummy 'competitor' to act as bye
@@ -4814,16 +4820,16 @@ class ClanLeagueTournament(RoundRobinTournament):
                 # Matchup contains bye... Skip
                 continue
             # Matchup i'th member in list with n-i'th member
-            games_created.append(team_order[i])
-            games_created.append(team_order[(i*-1)-1])
-            game_data1.append(team_order[i])
-            game_data2.append(team_order[(i*-1)-1])
+            games_created.append(int(team_order[i]))
+            games_created.append(int(team_order[(i*-1)-1]))
+            game_data1.append(int(team_order[i]))
+            game_data2.append(int(team_order[(i*-1)-1]))
 
 
         # Check if enough games were found
-        if len(teams_list) != len(games_created):
+        if len(teams_list) != len(games_created) or not self.validate_matchups(game_data1, game_data2, team_game_data):
             # Not enough games were created... Should never happen with format
-            log_tournament("Missing matchups in tournament... Game list 1: {}... Game list 2: {}... Round: {}".format(game_data1, game_data2, self.round_number), self)
+            log_tournament("Invalid matchups in tournament... Team List: {}... Game list 1: {}... Game list 2: {}... Round: {}".format(team_order, game_data1, game_data2, self.round_number), self)
             self.handle_no_games_created()
             games_created.clear()
             game_data1.clear()
@@ -4837,7 +4843,7 @@ class ClanLeagueTournament(RoundRobinTournament):
         return [games_created, game_data1, game_data2]
 
     def handle_no_games_created(self):
-        log("Unable to find game matchups after 50 iterations in {} [ID: {}]".format(self.name, self.id), LogLevel.critical)
+        log("Unable to find game matchups in {} [ID: {}]".format(self.name, self.id), LogLevel.critical)
 
     def are_vacations_supported(self):
         return True
