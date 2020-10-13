@@ -4782,7 +4782,18 @@ class ClanLeagueTournament(RoundRobinTournament):
         # If opponent of team_id is "-1", team_id gets bye
         team_list.append("-1")
         self.rotate_team_list(team_list, self.round_number)
-        return team_list[len(team_list) - team_list.index(str(team.id))] == "-1"
+        return team_list[len(team_list) - team_list.index(str(team.id)) - 1] == "-1"
+
+    def initialize_tournament_team_order(self):
+        # Formulate order for matchmaking
+        teams = TournamentTeam.objects.filter(round_robin_tournament=self)
+        team_list = []
+        for team in teams:
+            team_list.append(str(team.id))
+        shuffle(team_list)
+        self.tournament_team_order = ".".join(team_list)
+        log_tournament("Team matchup order: {}".format(self.tournament_team_order), self)
+        self.save()
 
     def validate_matchups(self, game_list1, game_list2, team_game_data):
         for i in range(len(game_list1)):
@@ -4804,8 +4815,8 @@ class ClanLeagueTournament(RoundRobinTournament):
         # https://en.wikipedia.org/wiki/Round-robin_tournament
 
         if not self.tournament_team_order:
-            log("No tournament_team_order value found for {} [ID: {}]".format(self.name, self.id), LogLevel.critical)
-            return [games_created, game_data1, game_data2]
+            log_tournament("No tournament_team_order found... Initializing value", self)
+            self.initialize_tournament_team_order()
         team_order = self.tournament_team_order.split(".")
 
         # If list is odd, we must add a dummy 'competitor' to act as bye
@@ -4815,7 +4826,7 @@ class ClanLeagueTournament(RoundRobinTournament):
         # Rotate team list to reflect current round
         self.rotate_team_list(team_order, self.round_number)
 
-        for i in range(len(team_order) / 2):
+        for i in range(int(len(team_order) / 2)):
             if team_order[i] == "-1" or team_order[(i*-1)-1] == "-1":
                 # Matchup contains bye... Skip
                 continue
@@ -4838,7 +4849,7 @@ class ClanLeagueTournament(RoundRobinTournament):
             self.round_number += 1
             self.save()
 
-        log_tournament("Teams with matchups: {}... Teams list: {}".format(games_created, teams_list), self)
+        log_tournament("Team List: {}... Game list 1: {}... Game list 2: {}... Round: {}".format(team_order, game_data1, game_data2, self.round_number), self)
 
         return [games_created, game_data1, game_data2]
 
@@ -4962,17 +4973,10 @@ class ClanLeagueTournament(RoundRobinTournament):
         self.games_start_times = creation_dates
         log_tournament("Game Start times: {}".format(self.games_start_times), self)
         self.round_number = 0
-
-        # Formulate order for matchmaking
-        teams = TournamentTeam.objects.filter(round_robin_tournament=self)
-        team_list = []
-        for team in teams:
-            team_list.append(str(team.id))
-        shuffle(team_list)
-        self.tournament_team_order = ".".join(team_list)
-        log_tournament("Team matchup order: {}".format(self.tournament_team_order), self)
-
         self.save()
+
+        # Initialize the team order for RR pairing
+        self.initialize_tournament_team_order()
 
         super(ClanLeagueTournament, self).start()
         # just call into the parent and start it
