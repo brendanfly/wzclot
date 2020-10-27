@@ -4833,6 +4833,13 @@ class ClanLeagueTournament(RoundRobinTournament):
         print("Starting Clan League Tournament, with template {}".format(self.clan_league_template.name))
         self.games_at_once = 100
 
+        # Determine number of rounds needed
+        # If number of teams is even, n-1 rounds needed (no byes -- each team gets a game each round)
+        # Else number of teams is odd, n rounds needed (each team gets a bye)
+        number_of_rounds = self.number_teams
+        if (self.number_teams % 2 == 0):
+            number_of_rounds -= 1
+
         # now we must create date intervals for each of the games. first games start now, with the following logic
         # Team games: 10/25/35/50/60/75/85/100 etc...
         # 1v1 games: 7/14/21/28/35/42 etc...
@@ -4846,13 +4853,13 @@ class ClanLeagueTournament(RoundRobinTournament):
         creation_dates = "{}.{}.{};".format(today.month, today.day, today.year)
         if self.players_per_team == 1:
             # hook up logic so that games are created every 7 days for as many teams as there are (everyone get a bye)
-            for i in range(1, self.number_teams):
+            for i in range(1, number_of_rounds):
                 next_date = today + datetime.timedelta(days=10)
                 creation_dates += "{}.{}.{};".format(next_date.month, next_date.day, next_date.year)
                 log_tournament("Creation dates after iteration {}: {}".format(i, creation_dates), self)
                 today = next_date
         else:
-            for i in range(1, self.number_teams):
+            for i in range(1, number_of_rounds):
                 if i % 2 == 1:
                     # increment 10 for odd numbers
                     next_date = today + datetime.timedelta(days=10)
