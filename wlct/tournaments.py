@@ -5880,8 +5880,8 @@ class RealTimeLadder(Tournament):
         return False
 
     def is_template_allowed(self, templateid, team):
-        veto = RealTimeLadderVeto.objects.filter(team=team, ladder=self)
-        if veto and veto[0].template.template == int(templateid):
+        veto = RealTimeLadderVeto.objects.filter(team=team, ladder=self, template__template=int(templateid))
+        if veto:
             log_tournament("Found template veto {} for team {}".format(templateid, team.id), self)
             return False
         else:
