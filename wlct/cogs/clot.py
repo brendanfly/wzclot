@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
-
+from wlct.api import API
+from django.conf import settings
+from wlct.cogs.common import is_clotadmin, has_tournament_admin_access
 from wlct.cogs.common import is_clotadmin, has_tournament_admin_access
 from wlct.logging import ProcessGameLog, ProcessNewGamesLog
 from channels.db import database_sync_to_async
@@ -132,7 +134,9 @@ class Clot(commands.Cog, name="clot"):
                           bb!admin rtl -r <discord_id> - removes player from RTL using Discord ID
                           bb!admin cache <tournament_id> - forcibly runs the cache on a tournament
                           bb!admin add <player_token> <tournament_id> - adds this player as an admin for the tournament
-                          bb!admin create_game <tournament_id> <round_number> <game_data> - creates a game with the game data in the specified round number 
+                          bb!admin create_game <tournament_id> <round_number> <game_data> - creates a game with the game data in the specified round number
+                          bb!admin delete_game <game_id> - deletes a game from the clot and warzone if possible
+                          bb!admin tournament_keys <tournament_id> - grabs tournament and team IDs for CL tournament
                           ''',
                       category="clot")
     async def admin(self, ctx, cmd="", option="", arg="", arg2=""):
@@ -336,6 +340,47 @@ class Clot(commands.Cog, name="clot"):
                     await ctx.send("Tournament is not valid. Please enter a valid tournament #")
                     return
 
+            elif cmd == "delete_game":
+                if not is_clotadmin(ctx.message.author.id):
+                    await ctx.send("Only CLOT admins can use this command")
+                    return
+                if not option.isnumeric():
+                    await ctx.send("Please enter a valid tournament id")
+                    return
+
+                game = TournamentGame.objects.get(gameid=option)
+                if not game:
+                    await ctx.send("Unable to find a game with id {}".format(option))
+                    return
+
+                api = API()
+                if game.current_state == "WaitingForPlayers":
+                    api.api_delete_game(game.gameid)
+                    await ctx.send("Deleted the game with ID {} on Warzone".format(option))
+                game.delete()
+                await ctx.send("Deleted the game with ID {} on the CLOT".format(option))
+                return
+            elif cmd == "tournament_keys":
+                if not is_clotadmin(ctx.message.author.id):
+                    await ctx.send("Only CLOT admins can use this command")
+                    return
+                if not option.isnumeric():
+                    await ctx.send("Please enter a valid tournament id")
+                    return
+                tournament = find_tournament_by_id(int(option), True)
+                if tournament is not None:
+                    teams = TournamentTeam.objects.filter(round_robin_tournament=tournament.id)
+                    if not teams:
+                        await ctx.send("Could not find teams in tournament: {}, id: {}".format(tournament.name, tournament.id))
+                        return
+
+                    # Print out tournament data
+                    output_str = "{} (ID: {})".format(tournament.name, tournament.id)
+                    for team in teams:
+                        output_str += "\n{} (ID: {})".format(team.clan_league_clan.clan.name, team.id)
+
+                    await ctx.send(output_str)
+                    return
             elif cmd == "add":
                 if not is_clotadmin(ctx.message.author.id):
                     await ctx.send("Only CLOT admins can use this command.")
