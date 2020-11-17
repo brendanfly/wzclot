@@ -2449,6 +2449,9 @@ class RoundRobinTournament(Tournament):
     def uses_byes(self):
         return False
 
+    def use_all_teams_in_last_round(self):
+        return True
+
     def games_created_at_once(self):
         return 2
 
@@ -2538,8 +2541,10 @@ class RoundRobinTournament(Tournament):
                     # check to see if this is the last team that needs a bye. We include this team
                     # because there could be a chance that they do not get a game in the last two rounds due to
                     # the games they needed are for teams with byes
+
+                    #! Should not be needed... Prevents last round from being made due to there being a check in CL for all teams in list having games
                     teams_with_byes = TournamentTeam.objects.filter(round_robin_tournament=self, has_had_bye=True)
-                    if teams_with_byes.count() == len(shuffled_team_list_read_only):
+                    if self.use_all_teams_in_last_round() and teams_with_byes.count() == len(shuffled_team_list_read_only):
                         # all teams have byes now, so include them all to make sure all games get created
                         log_tournament("Last team to get a bye: {}, add it to the list and make sure all games are created".format(shuffled_team_list_read_only[i].id), self)
                         teams_list.append(shuffled_team_list_read_only[i].id)
@@ -4776,6 +4781,9 @@ class ClanLeagueTournament(RoundRobinTournament):
     def uses_byes(self):
         if self.number_teams % 2 != 0:
             return True
+        return False
+
+    def use_all_teams_in_last_round(self):
         return False
 
     def games_created_at_once(self):
