@@ -1032,6 +1032,7 @@ class Tournament(models.Model):
                                                 teams_won.append(player_to_use.team.id)
 
                                         processGameLog += "\n{} failed to join, forcing loss and deleting game ".format(player_to_use.player.name)
+                                        game_status.update({'needsRemoval': '{}'.format(player_to_use.team.id)})  # tells the child tournament which team was booted
                                         game.finish_game_with_info(game_status)
                                         game.save()
 
@@ -3592,14 +3593,17 @@ class MonthlyTemplateRotation(Tournament):
     def handle_finish_game_with_info(self, game_info):
         # handle the game info here
         log_tournament("[MTC] {}: Finished game_info: {}".format(self.name, game_info), self)
-        if 'players' in game_info:
+        if 'needsRemoval' in game_info:
+            team_id = int(game_info['needsRemoval'])
+            log_tournament("Found needsRemoval info in the tournament with team id: {}".format(team_id))
+            # lookup the team id, and make sure it matches one of the players
             players_data = game_info['players']
             for data in players_data:
                 if 'state' in data and (data['state'] == 'Invited' or data['state'] == 'Booted' or data['state'] == 'Declined'):
                     if 'id' in data:
                         token = data['id']
                         player = TournamentPlayer.objects.filter(player__token=token)
-                        if player:
+                        if player and player.team.id == team_id:
                             # did we boot this past week?
                             if player[0].team.last_boot_time is not None:
                                 if player[0].team.last_boot_time.replace(tzinfo=pytz.UTC) > (datetime.datetime.utcnow().replace(tzinfo=pytz.UTC) - datetime.timedelta(days=7)):
