@@ -29,13 +29,10 @@ class Command(BaseCommand):
     help = "Runs the engine for cleaning up logs and creating new tournament games every 180 seconds"
     def handle(self, *args, **options):
         # set up git/restart handling
-        self.last_known_commit = ""
         self.shutdown = False
+        self.continue_flush = True
 
         print("Creating flushing and shutdown threads...")
-        #self.comm_thread = threading.Thread(target=self.handle_git)
-        #self.comm_thread.start()
-
         self.flush_thread = threading.Thread(target=self.flush)
         self.flush_thread.start()
 
@@ -46,7 +43,7 @@ class Command(BaseCommand):
         self.schedule_jobs()
 
     def flush(self):
-        while True and not self.shutdown:
+        while True and not self.continue_flush:
             sys.stdout.flush()
             sys.stderr.flush()
             time.sleep(5)
@@ -78,48 +75,15 @@ class Command(BaseCommand):
                 if self.scheduler.running:
                     print("Scheduler is running...shutting down")
                     print("Removing all jobs")
+                    self.scheduler.print_jobs()
+                    self.scheduler.remove_all_jobs()
+                    self.scheduler.print_jobs()
                     self.scheduler.remove_all_jobs()
                     print("Waiting for outstanding work to finish")
+                    self.continue_flush = False
+                    time.sleep(5)
                     self.scheduler.shutdown(wait=True)
             sys.exit(0)
-
-    def handle_git(self):
-        while not self.shutdown:
-            try:
-                # grab the latest commit the database knows about
-                logger = Logger.objects.filter(level=LogLevel.webhook)[:1]  # only care about the last one
-                if logger:
-                    logger = logger[0]
-                    if logger.msg is not None and len(logger.msg) > 0:
-                        webhook_dict = json.loads('''{}'''.format(logger.msg))
-                        if 'ref' in webhook_dict and 'before' in webhook_dict and 'after' in webhook_dict:
-                            if webhook_dict['ref'] == 'refs/heads/master':
-                                if webhook_dict['after'] != self.last_known_commit and self.last_known_commit is not "":
-                                    print("Found commit to the master branch...processing")
-                                    print("Commit is new, shutting down engine")
-                                    self.shutdown = True
-                                self.last_known_commit = webhook_dict['after']
-                                print("Last known good commit: {}".format(self.last_known_commit))
-            except:
-                print(traceback.format_exc())
-            finally:
-                # sleep for 30 seconds before checking again
-                print("Sleeping for 10 seconds. Last known commit: {}, Shutdown: {}".format(self.last_known_commit, self.shutdown))
-                time.sleep(10)
-                sys.stdout.flush()
-
-            if self.shutdown is True:
-                print('Waiting for all jobs to finish and shutting process down...')
-                if self.scheduler is not None and self.scheduler.running:
-                    print("Scheduler is running...shutting down")
-                    print("Removing all jobs")
-                    self.scheduler.print_jobs()
-                    self.scheduler.remove_all_jobs()
-                    self.scheduler.print_jobs()
-                    self.scheduler.shutdown()
-                    print("Waiting for outstanding work to finish...sleeping for 30 seconds")
-                    time.sleep(30)
-                    sys.exit(0)
 
     def schedule_jobs(self):
         # lookup the main scheduler, if it's not currently scheduled, add it every 3 min
