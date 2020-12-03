@@ -3662,11 +3662,12 @@ class MonthlyTemplateRotation(Tournament):
         current_year = get_current_month_year()[1]
         months = MonthlyTemplateRotationMonth.objects.filter(tournament=self).order_by('pk')
         for month in months:
-            if month.year >= current_year:
+            if month.year == current_year and month.month >= current_month:
+                # also good, include it
+                month_data.append(month)
+            elif month.year >= current_year:
                 # we're good, include it
-                if month.month >= current_month:
-                    # also good, include it
-                    month_data.append(month)
+                month_data.append(month)
 
         api = API()
         editor = '<table class="table table-hover" id="league-editing-data-table">'
