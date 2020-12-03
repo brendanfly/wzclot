@@ -15,28 +15,10 @@ from django.conf import settings
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.base import ConflictingIdError
 from django_apscheduler.jobstores import DjangoJobStore
-from wlct.management.commands.engine import tournament_engine, tournament_caching
 import string
 import random
 import json
 from django.core.paginator import Paginator
-
-def schedule_jobs():
-    # lookup the main scheduler, if it's not currently scheduled, add it every 5 min
-    if settings.DEBUG:
-        try:
-            scheduler = BackgroundScheduler()
-            # If you want all scheduled jobs to use this store by default,
-            # use the name 'default' instead of 'djangojobstore'.
-            scheduler.add_jobstore(DjangoJobStore(), 'default')
-            if not scheduler.running:
-                scheduler.add_job(tournament_caching, 'interval', seconds=30, id='tournament_engine',
-                                  max_instances=1, coalesce=False)
-                scheduler.start()
-        except ConflictingIdError:
-            pass
-
-schedule_jobs()
 
 # ajax post method that issues a start request to display host configurable data
 def tournament_start_request(request):
