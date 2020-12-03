@@ -3665,7 +3665,7 @@ class MonthlyTemplateRotation(Tournament):
             if month.year == current_year and month.month >= current_month:
                 # also good, include it
                 month_data.append(month)
-            elif month.year >= current_year:
+            elif month.year > current_year:
                 # we're good, include it
                 month_data.append(month)
 
