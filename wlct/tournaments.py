@@ -426,6 +426,8 @@ class Tournament(models.Model):
     tournament_logs = models.TextField(blank=True, null=True, default="")
     is_official = models.BooleanField(default=False)
     vacation_force_interval = 20
+    is_cache_dirty = models.BooleanField(default=True)
+    all_games_completed = models.BooleanField(default=False)
 
     def is_player_allowed_join(self, player):
         return is_player_allowed_join(player, self.template)
@@ -497,10 +499,6 @@ class Tournament(models.Model):
                     player.token, player.name)
 
         return ret
-
-    def all_games_completed(self):
-        games = TournamentGame.objects.filter(tournament=self, is_finished=False)
-        return games.count() == 0 and self.is_finished
 
     def start(self):
         if self.has_started:

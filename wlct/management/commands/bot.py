@@ -55,7 +55,7 @@ class WZBot(commands.AutoShardedBot):
         while True and not self.shutdown:
             sys.stdout.flush()
             sys.stdout.flush()
-            time.sleep(5)
+            time.sleep(10)
 
     # Handles any command errors
     async def handle_command_exception(self, ctx, err_msg):
@@ -84,7 +84,7 @@ class WZBot(commands.AutoShardedBot):
             finally:
                 if f:
                     f.close()
-                time.sleep(5)
+                time.sleep(10)
 
         if self.shutdown is True:
             cog = self.get_cog("tasks")
@@ -101,8 +101,10 @@ class WZBot(commands.AutoShardedBot):
         return self.get_user(self.owner_id)
 
     async def on_disconnect(self):
-        for channel in self.critical_error_channels:
-            print("Disconnecting...trying to restart")
+        # we're going down...stop the task first
+        cog = self.get_cog("tasks")
+        if cog:
+            cog.bg_task.stop()
 
     async def on_message(self, msg):
         if not self.is_ready() or msg.author.bot:

@@ -22,7 +22,6 @@ class Tasks(commands.Cog, name="tasks"):
         self.last_task_run = timezone.now()
         self.executions = 0
         self.bg_task.start()
-        self.orm_helpers = DjangoORMHelpers()
 
     async def handle_rtl_tasks(self):
         ladders = RealTimeLadder.objects.all()
@@ -430,23 +429,6 @@ class Tasks(commands.Cog, name="tasks"):
         except:
             print_exc()
             raise
-
-class DjangoORMHelpers():
-
-    def get_critical_errors(self):
-        return list(Logger.objects.filter(level=LogLevel.critical, bot_seen=False))
-
-    def get_tournament_updates(self):
-        return list(DiscordTournamentUpdate.objects.filter(bot_send=False))
-
-    def get_channel_tournament_links(self, tournament):
-        return list(DiscordChannelTournamentLink.objects.filter(tournament=tournament))
-
-    def get_rtl_games(self, ladder):
-        return list(TournamentGame.objects.filter(tournament=ladder, is_finished=False, mentioned=False))
-
-    def get_game_logs_for_tournament(self, tournament, time_since):
-        return list(TournamentGame.objects.filter(is_finished=True, tournament=tournament, game_finished_time__gt=(time_since), game_log_sent=False))
 
 def setup(bot):
     bot.add_cog(Tasks(bot))

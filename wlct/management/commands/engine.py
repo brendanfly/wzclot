@@ -243,6 +243,7 @@ class Command(BaseCommand):
     def cache_games(self, **kwargs):
         tournaments = Tournament.objects.filter(**kwargs)
         for tournament in tournaments:
+            games_in_progress = 0
             if self.shutdown:
                 return
             child_tournament = find_tournament_by_id(tournament.id, True)
@@ -251,22 +252,29 @@ class Command(BaseCommand):
                 try:
                     # we only need to cache if there are unfinished games
                     games = TournamentGame.objects.filter(tournament=child_tournament, is_finished=False)
+                    games_in_progress = games.count()
                     child_tournament.cache_data()
                     log("[CACHE]: Finished processing games for tournament {}".format(tournament.name), LogLevel.engine)
                 except Exception as e:
                     log_exception()
                 finally:
                     log("[CACHE]: Child tournament {} update done.".format(tournament.name), LogLevel.engine)
+
+                # if the tournament is finished and there are no more outstanding games that are in progress
+                # the cache is no longer dirty and we should stop looking at it
+                if child_tournament.is_finished and games_in_progress == 0:
+                    child_tournament.is_cache_dirty = False
+                    child_tournament.save()
+
             gc.collect()
 
     def check_games(self, **kwargs):
         log("Running check_games on thread {}".format(threading.get_ident()), LogLevel.engine)
         tournaments = Tournament.objects.filter(**kwargs)
         for tournament in tournaments:
+            games_in_progress = 0
             if self.shutdown:
                 return
-            elif tournament.all_games_completed():
-                continue
 
             # if we get this far, we actually need to check the tournament
             child_tournament = find_tournament_by_id(tournament.id, True)
@@ -274,6 +282,7 @@ class Command(BaseCommand):
                 log("[PROCESS GAMES]: Checking games for tournament: {}, shutdown: {}".format(tournament.name, self.shutdown), LogLevel.engine)
                 try:
                     games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
+                    games_in_progress = games.count()
                     log("[PROCESS GAMES]: Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.engine)
                     for game in games.iterator():
                         # process the game
@@ -292,6 +301,12 @@ class Command(BaseCommand):
                     child_tournament.update_in_progress = False
                     child_tournament.save()
                     log("[PROCESS GAMES]: Child tournament {} update done.".format(tournament.name), LogLevel.engine)
+
+                # if we are finished, and there are no outstanding games in progress...we are deemed "all_games_completed"
+                if child_tournament.is_finished and games_in_progress == 0:
+                    child_tournament.all_games_completed = True
+                    child_tournament.save()
+
             gc.collect()
 
     def cleanup_logs(self):
@@ -317,8 +332,8 @@ class Command(BaseCommand):
         while not self.shutdown:
             try:
                 now_run_time = timezone.now()
-                self.check_games(has_started=True, multi_day=False)
-                self.cache_games(has_started=True, multi_day=False)
+                self.check_games(has_started=True, multi_day=False, all_games_completed=False)
+                self.cache_games(has_started=True, multi_day=False, is_cache_dirty=True)
             except:
                 log_exception()
             finally:
@@ -351,8 +366,8 @@ class Command(BaseCommand):
                 # bulk of the logic, we handle all types of tournaments separately here
                 # there must be logic for each tournament type, as the child class contains
                 # the logic
-                self.check_games(has_started=True, multi_day=True)
-                self.cache_games(has_started=True, multi_day=True)
+                self.check_games(has_started=True, multi_day=True, all_games_completed=False)
+                self.cache_games(has_started=True, multi_day=True, is_cache_dirty=True)
                 self.cleanup_logs()
             except Exception as e:
                 log_exception()
