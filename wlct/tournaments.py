@@ -498,6 +498,10 @@ class Tournament(models.Model):
 
         return ret
 
+    def all_games_completed(self):
+        games = TournamentGame.objects.filter(tournament=self, is_finished=False)
+        return games.count() == 0 and self.is_finished
+
     def start(self):
         if self.has_started:
             # can't start twice, just log here so we can keep track of how often this happens
@@ -3600,7 +3604,7 @@ class MonthlyTemplateRotation(Tournament):
         log_tournament("[MTC] {}: Finished game_info: {}".format(self.name, game_info), self)
         if 'needsRemoval' in game_info:
             team_id = int(game_info['needsRemoval'])
-            log_tournament("Found needsRemoval info in the tournament with team id: {}".format(team_id))
+            log_tournament("Found needsRemoval info in the tournament with team id: {}".format(team_id), self)
             # lookup the team id, and make sure it matches one of the players
             players_data = game_info['players']
             for data in players_data:

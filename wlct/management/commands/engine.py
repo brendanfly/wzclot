@@ -265,6 +265,10 @@ class Command(BaseCommand):
         for tournament in tournaments:
             if self.shutdown:
                 return
+            elif tournament.all_games_completed():
+                continue
+
+            # if we get this far, we actually need to check the tournament
             child_tournament = find_tournament_by_id(tournament.id, True)
             if child_tournament and child_tournament.should_process_in_engine():
                 log("[PROCESS GAMES]: Checking games for tournament: {}, shutdown: {}".format(tournament.name, self.shutdown), LogLevel.engine)
