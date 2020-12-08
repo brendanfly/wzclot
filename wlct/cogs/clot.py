@@ -1,13 +1,11 @@
 import discord
+from wlct.models import Clan, Player, DiscordUser, DiscordChannelClanFilter, DiscordChannelPlayerFilter, DiscordChannelTournamentLink, TournamentAdministrator
+from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry, TournamentRound
+from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_command_exception
 from discord.ext import commands
+from django.conf import settings
+from wlct.cogs.common import is_clotadmin, has_tournament_admin_access, CLOTBridge
 
-from wlct.cogs.common import is_clotadmin, has_tournament_admin_access
-from wlct.logging import ProcessGameLog, ProcessNewGamesLog
-from wlct.models import Clan, Player, DiscordUser, DiscordChannelClanFilter, DiscordChannelPlayerFilter, \
-    DiscordChannelTournamentLink, TournamentAdministrator
-from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, TournamentGameEntry, MonthlyTemplateRotation, \
-    get_games_finished_for_team_since, find_tournaments_by_division_id
-from channels.db import database_sync_to_async
 
 class PlayerStats:
     def __init__(self, wins, losses, tournaments, games, win_pct, rating):
@@ -22,7 +20,6 @@ class Clot(commands.Cog, name="clot"):
     def __init__(self, bot):
         self.bot = bot
 
-    @database_sync_to_async
     def get_player_stats(self, token):
         # return a tuple of all the player stats
         # this tuple will be (Success, Wins, Losses, Tournaments Played In, Games Played In, Win %)
@@ -104,7 +101,8 @@ class Clot(commands.Cog, name="clot"):
                         await self.bot.update_progress(message, original_text, round(current_step, 2))
                     await self.bot.update_progress(message, original_text, 100.0)'''
 
-                stats = await self.get_player_stats(token)
+
+                stats = self.get_player_stats(token)
                 if stats[0]:
                     # success
                     pstats = stats[1]
@@ -136,7 +134,6 @@ class Clot(commands.Cog, name="clot"):
                           bb!admin cache <tournament_id> - forcibly runs the cache on a tournament
                           bb!admin add <player_token> <tournament_id> - adds this player as an admin for the tournament
                           bb!admin create_game <tournament_id> <round_number> <game_data> - creates a game with the game data in the specified round number
-                          bb!admin 
                           ''',
                       category="clot")
     async def admin(self, ctx, cmd="", option="", arg="", arg2=""):
@@ -262,7 +259,7 @@ class Clot(commands.Cog, name="clot"):
                 if not option.isnumeric():
                     await ctx.send("Please enter a valid tournament id")
                     return
-                tournament = await self.bot.bridge.findTournamentById(int(option), True)
+                tournament = find_tournament_by_id(int(option), True)
                 if not has_tournament_admin_access(ctx.message.author.id, tournament):
                     await ctx.send("Only tournament admins can use this command.")
                     return
@@ -278,7 +275,7 @@ class Clot(commands.Cog, name="clot"):
                 if not option.isnumeric():
                     await ctx.send("Please enter a valid tournament id")
                     return
-                tournament = await self.bot.bridge.findTournamentById(int(option), True)
+                tournament = find_tournament_by_id(int(option), True)
                 if tournament is not None:
                     if not tournament.has_started:
                         await ctx.send("You cannot create a game in a tournament that hasn't started.")
@@ -336,7 +333,7 @@ class Clot(commands.Cog, name="clot"):
                     else:
                         player = Player.objects.filter(token=option)
                         if player:
-                            tournament = await self.bot.bridge.findTournamentById(int(arg), True)
+                            tournament = find_tournament_by_id(int(arg), True)
                             if tournament:
                                 admin = TournamentAdministrator(player=player[0], tournament=tournament)
                                 admin.save()

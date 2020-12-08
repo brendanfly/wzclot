@@ -4,7 +4,6 @@ from django.conf import settings
 from django.utils import timezone
 from wlct.logging import log_command_exception, log_exception, Logger, LogLevel
 import time, threading, sys, os, discord, traceback, json
-from wlct.cogs.clotbridge import CLOTBridge
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -43,8 +42,6 @@ class WZBot(commands.AutoShardedBot):
         self.performance_counter = False
         self.running = True
         self.shutdown = False
-
-        self.bridge = CLOTBridge()
 
         # deltas for when the bot does stuff
         self.discord_link_text = "Your discord account is not linked to the CLOT. Please see <http://wzclot.eastus.cloudapp.azure.com/me/> for instructions."
