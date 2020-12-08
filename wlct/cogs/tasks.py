@@ -11,8 +11,6 @@ import datetime
 import pytz
 import urllib.request
 import json
-from wlct.clotbook import DiscordChannelCLOTBookLink, get_clotbook, BetGameOdds, BetTeamOdds, Bet
-from channels.db import database_sync_to_async
 import gc
 import asyncio
 
@@ -24,9 +22,9 @@ class Tasks(commands.Cog, name="tasks"):
         self.bg_task.start()
 
     async def handle_rtl_tasks(self):
-        ladders = RealTimeLadder.objects.all()
+        ladders = await self.bot.bridge.getRealTimeLaddersAll()
         for ladder in ladders:
-            games = self.orm_helpers.get_rtl_games(ladder)
+            games = await self.bot.bridge.getGames(tournament=ladder, is_finished=False, mentioned=False)
             # cache the game data + link for use with the embed
             emb = discord.Embed(color=self.bot.embed_color)
             emb.set_author(icon_url=self.bot.user.avatar_url, name="WarzoneBot")
@@ -48,8 +46,7 @@ class Tasks(commands.Cog, name="tasks"):
                     data += "<{}> vs. <@{}> [Game Link]({})\n".format(player1.name, player2.discord_member.memberid,
                                                                        game.game_link)
                 else:
-                    game.mentioned = True
-                    game.save()
+                    await self.bot.bridge.updateGameMentioned(game)
                     return
                 emb.add_field(name="Game", value=data, inline=True)
                 if player1 and player1.discord_member:
@@ -66,11 +63,10 @@ class Tasks(commands.Cog, name="tasks"):
                             await user.send(embed=emb)
                         except:
                             log_bot_msg("Could not send RTL game msg to {} ".format(player2.name))
-                game.mentioned = True
-                game.save()
+                await self.bot.bridge.updateGameMentioned(game)
 
     async def handle_clan_league_next_game(self):
-        clt = ClanLeagueTournament.objects.filter(is_finished=False)
+        clt = await self.bot.bridge.getClanLeagueTournaments(is_finished=False)
         for t in clt:
             # get the time until next game allocation
             start_times = t.games_start_times.split(';')
@@ -82,15 +78,15 @@ class Tasks(commands.Cog, name="tasks"):
                 # diff is our delta, compute how many days, hours, minutes remaining
 
     async def handle_clotbook(self):
-        channel_links = DiscordChannelCLOTBookLink.objects.filter(results_only=False)
+        channel_links = await self.bot.bridge.getChannelClotbookLinks(results_only=False)
         odds_created_sent = []
         odds_finished_sent = []
-        cb = get_clotbook()
+        cb = await self.bot.bridge.getCLOTBook()
         try:
             for cl in channel_links:
                 channel = self.bot.get_channel(cl.channelid)
                 if hasattr(self.bot, 'uptime') and channel:
-                    bet_odds = BetGameOdds.objects.filter(sent_created_notification=False, initial=True).order_by('created_time')
+                    bet_odds = await self.bot.bridge.getBetGameOdds(sent_created_notification=False, initial=True).order_by('created_time')
                     for bo in bet_odds:
                         if not cl.does_game_pass_filter(bo.game):
                             odds_created_sent.append(bo)
@@ -100,11 +96,11 @@ class Tasks(commands.Cog, name="tasks"):
                         await channel.send(embed=emb)
                         odds_created_sent.append(bo)
 
-            channel_links = DiscordChannelCLOTBookLink.objects.filter(results_only=True)
+            channel_links = await self.bot.bridge.getChannelClotbookLinks(results_only=True)
             for cl in channel_links:
                 channel = self.bot.get_channel(cl.channelid)
                 if hasattr(self.bot, 'uptime') and channel:
-                    bet_odds = BetGameOdds.objects.filter(sent_finished_notification=False, game__is_finished=True)
+                    bet_odds = await self.bot.bridge.getBetGameOdds(sent_finished_notification=False, game__is_finished=True)
                     print("Found {} finished bet game odds".format(bet_odds.count()))
                     for bo in bet_odds:
                         if bo.game.winning_team:
@@ -119,17 +115,15 @@ class Tasks(commands.Cog, name="tasks"):
                         else:
                             print("Game {} does not have a winning team, skipping".format(bo.game.gameid))
         except Exception:
-            log_exception()
+            await self.bot.bridge.log_exception()
         finally:
             for odds in odds_created_sent:
-                odds.sent_created_notification = True
-                odds.save()
+                await self.bot.bridge.updateBetOddsSentCreated(odds)
             for odds in odds_finished_sent:
-                odds.sent_finished_notification = True
-                odds.save()
+                await self.bot.bridge.updateBetOddsSentFinished(odds)
 
     async def handle_game_logs(self):
-        channel_links = DiscordChannelTournamentLink.objects.all()
+        channel_links = await self.bot.bridge.getChannelTournamentLinksAll()
         games_sent = []
         try:
             for cl in channel_links:
@@ -138,7 +132,8 @@ class Tasks(commands.Cog, name="tasks"):
                 # only look at games that have finished times greater than when the bot started
                 game_log_text = ""
                 if hasattr(self.bot, 'uptime') and channel:
-                    games = self.orm_helpers.get_game_logs_for_tournament(cl.tournament, self.bot.uptime-datetime.timedelta(days=3))
+                    time_since = self.bot.uptime-datetime.timedelta(days=3)
+                    games = await self.bot.bridge.getGames(is_finished=True, tournament=cl.tournament, game_finished_time__gt=(time_since), game_log_sent=False)
                     if len(games) > 0:
                         log_bot_msg("Found {} games to log in channel {}".format(len(games), channel.name))
                     for game in games:
@@ -165,7 +160,7 @@ class Tasks(commands.Cog, name="tasks"):
 
                         wrote_defeats = False
                         for team in team_list:
-                            tt = TournamentTeam.objects.filter(pk=team)
+                            tt = await self.bot.bridge.getTournamentTeams(pk=team)
                             if tt:
                                 tt = tt[0]
                                 # look up the clan for this team, and bold/write the clan name in there.
@@ -176,11 +171,11 @@ class Tasks(commands.Cog, name="tasks"):
                                 if player_team_id_list:
                                     tplayers = player_team_id_list[teams.index(str(team))].split(".")
                                 else:
-                                    tplayers = TournamentPlayer.objects.filter(team=tt)
+                                    tplayers = await self.bot.bridge.getTournamentPlayers(team=tt)
 
                                 for tplayer in tplayers:
                                     if player_team_id_list:
-                                        player_name = Player.objects.filter(token=tplayer)
+                                        player_name = await self.bot.bridge.getPlayers(token=tplayer)
                                         player_name = player_name[0].name
                                     else:
                                         player_name = tplayer.player.name
@@ -191,7 +186,7 @@ class Tasks(commands.Cog, name="tasks"):
                                     game_log_text += " defeats "
                                     wrote_defeats = True
 
-                        tournament = find_tournament_by_id(game.tournament.id, True)
+                        tournament = await self.bot.bridge.findTournamentById(game.tournament.id, True)
                         if tournament and hasattr(tournament, 'clan_league_template') and tournament.clan_league_template:
                             game_log_text += "\n{}".format(tournament.clan_league_template.name)
 
@@ -208,7 +203,7 @@ class Tasks(commands.Cog, name="tasks"):
                                 log_bot_msg("Exception: {} when sending message to server {}, channel {}".format(log_exception(), channel.guild.name, channel.name))
 
         except Exception:
-            log_exception()
+            await self.bot.bridge.log_exception()
         finally:
             for g in games_sent:
                 g.game_log_sent = True
@@ -232,7 +227,7 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_server_stats()
 
     async def handle_no_winning_team_games(self):
-        games = TournamentGame.objects.filter(winning_team__isnull=True, is_finished=True, no_winning_team_log_sent=False)
+        games = await self.bot.bridge.getGames(winning_team__isnull=True, is_finished=True, no_winning_team_log_sent=False)
         msg = ""
         if games:
             msg += "**Games finished with no winning team found**"
@@ -246,14 +241,14 @@ class Tasks(commands.Cog, name="tasks"):
                 msg = ""
 
     async def handle_rt_ladder(self):
-        tournaments = Tournament.objects.filter(has_started=True, is_finished=False)
+        tournaments = await self.bot.bridge.getTournaments(has_started=True, is_finished=False)
         for tournament in tournaments:
-            child_tournament = find_tournament_by_id(tournament.id, True)
+            child_tournament = await self.bot.bridge.findTournamentById(tournament.id, True)
             if child_tournament and not child_tournament.should_process_in_engine():
                 try:
                     child_tournament.update_in_progress = True
                     child_tournament.save()
-                    games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
+                    games = await self.bot.bridge.getGames(is_finished=False, tournament=tournament)
                     for game in games.iterator():
                         # process the game
                         # query the game status
@@ -263,7 +258,7 @@ class Tasks(commands.Cog, name="tasks"):
                     child_tournament.process_new_games()
                     await self.handle_rtl_tasks()
                 except Exception as e:
-                    log_exception()
+                    await self.bot.bridge.log_exception()
                 finally:
                     child_tournament.update_in_progress = False
                     child_tournament.save()
@@ -272,11 +267,11 @@ class Tasks(commands.Cog, name="tasks"):
     async def handle_process_queue(self):
         for i in range(0, len(self.bot.process_queue)):
             gc.collect()
-            t = find_tournament_by_id(self.bot.process_queue[i], True)
+            t = await self.bot.bridge.findTournamentById(self.bot.process_queue[i], True)
             if t:
                 print("Processing data for {}".format(t.name))
-                games = TournamentGame.objects.filter(is_finished=False, tournament=t)
-                for game in games.iterator():
+                games = await self.bot.bridge.getGames(is_finished=False, tournament=t)
+                for game in games:
                     # process the game
                     # query the game status
                     t.process_game(game)
@@ -287,47 +282,46 @@ class Tasks(commands.Cog, name="tasks"):
     async def handle_cache_queue(self):
         for i in range(0, len(self.bot.cache_queue)):
             gc.collect()
-            t = find_tournament_by_id(self.bot.cache_queue[i], True)
+            t = await self.bot.bridge.findTournamentById(self.bot.cache_queue[i], True)
             if t:
                 print("Caching data for {}".format(t.name))
                 t.cache_data()
                 self.bot.cache_queue.pop(i)
 
     async def handle_critical_errors(self):
-        logs = self.orm_helpers.get_critical_errors()
-        if logs:
-            for log in logs:
-                for cc in self.bot.critical_error_channels:
-                    msg = "**Critical Log Found**\n"
-                    msg += log.msg
-                    msg = msg[:1999]
-                    await cc.send(msg)
-                    await asyncio.sleep(1)
-                    log.bot_seen = True
-                    log.save()
+        logs = await self.bot.bridge.getLogs(level=LogLevel.critical, bot_seen=False)
+        for log in logs:
+            for cc in self.bot.critical_error_channels:
+                msg = "**Critical Log Found**\n"
+                msg += log.msg
+                msg = msg[:1999]
+                await cc.send(msg)
+                await asyncio.sleep(1)
+
+                # Update the log
+                await self.bot.bridge.updateLogSeen(log)
 
     async def handle_discord_tournament_updates(self):
         try:
-            updates = self.orm_helpers.get_tournament_updates()
+            updates = await self.bot.bridge.getTournamentUpdates()
             for u in updates:
                 # look up the tournament, and get all channel links for that tournament
-                channel_links = self.orm_helpers.get_channel_tournament_links(u.tournament)
+                channel_links = await self.bot.bridge.getChannelTournamentLinks(tournament=u.tournament)
                 for c in channel_links:
                     channel = self.bot.get_channel(c.channelid)
                     if channel:
                         await channel.send(u.update_text)
-                u.bot_send = True
-                u.save()
+                await self.bot.bridge.updateTournamentUpdateSent(u)
         except:
-            log_exception()
+            await self.bot.bridge.log_exception()
 
     async def handle_all_tasks(self):
         # calculate the time different here
         # determine if we need hours run or 4 hours run
         # for 1 hour, executions should be 360
         if self.bot.shutdown:
-           await self.bot.logout()
-           return
+            await self.bot.logout()
+            return
         start = datetime.datetime.utcnow()
         hours = (self.executions % 360 == 0)
         hours4 = (self.executions % (360*4) == 0)
@@ -356,7 +350,7 @@ class Tasks(commands.Cog, name="tasks"):
             end = datetime.datetime.utcnow()
             self.bot.perf_counter("Always Tasks took {} total seconds".format((end-start).total_seconds()))
         except Exception:
-            log_exception()
+            await self.bot.bridge.log_exception()
         finally:
             end = datetime.datetime.utcnow()
             self.bot.perf_counter("All Tasks took {} total seconds".format((end-start).total_seconds()))
@@ -392,7 +386,7 @@ class Tasks(commands.Cog, name="tasks"):
         member = self.bot.get_user(memid)
         if member:
             send_message = False
-            discord_user = DiscordUser.objects.filter(memberid=memid)
+            discord_user = await self.bot.bridge.getDiscordUsers(memberid=memid)
             emb = discord.Embed(color=self.bot.embed_color)
             emb.set_author(icon_url=self.bot.user.avatar_url, name="WarzoneBot")
             emb.title = "It's nice to meet you!"
@@ -405,18 +399,16 @@ class Tasks(commands.Cog, name="tasks"):
             emb.add_field(name="Welcome", value=msg)
 
             if not discord_user:
-                discord_user = DiscordUser(memberid=memid)
-                discord_user.save()
+                await self.bot.bridge.createDiscordUser(memberid=memid)
             else:
                 discord_user = discord_user[0]
 
             if not discord_user.link_mention:
                 print("Sending welcome message to {}".format(member.name.encode('utf-8')))
                 await member.send(embed=emb)
-                discord_user.link_mention = True
-                discord_user.save()
+                await self.bot.bridge.updateDiscordUserLinkMention(discord_user)
 
-    @tasks.loop(seconds=10.0)
+    @tasks.loop(seconds=30.0)
     async def bg_task(self):
         # runs every 10 seconds to check various things
         # are there any new games on the RTL that just got allocated?

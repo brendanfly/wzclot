@@ -24,10 +24,9 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                       ''')
     async def cb(self, ctx, option="", arg="", coins=""):
         try:
-            discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
+            discord_user = await self.bot.bridge.getDiscordUsers(memberid=ctx.message.author.id)
             if not discord_user:
-                discord_user = DiscordUser(memberid=ctx.message.author.id)
-                discord_user.save()
+                await self.bot.bridge.createDiscordUser(memberid=ctx.message.author.id)
             else:
                 discord_user = discord_user[0]
 
@@ -41,21 +40,19 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
                     if arg == "results":
                         # create a link for results only
-                        discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(
+                        discord_channel_link = await self.bot.bridge.getDiscordChannelClotBookLinks(
                             channelid=ctx.message.channel.id, results_only=True)
                         if discord_channel_link.count() > 0:
                             await ctx.send("There is already a CLOTBook results link to this channel.")
                             return
-                        discord_channel_link = DiscordChannelCLOTBookLink(channelid=ctx.message.channel.id,
+                        await self.bot.bridge.createChannelClotbookLink(channelid=ctx.message.channel.id,
                                                                           discord_user=discord_user,
                                                                           results_only=True)
-                        discord_channel_link.save()
                         await ctx.send("The CLOTBook will start using this channel to send live betting results.")
                     else:
-                        discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id, results_only=True)
+                        discord_channel_link = await self.bot.bridge.getDiscordChannelClotBookLinks(channelid=ctx.message.channel.id, results_only=True)
                         if discord_channel_link.count() == 0:
-                            discord_channel_link = DiscordChannelCLOTBookLink(channelid=ctx.message.channel.id, discord_user=discord_user)
-                            discord_channel_link.save()
+                            await self.bot.bridge.createChannelClotbookLink(channelid=ctx.message.channel.id, discord_user=discord_user)
                             await ctx.send("The CLOTBook will start using this channel to send live betting updates.")
                         else:
                             await ctx.send("This channel is already registered to receive CLOTBook Updates")
@@ -64,23 +61,23 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
             elif option == "off":
                 if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
                     if arg == "results":
-                        discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id, results_only=True)
+                        discord_channel_link = await self.bot.bridge.getDiscordChannelClotBookLinks(channelid=ctx.message.channel.id, results_only=True)
                         if discord_channel_link:
-                            discord_channel_link[0].delete()
+                            await self.bot.bridge.deleteObject(discord_channel_link[0])
                             await ctx.send("The CLOTBook will no longer use this channel for sending results.")
                         else:
                             await ctx.send("This channel is not hooked up to receive CLOTBook updates.")
                     else:
-                        discord_channel_link = DiscordChannelCLOTBookLink.objects.filter(channelid=ctx.message.channel.id, results_only=False)
+                        discord_channel_link = await self.bot.bridge.getDiscordChannelClotBookLinks(channelid=ctx.message.channel.id, results_only=False)
                         if discord_channel_link:
-                            discord_channel_link[0].delete()
+                            await self.bot.bridge.deleteObject(discord_channel_link[0])
                             await ctx.send("The CLOTBook will no longer use this channel for updates.")
                         else:
                             await ctx.send("This channel is not hooked up to receive CLOTBook updates.")
                 else:
                     await ctx.send("You must be a server administrator to use this command.")
             elif option == "me":
-                player = Player.objects.filter(discord_member=discord_user)
+                player = await self.bot.bridge.getPlayers(discord_member=discord_user)
                 if not player:
                     await ctx.send(self.bot.discord_link_text)
                     return
@@ -88,7 +85,7 @@ class CLOTBook(commands.Cog, name="CLOTBook"):
                 user = self.bot.get_user(discord_user.memberid)
                 emb = self.bot.get_embed(user)
                 emb.title = "{}'s last 10 bets".format(user.name)
-                bets = Bet.objects.filter(player=player).order_by('-created_time')
+                bets = await self.bot.bridge.getBetsOrderByCreatedTime(player=player)
                 total_bets = bets.count()
                 bets = bets[:10]
                 bet_text = ""

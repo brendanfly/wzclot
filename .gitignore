@@ -4,6 +4,8 @@ staticfiles
 .env
 db.sqlite3
 myenv/
+benv/
+myenv*/
 env/
 .idea/*
 wltourney/settings_local.py
