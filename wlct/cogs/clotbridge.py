@@ -170,6 +170,10 @@ class CLOTBridge:
         return list(BetGameOdds.objects.filter(**kwargs))
 
     @database_sync_to_async
+    def getBetGameOddsOrderByCreatedTime(self, **kwargs):
+        return list(BetGameOdds.objects.filter(**kwargs).order_by('created_time'))
+
+    @database_sync_to_async
     def getBetTeamOdds(self, **kwargs):
         return list(BetTeamOdds.objects.filter(**kwargs))
 

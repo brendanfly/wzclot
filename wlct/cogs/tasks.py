@@ -84,7 +84,7 @@ class Tasks(commands.Cog, name="tasks"):
             for cl in channel_links:
                 channel = self.bot.get_channel(cl.channelid)
                 if hasattr(self.bot, 'uptime') and channel:
-                    bet_odds = await self.bot.bridge.getBetGameOdds(sent_created_notification=False, initial=True).order_by('created_time')
+                    bet_odds = await self.bot.bridge.getBetGameOddsOrderByCreatedTime(sent_created_notification=False, initial=True)
                     for bo in bet_odds:
                         if not cl.does_game_pass_filter(bo.game):
                             odds_created_sent.append(bo)
@@ -98,7 +98,7 @@ class Tasks(commands.Cog, name="tasks"):
             for cl in channel_links:
                 channel = self.bot.get_channel(cl.channelid)
                 if hasattr(self.bot, 'uptime') and channel:
-                    bet_odds = await self.bot.bridge.getBetGameOdds(sent_finished_notification=False, game__is_finished=True)
+                    bet_odds = await self.bot.bridge.getBetGameOddsOrderByCreatedTime(sent_finished_notification=False, game__is_finished=True)
                     print("Found {} finished bet game odds".format(bet_odds.count()))
                     for bo in bet_odds:
                         if bo.game.winning_team:
