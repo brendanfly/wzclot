@@ -297,7 +297,7 @@ class Tasks(commands.Cog, name="tasks"):
 
     async def handle_discord_tournament_updates(self):
         try:
-            updates = await self.bot.bridge.getTournamentUpdates()
+            updates = await self.bot.bridge.getTournamentUpdates(bot_send=False)
             for u in updates:
                 # look up the tournament, and get all channel links for that tournament
                 channel_links = await self.bot.bridge.getChannelTournamentLinks(tournament=u.tournament)
