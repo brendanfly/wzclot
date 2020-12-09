@@ -1,11 +1,9 @@
 import discord
-from wlct.models import Clan, Player, DiscordChannelTournamentLink
-from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, TournamentGame
-from wlct.logging import log_bot_msg, log_exception
 from discord.ext import commands, tasks
 from wlct.cogs.common import is_tournament_creator, embed_list_special_delimiter
 from django.utils import timezone
 from traceback import print_exc
+from wlct.cogs.clotbridge import RealTimeLadderBridge
 
 
 
@@ -22,8 +20,11 @@ class Ladders(commands.Cog, name="ladders"):
         emb.set_footer(text="Bot created and maintained by -B#0292")
         do_embed = False
         discord_id = ctx.message.author.id
+
+        ladder = RealTimeLadderBridge(ladder)  # use a ladder bridge for the db functions
+
         teams = ladder.get_active_team_count()
-        log_bot_msg("Command: {}  Option: {} issued for ladder {}".format(cmd, option, ladder.id))
+        await self.bot.bridge.log_bot_msg("Command: {}  Option: {} issued for ladder {}".format(cmd, option, ladder.id))
         if cmd == "-p":
             # display current players in the ladder
             retStr = ladder.get_current_joined()
@@ -31,20 +32,20 @@ class Ladders(commands.Cog, name="ladders"):
             retStr = ladder.join_ladder(discord_id, False)
             current_joined = ladder.get_current_joined()
             retStr += "\n\n" + current_joined + "\n"
-            log_bot_msg("[Ladder {}]: User {} has joined the RTL. New team count: {}".format(ladder.id, ctx.message.author.name, teams))
+            await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has joined the RTL. New team count: {}".format(ladder.id, ctx.message.author.name, teams))
             if teams != ladder.get_active_team_count():
                 await self.send_ladder_message(current_joined, ladder, False, ctx.message)
         elif cmd == "-jl":
             retStr = ladder.join_ladder(discord_id, True) + " (You will be removed once a game is created)"
             current_joined = ladder.get_current_joined()
             retStr += "\n\n" + current_joined + "\n"
-            log_bot_msg("[Ladder {}]: User {} has joined the RTL for one game. New Team count: {}".format(ladder.id, ctx.message.author.name, teams))
+            await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has joined the RTL for one game. New Team count: {}".format(ladder.id, ctx.message.author.name, teams))
             if teams != ladder.get_active_team_count():
                 await self.send_ladder_message(current_joined, ladder, False, ctx.message)
         elif cmd == "-l":
             retStr = ladder.leave_ladder(discord_id)
             current_joined = ladder.get_current_joined()
-            log_bot_msg("[Ladder {}]: User {} has left the RTL. New Team count: {}".format(ladder.id, ctx.message.author.name, teams))
+            await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has left the RTL. New Team count: {}".format(ladder.id, ctx.message.author.name, teams))
             retStr += "\n\n" + current_joined + "\n"
             if not ladder.get_active_team_count():
                 await self.send_ladder_message(current_joined, ladder, False, ctx.message)
@@ -74,14 +75,14 @@ class Ladders(commands.Cog, name="ladders"):
         elif cmd == "-v":
             if option != "invalid_option":
                 retStr = ladder.veto_template(discord_id, option, False)
-                log_bot_msg("[Ladder {}]: User {} has vetoed template with id: {}".format(ladder.id, ctx.message.author.name, option))
+                await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has vetoed template with id: {}".format(ladder.id, ctx.message.author.name, option))
             else:
                 # display the users current veto
                 retStr = ladder.get_current_vetoes(discord_id)
         elif cmd == "-vr":
             if option != "invalid_option":
                 retStr = ladder.veto_template(discord_id, option, True)
-                log_bot_msg("[Ladder {}]: User {} has vetoed template with id: {}".format(ladder.id, ctx.message.author.name, option))
+                await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has vetoed template with id: {}".format(ladder.id, ctx.message.author.name, option))
             else:
                 # display the users current veto
                 retStr = ladder.get_current_vetoes(discord_id)
@@ -89,7 +90,7 @@ class Ladders(commands.Cog, name="ladders"):
             if option != "invalid_option":
                 # check to make sure the author has access here
                 if is_tournament_creator(ctx.message.author.id, ladder):
-                    log_bot_msg("[Ladder {}]: User {} has added template with id: {}".format(ladder.id, ctx.message.author.name, option))
+                    await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has added template with id: {}".format(ladder.id, ctx.message.author.name, option))
                     retStr = ladder.add_template(option)
                 else:
                     retStr = "Only the tournament creator can use this command."
@@ -109,8 +110,7 @@ class Ladders(commands.Cog, name="ladders"):
                 if is_tournament_creator(discord_id, ladder):
                     if option.isnumeric():
                         vetoes = int(option)
-                        ladder.max_vetoes = vetoes
-                        ladder.save()
+                        ladder.update_max_vetoes(vetoes)
                         retStr = "Updated {} # of vetoes to {} per team.".format(ladder.name, vetoes)
                     else:
                         retStr = "Please enter a valid # for updating veto count"
@@ -159,13 +159,13 @@ class Ladders(commands.Cog, name="ladders"):
                    ''')
     async def rtl(self, ctx, cmd="invalid_cmd", option="invalid_option"):
         try:
-            ladder = get_real_time_ladder(109)
+            ladder = await self.bot.bridge.getRealTimeLadder(109)
             if ladder is not None:
                 await self.ladder_command(ctx, ladder, cmd, option)
             else:
                 await ctx.send("Real-time Ladder cannot be found. Please contact -B.")
         except:
-            log_exception()
+            await self.bot.bridge.log_exception()
             await ctx.send("An error has occurred and was unable to process the command.")
 
     @commands.command(brief="Hosts a variety of commands for the 1v1 Real-Time INSS Ladder",
@@ -186,13 +186,13 @@ class Ladders(commands.Cog, name="ladders"):
                      ''')
     async def rtl_inss(self, ctx, cmd="invalid_cmd", option="invalid_option"):
         try:
-            ladder = get_real_time_ladder(167)
+            ladder = await self.bot.bridge.get_real_time_ladder(167)
             if ladder is not None:
                 await self.ladder_command(ctx, ladder, cmd, option)
             else:
                 await ctx.send("Real-time Ladder cannot be found. Please contact -B.")
         except:
-            log_exception()
+            await self.bot.bridge.log_exception()
             await ctx.send("An error has occurred and was unable to process the command.")
 
     '''
@@ -202,19 +202,19 @@ class Ladders(commands.Cog, name="ladders"):
     async def send_ladder_message(self, msg, ladder, is_embed, guild_original_msg):
         # loop through all rtl linked channels sending the appropriate message to all servers
         processed_channels = []
-        channels = DiscordChannelTournamentLink.objects.filter(tournament=ladder)
+        channels = await self.bot.bridge.getChannelTournamentLinks(tournament=ladder)
         if channels and channels.count() > 0:
-            log_bot_msg("Found {} channels to send RTL messages to.".format(channels.count()))
+            await self.bot.bridge.log_bot_msg("Found {} channels to send RTL messages to.".format(channels.count()))
         for rtl_channel in channels:
             channel = self.bot.get_channel(rtl_channel.channelid)
             if rtl_channel.id in processed_channels:
                 if guild_original_msg:
-                    log_bot_msg(
+                    await self.bot.bridge.log_bot_msg(
                         "Found duplicate cached RTL guild with id {} for original msg id {}".format(guild_original_msg.guild.id, guild_original_msg.id))
                 continue
             processed_channels.append(rtl_channel.id)
             if guild_original_msg:
-                log_bot_msg("Server id to send RTL message to: {}, server original message with msg id {} came from: {}".format(channel.guild.id,  guild_original_msg.id, guild_original_msg.guild.id))
+                await self.bot.bridge.log_bot_msg("Server id to send RTL message to: {}, server original message with msg id {} came from: {}".format(channel.guild.id,  guild_original_msg.id, guild_original_msg.guild.id))
             if guild_original_msg and channel.guild.id == guild_original_msg.guild.id:
                 # skip this one, it came from here
                 continue
@@ -224,8 +224,8 @@ class Ladders(commands.Cog, name="ladders"):
                 else:
                     await channel.send(msg)
             except:
-                log_exception()
-                log_bot_msg("Failed while sending msg to channel: {}".format(channel.name))
+                await self.bot.bridge.log_exception()
+                await self.bot.bridge.log_bot_msg("Failed while sending msg to channel: {}".format(channel.name))
 
 def setup(bot):
     bot.add_cog(Ladders(bot))

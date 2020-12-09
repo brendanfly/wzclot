@@ -426,6 +426,8 @@ class Tournament(models.Model):
     tournament_logs = models.TextField(blank=True, null=True, default="")
     is_official = models.BooleanField(default=False)
     vacation_force_interval = 20
+    is_cache_dirty = models.BooleanField(default=True)
+    all_games_completed = models.BooleanField(default=False)
 
     def is_player_allowed_join(self, player):
         return is_player_allowed_join(player, self.template)
@@ -3600,7 +3602,7 @@ class MonthlyTemplateRotation(Tournament):
         log_tournament("[MTC] {}: Finished game_info: {}".format(self.name, game_info), self)
         if 'needsRemoval' in game_info:
             team_id = int(game_info['needsRemoval'])
-            log_tournament("Found needsRemoval info in the tournament with team id: {}".format(team_id))
+            log_tournament("Found needsRemoval info in the tournament with team id: {}".format(team_id), self)
             # lookup the team id, and make sure it matches one of the players
             players_data = game_info['players']
             for data in players_data:

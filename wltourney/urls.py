@@ -59,5 +59,8 @@ urlpatterns = [
 
     path('max_games_at_once/', wlct.views.update_max_games_at_once, name='update_max_games_at_once'),
 
-    path('github/webhook/', wlct.views.webhook_request, name='webhook_request')
+    path('github/webhook/', wlct.views.webhook_request, name='webhook_request'),
+
+    # URLs for the APIs that expose read/writing data back and forth
+    # TBD
 ]
