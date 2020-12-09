@@ -263,6 +263,7 @@ class Command(BaseCommand):
                 # if the tournament is finished and there are no more outstanding games that are in progress
                 # the cache is no longer dirty and we should stop looking at it
                 if child_tournament.is_finished and games_in_progress == 0:
+                    log("[CACHE]: Child tournament {} cache is no longer dirty.".format(tournament.name), LogLevel.engine)
                     child_tournament.is_cache_dirty = False
                     child_tournament.save()
 
@@ -304,6 +305,7 @@ class Command(BaseCommand):
 
                 # if we are finished, and there are no outstanding games in progress...we are deemed "all_games_completed"
                 if child_tournament.is_finished and games_in_progress == 0:
+                    log("[PROCESS GAMES]: Child tournament {} has all games completed.".format(tournament.name), LogLevel.engine)
                     child_tournament.all_games_completed = True
                     child_tournament.save()
 
