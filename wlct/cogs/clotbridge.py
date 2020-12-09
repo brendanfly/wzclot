@@ -91,6 +91,10 @@ class CLOTBridge:
         return list(TournamentGame.objects.filter(**kwargs))
 
     @database_sync_to_async
+    def getGamesForTournament(self, tournament, time_since):
+        return list(TournamentGame.objects.filter(is_finished=True, tournament=tournament, game_finished_time__gt=time_since, game_log_sent=False))
+
+    @database_sync_to_async
     def getGamesAll(self):
         return list(TournamentGame.objects.all())
 

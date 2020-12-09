@@ -131,7 +131,7 @@ class Tasks(commands.Cog, name="tasks"):
                 game_log_text = ""
                 if hasattr(self.bot, 'uptime') and channel:
                     time_since = self.bot.uptime-datetime.timedelta(days=3)
-                    games = await self.bot.bridge.getGames(is_finished=True, tournament=cl.tournament, game_finished_time__gt=(time_since), game_log_sent=False)
+                    games = await self.bot.bridge.getGamesForTournament(cl.tournament, time_since)
                     if len(games) > 0:
                         await self.bot.bridge.log_bot_msg("Found {} games to log in channel {}".format(len(games), channel.name))
                     for game in games:
