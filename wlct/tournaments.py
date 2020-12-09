@@ -2842,7 +2842,7 @@ class RoundRobinTournament(Tournament):
 
             start_time = game.game_start_time.strftime("%b %d, %Y %H:%M:%S %p")
 
-            unix_time = time.mktime(start_time.timetuple())
+            unix_time = time.mktime(game.game_start_time.timetuple())
             game_log += '<td data-order={}>{}</td>'.format(unix_time, start_time)
 
             # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
@@ -2850,7 +2850,7 @@ class RoundRobinTournament(Tournament):
                 "%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
 
             if end_time is not "N/A":
-                unix_time = time.mktime(end_time.timetuple())
+                unix_time = time.mktime(game.game_finished_time.timetuple())
                 game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
             else:
                 game_log += '<td>{}</td>'.format(end_time)
@@ -3175,7 +3175,7 @@ class RoundRobinRandomTeams(RoundRobinTournament):
 
             start_time = game.game_start_time.strftime("%b %d, %Y %H:%M:%S %p")
 
-            unix_time = time.mktime(start_time.timetuple())
+            unix_time = time.mktime(game.game_start_time.timetuple())
             game_log += '<td data-order={}>{}</td>'.format(unix_time, start_time)
 
             # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
@@ -3183,7 +3183,7 @@ class RoundRobinRandomTeams(RoundRobinTournament):
                 "%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
 
             if end_time is not "N/A":
-                unix_time = time.mktime(end_time.timetuple())
+                unix_time = time.mktime(game.game_finished_time.timetuple())
                 game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
             else:
                 game_log += '<td>{}</td>'.format(end_time)
@@ -4106,7 +4106,7 @@ class MonthlyTemplateRotation(Tournament):
                 "%b %d, %Y %H:%M:%S %p") if entry.game.is_finished and entry.game.game_finished_time else 'N/A'
 
             if end_time is not "N/A":
-                unix_time = time.mktime(end_time.timetuple())
+                unix_time = time.mktime(entry.game.game_finished_time.timetuple())
                 game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
             else:
                 game_log += '<td>{}</td>'.format(end_time)
@@ -5370,7 +5370,7 @@ class ClanLeague(Tournament):
                 
                 start_time = game.game_start_time.strftime("%b %d, %Y %H:%M:%S %p")
 
-                unix_time = time.mktime(start_time.timetuple())
+                unix_time = time.mktime(game.game_start_time.timetuple())
                 game_log += '<td data-order={}>{}</td>'.format(unix_time, start_time)
 
                 # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
@@ -5378,7 +5378,7 @@ class ClanLeague(Tournament):
                     "%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
 
                 if end_time is not "N/A":
-                    unix_time = time.mktime(end_time.timetuple())
+                    unix_time = time.mktime(game.game_finished_time.timetuple())
                     game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
                 else:
                     game_log += '<td>{}</td>'.format(end_time)
@@ -5650,7 +5650,7 @@ class RealTimeLadder(Tournament):
                 "%b %d, %Y %H:%M:%S %p") if entry.game.is_finished and entry.game.game_finished_time else 'N/A'
 
             if end_time is not "N/A":
-                unix_time = time.mktime(end_time.timetuple())
+                unix_time = time.mktime(entry.game.game_finished_time.timetuple())
                 game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
             else:
                 game_log += '<td>{}</td>'.format(end_time)
