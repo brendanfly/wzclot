@@ -1,11 +1,9 @@
 import discord
-from wlct.models import Clan, Player, DiscordUser, DiscordChannelClanFilter, DiscordChannelPlayerFilter, DiscordChannelTournamentLink, TournamentAdministrator
-from wlct.tournaments import Tournament, TournamentTeam, TournamentPlayer, MonthlyTemplateRotation, get_games_finished_for_team_since, find_tournaments_by_division_id, find_tournament_by_id, get_team_data_no_clan, RealTimeLadder, get_real_time_ladder, get_team_data, ClanLeague, ClanLeagueTournament, ClanLeagueDivision, TournamentGame, TournamentGameEntry, TournamentRound
-from wlct.logging import ProcessGameLog, ProcessNewGamesLog, log_command_exception
 from discord.ext import commands
-from django.conf import settings
-from wlct.cogs.common import is_clotadmin, has_tournament_admin_access, CLOTBridge
 
+from wlct.cogs.common import is_clotadmin, has_tournament_admin_access
+from wlct.logging import ProcessGameLog, ProcessNewGamesLog
+from channels.db import database_sync_to_async
 
 class PlayerStats:
     def __init__(self, wins, losses, tournaments, games, win_pct, rating):
@@ -20,25 +18,25 @@ class Clot(commands.Cog, name="clot"):
     def __init__(self, bot):
         self.bot = bot
 
-    def get_player_stats(self, token):
+    async def get_player_stats(self, token):
         # return a tuple of all the player stats
         # this tuple will be (Success, Wins, Losses, Tournaments Played In, Games Played In, Win %)
         # first, grab the player
         if token == 0:
             return False, None
-        player = Player.objects.filter(token=token)
-        if player:
+        player = await self.bot.bridge.getPlayers(token=token)
+        if len(player):
             player = player[0]
             wins = player.wins
             losses = player.losses
             rating = player.rating
             tpi = 0
             gpi = 0
-            tplayer = TournamentPlayer.objects.filter(player=player)
+            tplayer = await self.bot.bridge.getTournamentPlayers(player=player)
             for p in tplayer:
                 tpi += 1
-                games = TournamentGameEntry.objects.filter(team=p.team)
-                gpi += games.count()
+                games = await self.bot.bridge.getTournamentGameEntries(team=p.team)
+                gpi += len(games)
             win_pct = 0
             if wins + losses != 0:
                 win_pct = (wins / (wins + losses)) * 100
@@ -59,12 +57,12 @@ class Clot(commands.Cog, name="clot"):
             if option == "clot":
                 emb = self.bot.get_default_embed()
                 # grab total tournaments + games + players
-                p = Player.objects.all()
-                emb.add_field(name="# of Players", value="{}".format(p.count()))
-                t = Tournament.objects.all()
-                emb.add_field(name="# of Tournaments Created", value="{}".format(t.count()))
-                g = TournamentGame.objects.all()
-                emb.add_field(name="# of Games Played", value="{}".format(g.count()))
+                p = await self.bot.bridge.getPlayersAll()
+                emb.add_field(name="# of Players", value="{}".format(len(p)))
+                t = await self.bot.bridge.getTournamentsAll()
+                emb.add_field(name="# of Tournaments Created", value="{}".format(len(t)))
+                g = await self.bot.bridge.getGamesAll()
+                emb.add_field(name="# of Games Played", value="{}".format(len(g)))
                 await ctx.send(embed=emb)
             elif option == "me" or option.isnumeric() or option != "":
                 token = 0
@@ -72,8 +70,8 @@ class Clot(commands.Cog, name="clot"):
                 if option == "me":
                     discord_user = ctx.message.author
                     discord_user_id = discord_user.id
-                    player = Player.objects.filter(discord_member__memberid=discord_user_id)
-                    if player:
+                    player = await self.bot.bridge.getPlayers(discord_member__memberid=discord_user_id)
+                    if len(player):
                         token = player[0].token
                 elif option.isnumeric():
                     # try to lookup the player by token
@@ -101,8 +99,7 @@ class Clot(commands.Cog, name="clot"):
                         await self.bot.update_progress(message, original_text, round(current_step, 2))
                     await self.bot.update_progress(message, original_text, 100.0)'''
 
-
-                stats = self.get_player_stats(token)
+                stats = await self.get_player_stats(token)
                 if stats[0]:
                     # success
                     pstats = stats[1]
@@ -134,6 +131,7 @@ class Clot(commands.Cog, name="clot"):
                           bb!admin cache <tournament_id> - forcibly runs the cache on a tournament
                           bb!admin add <player_token> <tournament_id> - adds this player as an admin for the tournament
                           bb!admin create_game <tournament_id> <round_number> <game_data> - creates a game with the game data in the specified round number
+                          bb!admin 
                           ''',
                       category="clot")
     async def admin(self, ctx, cmd="", option="", arg="", arg2=""):
@@ -144,7 +142,7 @@ class Clot(commands.Cog, name="clot"):
                     return
                 if option == "-pg":
                     if arg:
-                        game = TournamentGame.objects.filter(gameid=arg)
+                        game = await self.bot.bridge.getGames(gameid=arg)
                         if game:
                             game_logs = ProcessGameLog.objects.filter(game=game[0]).order_by('-timestamp')[:2]
                             if game_logs:
@@ -157,10 +155,10 @@ class Clot(commands.Cog, name="clot"):
                         await ctx.send("Please enter a valid game id")
                 elif option == "-png":
                     if arg and arg.isnumeric():
-                        tournament = Tournament.objects.filter(id=int(arg))
-                        if tournament:
-                            new_game_logs = ProcessNewGamesLog.objects.filter(tournament=tournament[0]).order_by('-timestamp')[:2]
-                            if new_game_logs:
+                        tournament = await self.bot.bridge.getTournaments(id=int(arg))
+                        if len(tournament):
+                            new_game_logs = await self.bot.brige.getProcessNewGameLogsLast2(tournament=tournament[0])
+                            if len(new_game_logs):
                                 await self.send_log_message(ctx, "process new game", new_game_logs)
                             else:
                                 await ctx.send("No process new game logs were found with that tournament id")
@@ -173,10 +171,10 @@ class Clot(commands.Cog, name="clot"):
                         await ctx.send("Only CLOT admins can use this command.")
                         return
                     if arg and arg.isnumeric():
-                        tt = TournamentTeam.objects.filter(id=int(arg))
-                        if tt:
+                        tt = await self.bot.bridge.getTournamentTeams(id=int(arg))
+                        if len(tt):
                             tt = tt[0]
-                            players = TournamentPlayer.objects.filter(team=tt)
+                            players = await self.bot.bridge.getTournamentPlayers(team=tt)
                             team_name_list = []
                             for player in players:
                                 team_name_list.append(player.player.name)
@@ -192,37 +190,41 @@ class Clot(commands.Cog, name="clot"):
                 if not is_clotadmin(ctx.message.author.id):
                     await ctx.send("Only MTC admins can use this command.")
                     return
-                mtc = MonthlyTemplateRotation.objects.filter(id=22)[0]
-                if option == "-p":
-                    tplayers = TournamentPlayer.objects.filter(tournament=mtc)
-                    if tplayers:
-                        player_data = "Current Players on the MTC:\n"
-                        for tplayer in tplayers:
-                            if tplayer.team.active:
-                                player_data += "{} | Id: {}\n".format(tplayer.player.name,
-                                                                              tplayer.player.token)
-                        await ctx.send(player_data)
+                mtc = await self.bot.bridge.getMonthlyTemplateRotations(id=22)
+                if len(mtc):
+                    mtc = mtc[0]
+                    if option == "-p":
+                        tplayers = await self.bot.bridge.getTournamentPlayers(tournament=mtc)
+                        if len(tplayers):
+                            player_data = "Current Players on the MTC:\n"
+                            for tplayer in tplayers:
+                                if tplayer.team.active:
+                                    player_data += "{} | Id: {}\n".format(tplayer.player.name,
+                                                                                  tplayer.player.token)
+                            await ctx.send(player_data)
+                        else:
+                            await ctx.send("Currently there are no players on the MTC")
+                    elif option == "-r":
+                        if arg:
+                            try:
+                                mtc.decline_tournament(arg)
+                                await ctx.send("Successfully removed player from MTC with id: {}".format(arg))
+                            except:
+                                await ctx.send("Unable to remove player from MTC with id: {}".format(arg))
+                        else:
+                            ctx.send("Please enter a valid token. Use ``bb!admin mtc -p`` to see current players.")
                     else:
-                        await ctx.send("Currently there are no players on the MTC")
-                elif option == "-r":
-                    if arg:
-                        try:
-                            mtc.decline_tournament(arg)
-                            await ctx.send("Successfully removed player from MTC with id: {}".format(arg))
-                        except:
-                            await ctx.send("Unable to remove player from MTC with id: {}".format(arg))
-                    else:
-                        ctx.send("Please enter a valid token. Use ``bb!admin mtc -p`` to see current players.")
+                        await ctx.send("Please enter a valid option (-p or -r)")
                 else:
-                    await ctx.send("Please enter a valid option (-p or -r)")
+                    await ctx.send("MTC with id {} is invalid. Please enter a valid MTC league id.".format(22))
             elif cmd == "rtl":
-                rtl = RealTimeLadder.objects.filter(id=109)[0]
+                rtl = await self.bot.bridge.getRealTimeLadders(id=109)[0]
                 if not has_tournament_admin_access(ctx.message.author.id, rtl):
                     await ctx.send("Only RTL admins can use this command.")
                     return
                 if option == "-p":
-                    tplayers = TournamentPlayer.objects.filter(tournament=rtl, team__active=True)
-                    if tplayers:
+                    tplayers = self.bot.bridge.getTournamentPlayers(tournament=rtl, team__active=True)
+                    if len(tplayers):
                         player_data = "Current Players on the RTL:\n"
                         for tplayer in tplayers:
                             player_data += "{} | Discord Id: {}\n".format(tplayer.player.name, tplayer.player.discord_member.memberid)
@@ -232,7 +234,7 @@ class Clot(commands.Cog, name="clot"):
                 elif option == "-r":
                     if arg:
                         try:
-                            rtl.leave_ladder(arg)
+                            await self.bot.bridge.removeRealTimeLadderPlayer(rtl, arg)
                             await ctx.send("Successfully removed player from RTL with id: {}".format(arg))
                         except:
                             await ctx.send("Unable to remove player from RTL with id: {}".format(arg))
@@ -244,7 +246,7 @@ class Clot(commands.Cog, name="clot"):
                 # forcibly run the game caching
                 if option.isnumeric():
                     # option is the tournament id to run caching on
-                    tournament = find_tournament_by_id(int(option), True)
+                    tournament = await self.bot.bridge.findTournamentById(int(option), True)
                     if not has_tournament_admin_access(ctx.message.author.id, tournament):
                         await ctx.send("Only tournament admins can use this command.")
                         return
@@ -259,7 +261,7 @@ class Clot(commands.Cog, name="clot"):
                 if not option.isnumeric():
                     await ctx.send("Please enter a valid tournament id")
                     return
-                tournament = find_tournament_by_id(int(option), True)
+                tournament = await self.bot.bridge.findTournamentById(int(option), True)
                 if not has_tournament_admin_access(ctx.message.author.id, tournament):
                     await ctx.send("Only tournament admins can use this command.")
                     return
@@ -275,7 +277,7 @@ class Clot(commands.Cog, name="clot"):
                 if not option.isnumeric():
                     await ctx.send("Please enter a valid tournament id")
                     return
-                tournament = find_tournament_by_id(int(option), True)
+                tournament = await self.bot.bridge.findTournamentById(int(option), True)
                 if tournament is not None:
                     if not tournament.has_started:
                         await ctx.send("You cannot create a game in a tournament that hasn't started.")
@@ -288,8 +290,8 @@ class Clot(commands.Cog, name="clot"):
                         await ctx.send("Round number must be numeric")
                         return
                     round_number = int(arg)
-                    tournament_round = TournamentRound.objects.filter(tournament=tournament.id, round_number=round_number)
-                    if not tournament_round:
+                    tournament_round = await self.bot.bridge.getTournamentRounds(tournament=tournament.id, round_number=round_number)
+                    if not len(tournament_round):
                         await ctx.send("Could not find round {} in Tournament: {} Id: {}".format(round_number, tournament.name, tournament.id))
                         return
                     tournament_round = tournament_round[0]
@@ -299,22 +301,22 @@ class Clot(commands.Cog, name="clot"):
                         return
                     # validate the game data
                     game_data = arg2.split('.')
-                    team1 = TournamentTeam.objects.filter(tournament=tournament.id, pk=int(game_data[0]))
-                    if not team1:
+                    team1 = await self.bot.bridge.getTournamentTeams(tournament=tournament.id, pk=int(game_data[0]))
+                    if not len(team1):
                         # try for the round_robin_tournament
-                        team1 = TournamentTeam.objects.filter(round_robin_tournament=tournament.id, pk=int(game_data[0]))
-                        if not team1:
+                        team1 = await self.bot.bridge.getTournamentTeams(round_robin_tournament=tournament.id, pk=int(game_data[0]))
+                        if not len(team1):
                             await ctx.send("Could not find team {} in tournament: {}, id: {}".format(game_data[0], tournament.name, tournament.id))
                             return
-                    team2 = TournamentTeam.objects.filter(tournament=tournament.id, pk=int(game_data[1]))
-                    if not team2:
+                    team2 = await self.bot.bridge.getTournamentTeams(tournament=tournament.id, pk=int(game_data[1]))
+                    if not len(team2):
                         # try for the round_robin_tournament
-                        team2 = TournamentTeam.objects.filter(round_robin_tournament=tournament.id, pk=int(game_data[1]))
-                        if not team2:
+                        team2 = await self.bot.bridge.getTournamentTeams(round_robin_tournament=tournament.id, pk=int(game_data[1]))
+                        if not len(team2):
                             await ctx.send("Could not find team {} in tournament: {}, id: {}".format(game_data[1], tournament.name, tournament.id))
                             return
                     # at this point we've validated everything...go ahead and create the one-off game
-                    tournament_game = tournament.create_game(tournament_round, arg2)
+                    tournament_game = await self.bot.bridge.createGame(tournament, tournament_round, arg2)
                     await ctx.send("Created game in {} between teams {} and {}. Game Link: {}".format(tournament.name, game_data[0], game_data[1], tournament_game.game_link))
 
                 else:
@@ -326,17 +328,16 @@ class Clot(commands.Cog, name="clot"):
                     await ctx.send("Only CLOT admins can use this command.")
                     return
                 if option.isnumeric() and arg.isnumeric():
-                    admin = TournamentAdministrator.objects.filter(player__token=option, tournament__id=int(arg))
+                    admin = await self.bot.bridge.getTournamentAdministrators(player__token=option, tournament__id=int(arg))
                     if admin:
                         await ctx.send("{} is already an administrator of tournament {}".format(option, arg))
                         return
                     else:
-                        player = Player.objects.filter(token=option)
-                        if player:
-                            tournament = find_tournament_by_id(int(arg), True)
+                        player = await self.bot.bridge.getPlayers(token=option)
+                        if len(player):
+                            tournament = await self.bot.bridge.findTournamentById(int(arg), True)
                             if tournament:
-                                admin = TournamentAdministrator(player=player[0], tournament=tournament)
-                                admin.save()
+                                await self.bot.bridge.createTournamentAdministrator(player=player[0], tournament=tournament)
                                 await ctx.send("Added {} as a {} admin successfully.".format(player[0].name, tournament.name))
                                 return
                 await ctx.send("Please enter a valid player token and tournament id.")
@@ -359,10 +360,9 @@ class Clot(commands.Cog, name="clot"):
         category="clot")
     async def filter(self, ctx, arg="invalid_cmd", arg2="invalid_cmd", id="invalid_id", tournament_id=""):
         try:
-            discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
+            discord_user = await self.bot.bridge.getDiscordUsers(memberid=ctx.message.author.id)
             if not discord_user:
-                discord_user = DiscordUser(memberid=ctx.message.author.id)
-                discord_user.save()
+                discord_user = await self.bot.bridge.createDiscordUser(memberid=ctx.message.author.id)
 
             # Ensure parameters follow syntax
             if arg == "invalid_cmd" or arg != "-a" and arg != "-r" and arg != "-rall":
@@ -386,29 +386,29 @@ class Clot(commands.Cog, name="clot"):
             if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
                 # user is a server admin, process to create the channel -> tournament link
                 if tournament_id:
-                    tournament = find_tournament_by_id(int(tournament_id), True)
+                    tournament = await self.bot.bridge.findTournamentById(int(tournament_id), True)
                     if not tournament:
                         await ctx.send("Unable to find tournament with id {}. Use ``bb!tournaments`` to see list of tournaments.".format(tournament_id))
                         return
 
-                    discord_channel_link = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id,
+                    discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(channelid=ctx.message.channel.id,
                                                                                        tournament=tournament)
                 else:
-                    discord_channel_link = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id)
+                    discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(channelid=ctx.message.channel.id)
 
-                if not discord_channel_link:
+                if not len(discord_channel_link):
                     await ctx.send("There were no links found in this channel satisfying the command. Use ``bb!help linkt`` to see commands to link.")
                     return
 
                 if arg2 == "-c":
-                    clan = Clan.objects.filter(id=int(id))
-                    if not clan:
+                    clan = await self.bot.bridge.getClans(id=int(id))
+                    if not len(clan):
                         await ctx.send("Unable to find clan with id {}. Use ``bb!clans`` to see list of clans.".format(id))
                         return
                     clan = clan[0]
                 elif arg2 == "-p":
-                    player = Player.objects.filter(token=id)
-                    if not player:
+                    player = await self.bot.bridge.getPlayers(token=id)
+                    if not len(player):
                         await ctx.send("Unable to find player with token {}.".format(id))
                         return
                     player = player[0]
@@ -418,18 +418,18 @@ class Clot(commands.Cog, name="clot"):
                     for cl in discord_channel_link:
                         if arg2 == "-c":
                             # Adds clan filters to the channel
-                            discord_channel_filter = DiscordChannelClanFilter.objects.filter(link=cl, clan=clan)
+                            discord_channel_filter = await self.bot.bridge.getDiscordChannelClanFilters(link=cl, clan=clan)
                             if discord_channel_filter:
                                 await ctx.send("Filter for {} and {} already exists. Use ``bb!links`` to see all links and filters.".format(clan.name, cl.tournament.name))
                                 continue
-                            new_filter = DiscordChannelClanFilter(link=cl, clan=clan)
+                            new_filter = await self.bot.bridge.createDiscordChannelClanFilter(link=cl, clan=clan)
                         elif arg2 == "-p":
                             # Adds player filters to the channel
-                            discord_channel_filter = DiscordChannelPlayerFilter.objects.filter(link=cl, player=player)
+                            discord_channel_filter = await self.bot.bridge.getDiscordChannelPlayerFilters(link=cl, player=player)
                             if discord_channel_filter:
                                 await ctx.send("Filter for {} and {} already exists. Use ``bb!links`` to see all links and filters.".format(player.name, cl.tournament.name))
                                 continue
-                            new_filter = DiscordChannelPlayerFilter(link=cl, player=player)
+                            new_filter = await self.bot.bridge.createDiscordChannelPlayerFilter(link=cl, player=player)
 
                         new_filter.save()
                         total_filters_added += 1
@@ -440,8 +440,8 @@ class Clot(commands.Cog, name="clot"):
 
                     if arg == "-rall":
                         # Remove all filters from the channel
-                        clan_filters = DiscordChannelClanFilter.objects.filter(link__channelid=ctx.message.channel.id)
-                        player_filters = DiscordChannelPlayerFilter.objects.filter(link__channelid=ctx.message.channel.id)
+                        clan_filters = await self.bot.bridge.getDiscordChannelClanFilters(link__channelid=ctx.message.channel.id)
+                        player_filters = await self.bot.bridge.getDiscordChannelPlayerFilters(link__channelid=ctx.message.channel.id)
                         for cf in clan_filters:
                             cf.delete()
                             total_filters_removed += 1
@@ -452,13 +452,13 @@ class Clot(commands.Cog, name="clot"):
                         for cl in discord_channel_link:
                             if arg2 == "-c":
                                 # Remove all filters applying to the channel, clan and (optionally) tournament
-                                discord_channel_filter = DiscordChannelClanFilter.objects.filter(link=cl, clan=clan)
+                                discord_channel_filter = await self.bot.bridge.getDiscordChannelClanFilters(link=cl, clan=clan)
                                 if discord_channel_filter:
                                     discord_channel_filter[0].delete()
                                     total_filters_removed += 1
                             elif arg2 == "-p":
                                 # Remove all filters applying to the channel, player and (optionally) tournament
-                                discord_channel_filter = DiscordChannelPlayerFilter.objects.filter(link=cl, player=player)
+                                discord_channel_filter = await self.bot.bridge.getDiscordChannelPlayerFilters(link=cl, player=player)
                                 if discord_channel_filter:
                                     discord_channel_filter[0].delete()
                                     total_filters_removed += 1
@@ -495,17 +495,16 @@ class Clot(commands.Cog, name="clot"):
         category="clot")
     async def linkd(self, ctx, arg="invalid_cmd", arg2="invalid_id"):
         try:
-            discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
-            if not discord_user:
-                discord_user = DiscordUser(memberid=ctx.message.author.id)
-                discord_user.save()
+            discord_user = await self.bot.bridge.getDiscordUsers(memberid=ctx.message.author.id)
+            if not len(discord_user):
+                discord_user = await self.bot.bridge.createDiscordUser(memberid=ctx.message.author.id)
             else:
                 discord_user = discord_user[0]
 
             if arg == "invalid_cmd":
                 # list the current links for this channel
                 links = "__**Tournaments Linked to this Channel**__\n"
-                discord_channel_link = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id)
+                discord_channel_link = await self.bot.bridge.getDiscordChannelTournamentLinks(channelid=ctx.message.channel.id)
                 if discord_channel_link.count() == 0:
                     links += "There are currently no links."
                 else:
@@ -525,18 +524,18 @@ class Clot(commands.Cog, name="clot"):
             # validate that here
             if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
                 # user is a server admin, process to create the channel -> tournament link
-                tournaments = find_tournaments_by_division_id(int(arg2))
+                tournaments = await self.bot.bridge.findTournamentByDivisionId(int(arg2))
                 total_successfully_updated = 0
                 total_filters_removed = 0
-                if not tournaments:
+                if not len(tournaments):
                     await ctx.send(
                         "Please enter a valid division id to link to this channel. Use ``bb!divisions`` to see list of divisions.")
                     return
                 for tournament in tournaments:
                     # if a private tournament, the person sending this command must be linked and be the creator
                     if tournament.private:
-                        player = Player.objects.filter(discord_member__memberid=ctx.message.author.id)
-                        if player:
+                        player = await self.bot.bridge.getPlayers(discord_member__memberid=ctx.message.author.id)
+                        if len(player):
                             player = player[0]
                             if hasattr(tournament, 'parent_tournament'):
                                 if tournament.parent_tournament:
@@ -562,27 +561,26 @@ class Clot(commands.Cog, name="clot"):
                         # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
                         # already a tournament hooked up to this channel. We don't even check, just add this tournament
                         # as a link to this channel
-                        discord_channel_link = DiscordChannelTournamentLink.objects.filter(tournament=tournament,
+                        discord_channel_link = await self.bot.bridge.getDiscordChannelTournamentLinks(tournament=tournament,
                                                                                            channelid=ctx.message.channel.id)
                         if discord_channel_link:
                             await ctx.send("You've already linked this channel to tournament: {}".format(tournament.name))
                             continue
-                        discord_channel_link = DiscordChannelTournamentLink(tournament=tournament,
+                        await self.bot.bridge.createChannelTournamentLink(tournament=tournament,
                                                                             discord_user=discord_user,
                                                                             channelid=ctx.message.channel.id)
-                        discord_channel_link.save()
                         total_successfully_updated += 1
                     elif arg == "-r":
-                        discord_channel_link = DiscordChannelTournamentLink.objects.filter(tournament=tournament,
+                        discord_channel_link = await self.bot.bridge.getDiscordChannelTournamentLinks(tournament=tournament,
                                                                                            channelid=ctx.message.channel.id)
                         if discord_channel_link:
                             discord_channel_link = discord_channel_link[0]
 
-                            clan_filters = DiscordChannelClanFilter.objects.filter(link=discord_channel_link)
+                            clan_filters = await self.bot.bridge.getDiscordChannelClanFilters(link=discord_channel_link)
                             for cf in clan_filters:
                                 total_filters_removed += 1
                                 cf.delete()
-                            player_filters = DiscordChannelPlayerFilter.objects.filter(link=discord_channel_link)
+                            player_filters = await self.bot.bridge.getDiscordChannelPlayerFilters(link=discord_channel_link)
                             for pf in player_filters:
                                 total_filters_removed += 1
                                 pf.delete()
@@ -614,17 +612,16 @@ class Clot(commands.Cog, name="clot"):
         category="clot")
     async def linkt(self, ctx, arg="invalid_cmd", arg2="invalid_id"):
         try:
-            discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
+            discord_user = await self.bot.bridge.getDiscordUsers(memberid=ctx.message.author.id)
             if not discord_user:
-                discord_user = DiscordUser(memberid=ctx.message.author.id)
-                discord_user.save()
+                discord_user = await self.bot.bridge.createDiscordUser(memberid=ctx.message.author.id)
             else:
                 discord_user = discord_user[0]
 
             if arg == "invalid_cmd":
                 # list the current links for this channel
                 links = "__**Tournaments Linked to this Channel**__\n"
-                discord_channel_link = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id)
+                discord_channel_link = await self.bot.bridge.getDiscordChannelTournamentLinks(channelid=ctx.message.channel.id)
                 if discord_channel_link.count() == 0:
                     links += "There are currently no links."
                 else:
@@ -644,12 +641,12 @@ class Clot(commands.Cog, name="clot"):
             # validate that here
             if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
                 # user is a server admin, process to create the channel -> tournament link
-                tournament = find_tournament_by_id(int(arg2), True)
+                tournament = await self.bot.bridge.findTournamentById(int(arg2), True)
                 if tournament:
                     # if a private tournament, the person sending this command must be linked and be the creator
                     if tournament.private:
-                        player = Player.objects.filter(discord_member__memberid=ctx.message.author.id)
-                        if player:
+                        player = await self.bot.bridge.getPlayers(discord_member__memberid=ctx.message.author.id)
+                        if len(player):
                             player = player[0]
                             if hasattr(tournament, 'parent_tournament'):
                                 if tournament.parent_tournament:
@@ -670,23 +667,22 @@ class Clot(commands.Cog, name="clot"):
                         # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
                         # already a tournament hooked up to this channel. We don't even check, just add this tournament
                         # as a link to this channel
-                        discord_channel_link = DiscordChannelTournamentLink.objects.filter(tournament=tournament, channelid=ctx.message.channel.id)
-                        if discord_channel_link:
+                        discord_channel_link = await self.bot.bridge.getDiscordChannelTournamentLinks(tournament=tournament, channelid=ctx.message.channel.id)
+                        if len(discord_channel_link):
                             await ctx.send("You've already linked this channel to tournament: {}".format(tournament.name))
                             return
-                        discord_channel_link = DiscordChannelTournamentLink(tournament=tournament, discord_user=discord_user, channelid=ctx.message.channel.id)
-                        discord_channel_link.save()
+                        discord_channel_link = await self.bot.bridge.createChannelTournamentLink(tournament=tournament, discord_user=discord_user, channelid=ctx.message.channel.id)
                         await ctx.send("You've linked this channel to tournament: {}. Game logs will now show-up here in real-time.".format(tournament.name))
                     elif arg == "-r":
                         total_filters_removed = 0
-                        discord_channel_link = DiscordChannelTournamentLink.objects.filter(tournament=tournament, channelid=ctx.message.channel.id)
+                        discord_channel_link = await self.bot.bridge.getDiscordChannelTournamentLinks(tournament=tournament, channelid=ctx.message.channel.id)
                         if discord_channel_link:
                             discord_channel_link = discord_channel_link[0]
-                            clan_filters = DiscordChannelClanFilter.objects.filter(link=discord_channel_link)
+                            clan_filters = await self.bot.bridge.getDiscordChannelClanFilters(link=discord_channel_link)
                             for cf in clan_filters:
                                 total_filters_removed += 1
                                 cf.delete()
-                            player_filters = DiscordChannelPlayerFilter.objects.filter(link=discord_channel_link)
+                            player_filters = await self.bot.bridge.getDiscordChannelPlayerFilters(link=discord_channel_link)
                             for pf in player_filters:
                                 total_filters_removed += 1
                                 pf.delete()
@@ -710,20 +706,19 @@ class Clot(commands.Cog, name="clot"):
         category="clot")
     async def links(self, ctx):
         try:
-            discord_user = DiscordUser.objects.filter(memberid=ctx.message.author.id)
+            discord_user = await self.bot.bridge.getDiscordUsers(memberid=ctx.message.author.id)
             if not discord_user:
-                discord_user = DiscordUser(memberid=ctx.message.author.id)
-                discord_user.save()
+                await self.bot.bridge.createDiscordUser(memberid=ctx.message.author.id)
 
             # Get all of the channel links
-            discord_channel_links = DiscordChannelTournamentLink.objects.filter(channelid=ctx.message.channel.id)
-            if not discord_channel_links:
+            discord_channel_links = await self.bot.bridge.getDiscordChannelTournamentLinks(channelid=ctx.message.channel.id)
+            if not len(discord_channel_links):
                 await ctx.send("No links were found for this channel. Use ``bb!help linkt`` to see how to link.")
                 return
 
             # List all channel links and create queryset of clan and player filters
-            clan_filters = DiscordChannelClanFilter.objects.none()
-            player_filters = DiscordChannelPlayerFilter.objects.none()
+            clan_filters = []
+            player_filters = []
             message_data = "Tournament Links:\n"
             for cl in discord_channel_links:
                 if len(message_data) > 1500:
@@ -732,8 +727,8 @@ class Clot(commands.Cog, name="clot"):
 
                 message_data += "{} (ID: {})\n".format(cl.tournament.name, cl.tournament.id)
 
-                clan_filters |= DiscordChannelClanFilter.objects.filter(link=cl)
-                player_filters |= DiscordChannelPlayerFilter.objects.filter(link=cl)
+                clan_filters = clan_filters + await self.bot.bridge.getDiscordChannelClanFilters(link=cl)
+                player_filters = player_filters + await self.bot.bridge.getDiscordChannelPlayerFilters(link=cl)
 
             # List all clan filters
             message_data += "\nClan Filters:\n"
@@ -768,12 +763,12 @@ class Clot(commands.Cog, name="clot"):
             if isinstance(ctx.message.channel, discord.DMChannel):
                 print("Token for linking: {} for user: {}".format(arg, ctx.message.author.id))
                 # check to see if this player is already linked
-                player = Player.objects.filter(bot_token=arg)
-                if player:
+                player = await self.bot.bridge.getPlayers(bot_token=arg)
+                if len(player):
                     player = player[0]
                     # make sure the discord id is not already here
-                    current_discord = Player.objects.filter(discord_member__memberid=ctx.message.author.id)
-                    if current_discord:
+                    current_discord = await self.bot.bridge.getPlayers(discord_member__memberid=ctx.message.author.id)
+                    if len(current_discord):
                         current_discord = current_discord[0]
                         cd_name = self.bot.get_user(current_discord.discord_member.memberid)
                         new_name = ctx.message.author.name
@@ -787,10 +782,9 @@ class Clot(commands.Cog, name="clot"):
                         await ctx.send("You're account is already linked on the CLOT.")
                     elif player.discord_member is None:
                         print("Saving discord id: {} for user".format(ctx.message.author.id))
-                        discord_obj = DiscordUser.objects.filter(memberid=ctx.message.author.id)
-                        if not discord_obj:
-                            discord_obj = DiscordUser(memberid=ctx.message.author.id)
-                            discord_obj.save()
+                        discord_obj = await self.bot.bridge.getDiscordUsers(memberid=ctx.message.author.id)
+                        if not len(discord_obj):
+                            discord_obj = await self.bot.bridge.createDiscordUser(memberid=ctx.message.author.id)
                         else:
                             discord_obj = discord_obj[0]
                         player.discord_member = discord_obj
@@ -814,8 +808,8 @@ class Clot(commands.Cog, name="clot"):
             await ctx.send("Gathering tournament data....")
             division_data = "Clan League Divisions\n"
 
-            cl = ClanLeague.objects.filter(id=369)[0]
-            divisions = ClanLeagueDivision.objects.filter(league=cl).order_by('title')
+            cl = await self.bot.bridge.getClanLeagues(id=369)[0]
+            divisions = await self.bot.bridge.getClanLeagueDivisionsOrderByTitle(league=cl)
 
             for division in divisions:
                 if len(division_data) > 1500:
@@ -839,7 +833,7 @@ class Clot(commands.Cog, name="clot"):
     async def tournaments(self, ctx, option="invalid", arg=""):
         try:
             tournament_data = ""
-            tournaments = Tournament.objects.all()
+            tournaments = await self.bot.bridge.getTournamentsAll()
             if option == "-f":
                 tournament_data += "Finished Tournaments\n"
             elif option == "-o":
@@ -850,7 +844,7 @@ class Clot(commands.Cog, name="clot"):
                 tournament_data += "Clan League Tournaments\n"
             elif option == "-s":
                 await ctx.send("Searching for Tournaments starting with {}...".format(arg))
-                tournaments = Tournament.objects.filter(name__istartswith=arg.lower(), private=False)[:10]
+                tournaments = await self.bot.bridge.getTournaments(name__istartswith=arg.lower(), private=False)[:10]
                 data = "Showing top 10 results\n"
                 for t in tournaments:
                     data += "{} (Id: {}) | <{}>\n".format(t.name, t.id, t.get_full_public_link())
@@ -865,7 +859,7 @@ class Clot(commands.Cog, name="clot"):
 
             await ctx.send("Gathering tournament data....")
             for tournament in tournaments:
-                child_tournament = find_tournament_by_id(tournament.id, True)
+                child_tournament = await self.bot.bridge.findTournamentById(tournament.id, True)
                 if child_tournament:
                     if len(tournament_data) > 1500:
                         await ctx.send(tournament_data)
@@ -879,7 +873,7 @@ class Clot(commands.Cog, name="clot"):
                     if option == "-f":  # only finished tournaments
                         if child_tournament.is_finished:
                             tournament_data += "{} (Id: {}) | <{}> | Winner: {}\n".format(child_tournament.name, child_tournament.id, link_text,
-                                                                         get_team_data(child_tournament.winning_team))
+                                                                         await self.bot.bridge.get_team_data(child_tournament.winning_team))
                     elif option == "-o":  # only open tournaments
                         if not child_tournament.has_started and not child_tournament.private:
                             tournament_data += "{} (Id: {}) | <{}> | {}\n".format(child_tournament.name, child_tournament.id, link_text,
@@ -889,7 +883,7 @@ class Clot(commands.Cog, name="clot"):
                             tournament_data += "{} (Id: {}) | <{}>\n".format(child_tournament.name, child_tournament.id, link_text)
                     elif option == "-cl":  # only in progress
                         if child_tournament.id == 369 and child_tournament.has_started:
-                            cl_tourneys = ClanLeagueTournament.objects.filter(parent_tournament=child_tournament).order_by('id')
+                            cl_tourneys = await self.bot.bridge.getClanLeagueTournamentsOrderById(parent_tournament=child_tournament)
                             for cl_tourney in cl_tourneys:
                                 tournament_data += "{} (Id: {})\n".format(cl_tourney.name, cl_tourney.id)
             if len(tournament_data) > 0:
@@ -913,19 +907,18 @@ class Clot(commands.Cog, name="clot"):
                 await ctx.send("You've entered and invalid MTC league id.")
                 return
 
-            tournament = MonthlyTemplateRotation.objects.filter(id=int(mtc_id))
+            tournament = await self.bot.bridge.getMonthlyTemplateRotations(id=int(mtc_id))
             if tournament:
                 await ctx.send("Gathering Monthly Template Rotation data....")
                 tournament = tournament[0]
-                tournamentteams = TournamentTeam.objects.filter(tournament=tournament.id, active=True).order_by('-rating',
-                                                                                                                '-wins')
+                tournamentteams = await self.bot.bridge.getTournamentTeamsOrderByRatingWins(tournament=tournament.id, active=True)
                 tournament_data += "MTC Top 10\n"
                 teams_found = 0
                 for team in tournamentteams:
                     if teams_found < 10:
-                        games_finished = get_games_finished_for_team_since(team.id, tournament, 90)
+                        games_finished = await self.bot.bridge.get_games_finished_for_team_since(team.id, tournament, 90)
                         if games_finished >= 10:
-                            tournament_data += "{}) {} - {}\n".format(teams_found + 1, get_team_data_no_clan(team), team.rating)
+                            tournament_data += "{}) {} - {}\n".format(teams_found + 1, await self.bot.bridge.get_team_data_no_clan(team), team.rating)
                             teams_found += 1
                 print("MTC: {}\nLength: {}".format(tournament_data.encode('utf-8'), len(tournament_data)))
                 await ctx.send(tournament_data)
@@ -947,19 +940,19 @@ class Clot(commands.Cog, name="clot"):
                 await ctx.send("No clanid has been entered. Please use ``bb!clans`` to show clans.")
                 return
             await ctx.send("Gathering player data for clan {}....".format(clanid))
-            clan_obj = Clan.objects.filter(pk=int(clanid))
+            clan_obj = await self.bot.bridge.getClans(pk=int(clanid))
             emb = discord.Embed(color=self.bot.embed_color)
-            if clan_obj:
+            if len(clan_obj):
                 emb.title = "{}".format(clan_obj[0].name)
                 emb.set_thumbnail(url=clan_obj[0].image_path)
                 player_data = ""
                 field_name = ""
                 if discord_arg != "-d":
                     field_name = "Registered on CLOT"
-                    players = Player.objects.filter(clan=clan_obj[0].id).order_by('name')
+                    players = await self.bot.bridge.getPlayersOrderByName(clan=clan_obj[0].id)
                 else:
                     field_name = "Discord Linked on CLOT"
-                    players = Player.objects.filter(clan=clan_obj[0].id, discord_member__isnull=False).order_by('name')
+                    players = await self.bot.bridge.getPlayersOrderByName(clan=clan_obj[0].id, discord_member__isnull=False)
                 current_player = 0
                 if players:
                     for player in players:
@@ -988,12 +981,12 @@ class Clot(commands.Cog, name="clot"):
     @commands.command(brief="Displays all clans on the CLOT")
     async def clans(self, ctx):
         try:
-            clans = Clan.objects.all().order_by('id')
+            clans = await self.bot.bridge.getClansAllOrderById()
             await ctx.send("Gathering clans data....")
             clans_data = "Clans on the CLOT\n\n"
             for clan in clans:
-                player = Player.objects.filter(clan=clan)
-                if player:
+                player = await self.bot.bridge.getPlayers(clan=clan)
+                if len(player):
                     if len(clans_data) > 1500:
                         await ctx.send(clans_data)
                         clans_data = ""
@@ -1011,15 +1004,15 @@ class Clot(commands.Cog, name="clot"):
         try:
             if option == "":
                 discord_id = ctx.message.author.id
-                player = Player.objects.filter(discord_member__memberid=discord_id)
-                if player:
+                player = await self.bot.bridge.getPlayers(discord_member__memberid=discord_id)
+                if len(player):
                     player = player[0]
                     await ctx.send("{} | <http://wzclot.com/stats/{}> | <https://warzone.com/Profile?p={}>".format(player.name, player.token, player.token))
                 else:
                     await ctx.send("Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions.")
             else:
                 await ctx.send("Searching the CLOT for players starting with {}...".format(option))
-                players = Player.objects.filter(name__istartswith=option)
+                players = await self.bot.bridge.getPlayers(name__istartswith=option)
                 data = ""
                 current_player = 0
                 for player in players:

@@ -4,6 +4,7 @@ from django.conf import settings
 from django.utils import timezone
 from wlct.logging import log_command_exception, log_exception, Logger, LogLevel
 import time, threading, sys, os, discord, traceback, json
+from wlct.cogs.clotbridge import CLOTBridge
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -43,6 +44,8 @@ class WZBot(commands.AutoShardedBot):
         self.running = True
         self.shutdown = False
 
+        self.bridge = CLOTBridge()
+
         # deltas for when the bot does stuff
         self.discord_link_text = "Your discord account is not linked to the CLOT. Please see <http://wzclot.eastus.cloudapp.azure.com/me/> for instructions."
         self.discord_link_text_user = "That user's discord account is not linked to the CLOT."
@@ -63,7 +66,7 @@ class WZBot(commands.AutoShardedBot):
         msg_info = "Channel/Server: " + msg_channel.name + "/" + msg_channel.guild.name
         msg_info += "\nUser: " + ctx.message.author.name + "#" + ctx.message.author.discriminator
         # Logs user and channel info to backend
-        log_command_exception(msg_info)
+        await self.bridge.log_command_exception(msg_info)
 
         # Outputs error message to discord for user context
         await ctx.send("An error has occurred:\n{}\nAsk -B#0292 or JustinR17#9950".format(err_msg))
