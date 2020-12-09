@@ -255,6 +255,16 @@ class CLOTBridge:
         log.save()
 
     @database_sync_to_async
+    def updateGameLogSent(self, game):
+        game.game_log_sent = True
+        game.save()
+
+    @database_sync_to_async
+    def updateGameNoWinningTeamSent(self, game):
+        game.no_winning_team_log_sent = True
+        game.save()
+
+    @database_sync_to_async
     def updateTournamentUpdateSent(self, update):
         update.bot_send = True
         update.save()
@@ -262,6 +272,11 @@ class CLOTBridge:
     @database_sync_to_async
     def removeRealTimeLadderPlayer(self, rtl, player):
         rtl.leave_ladder(player)
+
+    @database_sync_to_async
+    def updateRealTimeLadderUpdateInProgress(self, ladder, in_progress):
+        ladder.update_in_progress = in_progress
+        ladder.save()
 
     '''
     Methods used to create new objects, mainly discord user* objects

@@ -204,8 +204,7 @@ class Tasks(commands.Cog, name="tasks"):
             await self.bot.bridge.log_exception()
         finally:
             for g in games_sent:
-                g.game_log_sent = True
-                g.save()
+                await self.bot.bridge.updateGameLogSent(g)
 
     async def handle_server_stats(self):
         pass
@@ -234,8 +233,7 @@ class Tasks(commands.Cog, name="tasks"):
                 msg += "\n{} | ID: {} \nLink: <{}> \nLogs: <http://wzclot.eastus.cloudapp.azure.com/admin/wlct/processgamelog/?q={}>".format(game.tournament.name, game.gameid, game.game_link, game.gameid)
                 msg = msg[:1999]
                 await cc.send(msg)
-                game.no_winning_team_log_sent = True
-                game.save()
+                await self.bot.bridge.updateGameNoWinningTeamSent(game)
                 msg = ""
 
     async def handle_rt_ladder(self):
@@ -244,8 +242,7 @@ class Tasks(commands.Cog, name="tasks"):
             child_tournament = await self.bot.bridge.findTournamentById(tournament.id, True)
             if child_tournament and not child_tournament.should_process_in_engine():
                 try:
-                    child_tournament.update_in_progress = True
-                    child_tournament.save()
+                    await self.bot.bridge.updateRealTimeLadderUpdateInProgress(child_tournament, True)
                     games = await self.bot.bridge.getGames(is_finished=False, tournament=tournament)
                     for game in games.iterator():
                         # process the game
@@ -258,8 +255,7 @@ class Tasks(commands.Cog, name="tasks"):
                 except Exception as e:
                     await self.bot.bridge.log_exception()
                 finally:
-                    child_tournament.update_in_progress = False
-                    child_tournament.save()
+                    await self.bot.bridge.updateRealTimeLadderUpdateInProgress(child_tournament, False)
             gc.collect()
 
     async def handle_process_queue(self):
