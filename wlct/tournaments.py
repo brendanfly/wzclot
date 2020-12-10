@@ -399,6 +399,16 @@ def find_tournament_public(id):
     return None
 
 
+class TournamentType:
+    swiss = "Swiss"
+    seeded = "Seeded"
+    group_stage = "Group Stage"
+    pr = "Promotional/Relegation League"
+    mtc = "Monthly Template Circuit"
+    round_robin = "Round Robin"
+    clan_league = "Clan League"
+
+
 class Tournament(models.Model):
     name = models.CharField(max_length=128, null=True)
     description = models.CharField(max_length=2000, null=True, blank=True)
@@ -1089,7 +1099,7 @@ class Tournament(models.Model):
                             tourney_team_lost.losses += 1
                             tourney_team_lost.buchholz += tourney_team.buchholz
                             tourney_team_lost.save()
-                            processGameLog += "\nLosing team: {}, len(team_lost): {}".format(tourney_team_lost.id,
+                            processGameLog += "\nLosing team: {}, len(teams_lost): {}".format(tourney_team_lost.id,
                                                                                             len(teams_lost))
                     else:
                         processGameLog += "Could not find a losing team when processing game...??"
@@ -1393,7 +1403,7 @@ class Tournament(models.Model):
 
 
 class SwissTournament(Tournament):
-    type = models.CharField(max_length=255, default="Swiss")
+    type = models.CharField(max_length=255, default=TournamentType.swiss)
     max_rating = models.IntegerField(default=0)
     min_rating = models.IntegerField(default=0)
     best_record = models.CharField(max_length=10, default="0-0")
@@ -1713,7 +1723,7 @@ class SwissTournament(Tournament):
         self.save()
 
 class SeededTournament(Tournament):
-    type = models.CharField(max_length=255, default="Seeded")
+    type = models.CharField(max_length=255, default=TournamentType.seeded)
     min_teams = 4
 
     @property
@@ -2140,7 +2150,7 @@ class SeededTournament(Tournament):
             return draggable_data
 
 class GroupStageTournament(Tournament):
-    type = models.CharField(max_length=255, default="Group Stage")
+    type = models.CharField(max_length=255, default=TournamentType.group_stage)
     groups = models.IntegerField(default=4)
     player_per_group = models.IntegerField(default=4)
     knockout_rounds = models.IntegerField(default=2)
@@ -2407,7 +2417,7 @@ class GroupStageTournamentGroup(models.Model):
 
 
 class RoundRobinTournament(Tournament):
-    type = models.CharField(max_length=255, default="Round Robin")
+    type = models.CharField(max_length=255, default=TournamentType.round_robin)
     games_at_once = models.IntegerField(default=2)
     first_place = models.ForeignKey('TournamentTeam', on_delete=models.SET_NULL, null=True, blank=True, related_name='rr_first_place')
     second_place = models.ForeignKey('TournamentTeam', on_delete=models.SET_NULL, null=True, blank=True, related_name='rr_second_place')
@@ -3563,7 +3573,7 @@ class MonthlyTemplateRotationMonth(TournamentRound):
         return "pk: {}, MTC Month in {}, Month: {}, Year: {}, Template: {}".format(self.id, self.tournament.name, self.month, self.year, self.template)
 
 class MonthlyTemplateRotation(Tournament):
-    type = models.CharField(max_length=255, blank=True, null=True, default="Monthly Template Circuit")
+    type = models.CharField(max_length=255, blank=True, null=True, default=TournamentType.mtc)
     current_template = models.IntegerField(default=0)
 
     min_teams = 2
@@ -4150,7 +4160,7 @@ class MonthlyTemplateRotation(Tournament):
         return ""
 
 class PromotionalRelegationLeague(Tournament):
-    type = models.CharField(max_length=255, blank=True, null=True, default="Promotion/Relegation League")
+    type = models.CharField(max_length=255, blank=True, null=True, default=TournamentType.pr)
     seasons = models.IntegerField(default=0)
     current_season = models.ForeignKey('PromotionalRelegationLeagueSeason', blank=True, null=True, on_delete=models.DO_NOTHING)
     min_teams = 2
@@ -4967,7 +4977,7 @@ class ClanLeagueTournament(RoundRobinTournament):
             return False
 
 class ClanLeague(Tournament):
-    type = models.CharField(max_length=255, blank=True, null=True, default="Clan League")
+    type = models.CharField(max_length=255, blank=True, null=True, default=TournamentType.clan_league)
     game_allocation_started = models.BooleanField(default=False, null=True, blank=True)
     start_day = models.IntegerField(default=0, null=True, blank=True)
     start_month = models.IntegerField(default=0, null=True, blank=True)
