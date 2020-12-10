@@ -294,6 +294,10 @@ class Command(BaseCommand):
                     log("[PROCESS GAMES]: Processing new games for tournament {}".format(tournament.name), LogLevel.engine)
                     child_tournament.process_new_games()
 
+                    if hasattr(child_tournament, 'clan_league_template') and not child_tournament.multi_day:
+                        child_tournament.multi_day = True
+                        child_tournament.save()
+
                     # after we process games we always cache the latest data for quick reads
                     log("[PROCESS GAMES]: Finished processing games for tournament {}".format(tournament.name), LogLevel.engine)
                 except Exception as e:

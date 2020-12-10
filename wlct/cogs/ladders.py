@@ -89,7 +89,7 @@ class Ladders(commands.Cog, name="ladders"):
         elif cmd == "-ta":
             if option != "invalid_option":
                 # check to make sure the author has access here
-                if is_tournament_creator(ctx.message.author.id, ladder):
+                if await is_tournament_creator(ctx.message.author.id, ladder):
                     await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has added template with id: {}".format(ladder.id, ctx.message.author.name, option))
                     retStr = ladder.add_template(option)
                 else:
@@ -99,7 +99,7 @@ class Ladders(commands.Cog, name="ladders"):
         elif cmd == "-tr":
             if option != "invalid_option":
                 # check for access
-                if is_tournament_creator(discord_id, ladder):
+                if await is_tournament_creator(discord_id, ladder):
                     retStr = ladder.remove_template(option)
                 else:
                     retStr = "Only the tournament creator can use this command."
@@ -107,7 +107,7 @@ class Ladders(commands.Cog, name="ladders"):
                 retStr = invalid_cmd_text
         elif cmd == "-tv":
             if option != "invalid_option":
-                if is_tournament_creator(discord_id, ladder):
+                if await is_tournament_creator(discord_id, ladder):
                     if option.isnumeric():
                         vetoes = int(option)
                         ladder.update_max_vetoes(vetoes)

@@ -84,15 +84,15 @@ class CLOTBridge:
 
     @database_sync_to_async
     def getChannelTournamentLinksAll(self):
-        return list(DiscordChannelTournamentLink.objects.all())
+        return list(DiscordChannelTournamentLink.objects.all().select_related('tournament'))
 
     @database_sync_to_async
     def getGames(self, **kwargs):
-        return list(TournamentGame.objects.filter(**kwargs))
+        return list(TournamentGame.objects.filter(**kwargs).select_related('tournament', 'winning_team'))
 
     @database_sync_to_async
     def getGamesForTournament(self, tournament, time_since):
-        return list(TournamentGame.objects.filter(is_finished=True, tournament=tournament, game_finished_time__gt=time_since, game_log_sent=False))
+        return list(TournamentGame.objects.filter(is_finished=True, tournament=tournament, game_finished_time__gt=time_since, game_log_sent=False).select_related('tournament', 'winning_team'))
 
     @database_sync_to_async
     def getGamesAll(self):
@@ -100,7 +100,7 @@ class CLOTBridge:
 
     @database_sync_to_async
     def getDiscordUsers(self, **kwargs):
-        return list(DiscordUser.object.filter(**kwargs))
+        return list(DiscordUser.objects.filter(**kwargs))
 
     @database_sync_to_async
     def getDiscordChannelClanFilters(self, **kwargs):
@@ -171,11 +171,11 @@ class CLOTBridge:
 
     @database_sync_to_async
     def getBetGameOdds(self, **kwargs):
-        return list(BetGameOdds.objects.filter(**kwargs))
+        return list(BetGameOdds.objects.filter(**kwargs).select_related('game'))
 
     @database_sync_to_async
     def getBetGameOddsOrderByCreatedTime(self, **kwargs):
-        return list(BetGameOdds.objects.filter(**kwargs).order_by('created_time'))
+        return list(BetGameOdds.objects.filter(**kwargs).order_by('created_time').select_related('game'))
 
     @database_sync_to_async
     def getBetTeamOdds(self, **kwargs):
@@ -357,6 +357,10 @@ class CLOTBridge:
     def get_team_data_no_clan_player_list(self, data):
         return get_team_data_no_clan_player_list(data)
 
+    @database_sync_to_async
+    def does_game_pass_filter(self, cl, game):
+        return cl.does_game_pass_filter(game)
+
 '''
 Helper class to act as the ladder with a reference to the real ladder in order to make the DB operations async
 '''
@@ -417,5 +421,3 @@ class RealTimeLadderBridge:
     @database_sync_to_async
     def get_player_data(self, discord_id):
         return self.ladder.get_player_data(discord_id)
-
-
