@@ -355,6 +355,8 @@ class Command(BaseCommand):
 
     def tournament_engine(self):
         while not self.shutdown:
+            print("[Tournament Engine Sleeping...]")
+            self.shutdown_event.wait(timeout=get_run_time()*10)
             try:
                 engine = Engine.objects.all()
                 if engine and engine.count() == 0:
@@ -390,5 +392,3 @@ class Command(BaseCommand):
                 engine.save()
 
             # sleep for the next iteration
-            print("[Tournament Engine Sleeping...]")
-            self.shutdown_event.wait(timeout=get_run_time()*10)
