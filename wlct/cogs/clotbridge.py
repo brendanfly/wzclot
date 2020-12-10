@@ -152,7 +152,13 @@ class CLOTBridge:
 
     @database_sync_to_async
     def findTournamentById(self, id, search_all):
-        return find_tournament_by_id(id, search_all)
+        tournament = find_tournament_by_id(id, search_all)
+
+        # this is to force load the template into the cache for clan league tournaments
+        if tournament and hasattr(tournament, 'clan_league_template') and tournament.clan_league_template:
+            pass
+
+        return tournament
 
     @database_sync_to_async
     def findTournamentByDivisionId(self, id):

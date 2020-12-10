@@ -37,6 +37,8 @@ class Command(BaseCommand):
         self.handle_shutdown_thread = threading.Thread(target=self.handle_shutdown)
         self.handle_shutdown_thread.start()
 
+        self.shutdown_event = threading.Event()
+
         self.tournament_engine_thread = threading.Thread(target=self.tournament_engine)
         self.tournament_engine_thread.start()
 
@@ -45,8 +47,6 @@ class Command(BaseCommand):
 
         self.worker_thread = threading.Thread(target=self.worker_routine)
         self.worker_thread.start()
-
-        self.shutdown_event = threading.Event()
 
     def flush(self):
         while True and not self.continue_flush:
