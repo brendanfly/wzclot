@@ -99,7 +99,7 @@ class Tasks(commands.Cog, name="tasks"):
                 channel = self.bot.get_channel(cl.channelid)
                 if hasattr(self.bot, 'uptime') and channel:
                     bet_odds = await self.bot.bridge.getBetGameOddsOrderByCreatedTime(sent_finished_notification=False, game__is_finished=True)
-                    print("Found {} finished bet game odds".format(bet_odds.count()))
+                    print("Found {} finished bet game odds".format(len(bet_odds)))
                     for bo in bet_odds:
                         if bo.game.winning_team:
                             if not await self.bot.bridge.does_game_pass_filter(cl, bo.game):
@@ -247,10 +247,10 @@ class Tasks(commands.Cog, name="tasks"):
                     for game in games:
                         # process the game
                         # query the game status
-                        child_tournament.process_game(game)
+                        await self.bot.bridge.process_game(child_tournament, game)
                     # in case tournaments get stalled for some reason
                     # for it to process new games based on current tournament data
-                    child_tournament.process_new_games()
+                    await self.bot.bridge.process_new_games(child_tournament)
                     await self.handle_rtl_tasks()
                 except Exception as e:
                     await self.bot.bridge.log_exception()

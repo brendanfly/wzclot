@@ -56,7 +56,7 @@ class CLOTBridge:
 
     @database_sync_to_async
     def getTournamentTeams(self, **kwargs):
-        return list(TournamentTeam.objects.filter(**kwargs))
+        return list(TournamentTeam.objects.filter(**kwargs).select_related('clan_league_clan'))
 
     @database_sync_to_async
     def getTournamentTeamsOrderByRatingWins(self, **kwargs):
