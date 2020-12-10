@@ -254,7 +254,6 @@ class Command(BaseCommand):
                     games = TournamentGame.objects.filter(tournament=child_tournament, is_finished=False)
                     games_in_progress = games.count()
                     child_tournament.cache_data()
-                    log("[CACHE]: Finished processing games for tournament {}".format(tournament.name), LogLevel.engine)
                 except Exception as e:
                     log_exception()
                 finally:
@@ -262,6 +261,7 @@ class Command(BaseCommand):
 
                 # if the tournament is finished and there are no more outstanding games that are in progress
                 # the cache is no longer dirty and we should stop looking at it
+                log("[CACHE]: {} has {} games in progress, is_finished: {}".format(games_in_progress, child_tournament.is_finished), LogLevel.engine)
                 if child_tournament.is_finished and games_in_progress == 0:
                     log("[CACHE]: Child tournament {} cache is no longer dirty.".format(tournament.name), LogLevel.engine)
                     child_tournament.is_cache_dirty = False
@@ -280,7 +280,6 @@ class Command(BaseCommand):
             # if we get this far, we actually need to check the tournament
             child_tournament = find_tournament_by_id(tournament.id, True)
             if child_tournament and child_tournament.should_process_in_engine():
-                log("[PROCESS GAMES]: Checking games for tournament: {}, shutdown: {}".format(tournament.name, self.shutdown), LogLevel.engine)
                 try:
                     games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
                     games_in_progress = games.count()
@@ -291,21 +290,16 @@ class Command(BaseCommand):
                         child_tournament.process_game(game)
                     # in case tournaments get stalled for some reason
                     # for it to process new games based on current tournament data
-                    log("[PROCESS GAMES]: Processing new games for tournament {}".format(tournament.name), LogLevel.engine)
                     child_tournament.process_new_games()
 
                     if hasattr(child_tournament, 'clan_league_template') and not child_tournament.multi_day:
                         child_tournament.multi_day = True
                         child_tournament.save()
-
-                    # after we process games we always cache the latest data for quick reads
-                    log("[PROCESS GAMES]: Finished processing games for tournament {}".format(tournament.name), LogLevel.engine)
                 except Exception as e:
                     log_exception()
                 finally:
                     child_tournament.update_in_progress = False
                     child_tournament.save()
-                    log("[PROCESS GAMES]: Child tournament {} update done.".format(tournament.name), LogLevel.engine)
 
                 # if we are finished, and there are no outstanding games in progress...we are deemed "all_games_completed"
                 if child_tournament.is_finished and games_in_progress == 0:
@@ -355,7 +349,7 @@ class Command(BaseCommand):
 
     def tournament_engine(self):
         while not self.shutdown:
-            print("[Tournament Engine Sleeping...]")
+            print("[Tournament Engine Sleeping for {} seconds]".format(get_run_time()*10))
             self.shutdown_event.wait(timeout=get_run_time()*10)
             try:
                 engine = Engine.objects.all()
