@@ -11,6 +11,7 @@ from wlct.cogs.help import get_help_embed
 from django.utils import timezone
 import datetime
 from django.core.paginator import Paginator
+from channels.db import database_sync_to_async
 
 # Handles any command errors
 def handle_command_exception(ctx):
@@ -23,6 +24,7 @@ def handle_command_exception(ctx):
 def embed_list_special_delimiter():
     return "$%"
 
+@database_sync_to_async
 def is_tournament_creator(discord_id, tournament):
     if is_clotadmin(discord_id):
         return True
@@ -33,6 +35,7 @@ def is_tournament_creator(discord_id, tournament):
     else:
         return False
 
+@database_sync_to_async
 def has_tournament_admin_access(discord_id, tournament):
     if has_admin_access(discord_id):
         return True

@@ -219,7 +219,7 @@ class Clot(commands.Cog, name="clot"):
                     await ctx.send("MTC with id {} is invalid. Please enter a valid MTC league id.".format(22))
             elif cmd == "rtl":
                 rtl = await self.bot.bridge.getRealTimeLadders(id=109)[0]
-                if not has_tournament_admin_access(ctx.message.author.id, rtl):
+                if not await has_tournament_admin_access(ctx.message.author.id, rtl):
                     await ctx.send("Only RTL admins can use this command.")
                     return
                 if option == "-p":
@@ -247,7 +247,7 @@ class Clot(commands.Cog, name="clot"):
                 if option.isnumeric():
                     # option is the tournament id to run caching on
                     tournament = await self.bot.bridge.findTournamentById(int(option), True)
-                    if not has_tournament_admin_access(ctx.message.author.id, tournament):
+                    if not await has_tournament_admin_access(ctx.message.author.id, tournament):
                         await ctx.send("Only tournament admins can use this command.")
                         return
                     if tournament:
@@ -262,7 +262,7 @@ class Clot(commands.Cog, name="clot"):
                     await ctx.send("Please enter a valid tournament id")
                     return
                 tournament = await self.bot.bridge.findTournamentById(int(option), True)
-                if not has_tournament_admin_access(ctx.message.author.id, tournament):
+                if not await has_tournament_admin_access(ctx.message.author.id, tournament):
                     await ctx.send("Only tournament admins can use this command.")
                     return
                 if tournament:
@@ -504,7 +504,7 @@ class Clot(commands.Cog, name="clot"):
             if arg == "invalid_cmd":
                 # list the current links for this channel
                 links = "__**Tournaments Linked to this Channel**__\n"
-                discord_channel_link = await self.bot.bridge.getDiscordChannelTournamentLinks(channelid=ctx.message.channel.id)
+                discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(channelid=ctx.message.channel.id)
                 if discord_channel_link.count() == 0:
                     links += "There are currently no links."
                 else:
@@ -561,7 +561,7 @@ class Clot(commands.Cog, name="clot"):
                         # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
                         # already a tournament hooked up to this channel. We don't even check, just add this tournament
                         # as a link to this channel
-                        discord_channel_link = await self.bot.bridge.getDiscordChannelTournamentLinks(tournament=tournament,
+                        discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(tournament=tournament,
                                                                                            channelid=ctx.message.channel.id)
                         if discord_channel_link:
                             await ctx.send("You've already linked this channel to tournament: {}".format(tournament.name))
@@ -571,7 +571,7 @@ class Clot(commands.Cog, name="clot"):
                                                                             channelid=ctx.message.channel.id)
                         total_successfully_updated += 1
                     elif arg == "-r":
-                        discord_channel_link = await self.bot.bridge.getDiscordChannelTournamentLinks(tournament=tournament,
+                        discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(tournament=tournament,
                                                                                            channelid=ctx.message.channel.id)
                         if discord_channel_link:
                             discord_channel_link = discord_channel_link[0]
@@ -621,8 +621,8 @@ class Clot(commands.Cog, name="clot"):
             if arg == "invalid_cmd":
                 # list the current links for this channel
                 links = "__**Tournaments Linked to this Channel**__\n"
-                discord_channel_link = await self.bot.bridge.getDiscordChannelTournamentLinks(channelid=ctx.message.channel.id)
-                if discord_channel_link.count() == 0:
+                discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(channelid=ctx.message.channel.id)
+                if len(discord_channel_link) == 0:
                     links += "There are currently no links."
                 else:
                     for link in discord_channel_link:
@@ -667,7 +667,7 @@ class Clot(commands.Cog, name="clot"):
                         # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
                         # already a tournament hooked up to this channel. We don't even check, just add this tournament
                         # as a link to this channel
-                        discord_channel_link = await self.bot.bridge.getDiscordChannelTournamentLinks(tournament=tournament, channelid=ctx.message.channel.id)
+                        discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(tournament=tournament, channelid=ctx.message.channel.id)
                         if len(discord_channel_link):
                             await ctx.send("You've already linked this channel to tournament: {}".format(tournament.name))
                             return
@@ -675,7 +675,7 @@ class Clot(commands.Cog, name="clot"):
                         await ctx.send("You've linked this channel to tournament: {}. Game logs will now show-up here in real-time.".format(tournament.name))
                     elif arg == "-r":
                         total_filters_removed = 0
-                        discord_channel_link = await self.bot.bridge.getDiscordChannelTournamentLinks(tournament=tournament, channelid=ctx.message.channel.id)
+                        discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(tournament=tournament, channelid=ctx.message.channel.id)
                         if discord_channel_link:
                             discord_channel_link = discord_channel_link[0]
                             clan_filters = await self.bot.bridge.getDiscordChannelClanFilters(link=discord_channel_link)
@@ -711,7 +711,7 @@ class Clot(commands.Cog, name="clot"):
                 await self.bot.bridge.createDiscordUser(memberid=ctx.message.author.id)
 
             # Get all of the channel links
-            discord_channel_links = await self.bot.bridge.getDiscordChannelTournamentLinks(channelid=ctx.message.channel.id)
+            discord_channel_links = await self.bot.bridge.getChannelTournamentLinks(channelid=ctx.message.channel.id)
             if not len(discord_channel_links):
                 await ctx.send("No links were found for this channel. Use ``bb!help linkt`` to see how to link.")
                 return
