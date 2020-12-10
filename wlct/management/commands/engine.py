@@ -261,11 +261,16 @@ class Command(BaseCommand):
 
                 # if the tournament is finished and there are no more outstanding games that are in progress
                 # the cache is no longer dirty and we should stop looking at it
-                log("[CACHE]: {} has {} games in progress, is_finished: {}".format(games_in_progress, child_tournament.is_finished), LogLevel.engine)
+                log("[CACHE]: {} has {} games in progress, is_finished: {}".format(child_tournament.name, games_in_progress, child_tournament.is_finished), LogLevel.engine)
                 if child_tournament.is_finished and games_in_progress == 0:
                     log("[CACHE]: Child tournament {} cache is no longer dirty.".format(tournament.name), LogLevel.engine)
                     child_tournament.is_cache_dirty = False
                     child_tournament.save()
+                elif games_in_progress > 0:
+                    child_tournament.is_cache_dirty = True
+                    child_tournament.save()
+                    # cache is not dirty...let's get this on the next time around
+
 
             gc.collect()
 
