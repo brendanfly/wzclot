@@ -48,7 +48,7 @@ class CLOTBridge:
 
     @database_sync_to_async
     def getTournamentPlayers(self, **kwargs):
-        return list(TournamentPlayer.objects.filter(**kwargs))
+        return list(TournamentPlayer.objects.filter(**kwargs).select_related('player'))
 
     @database_sync_to_async
     def getTournamentGameEntries(self, **kwargs):
@@ -206,6 +206,18 @@ class CLOTBridge:
         return odds
 
     @database_sync_to_async
+    def get_initial_bet_card(self, cb, bo, emb):
+        return cb.get_initial_bet_card(bo, emb)
+
+    @database_sync_to_async
+    def get_bet_results_card(self, cb, bo, emb):
+        return cb.get_bet_results_card(bo, emb)
+
+    '''
+    Creation methods
+    '''
+
+    @database_sync_to_async
     def createChannelClotbookLink(self, **kwargs):
         link = DiscordChannelCLOTBookLink(**kwargs)
         link.save()
@@ -356,6 +368,10 @@ class CLOTBridge:
     @database_sync_to_async
     def get_team_data_no_clan_player_list(self, data):
         return get_team_data_no_clan_player_list(data)
+
+    @database_sync_to_async
+    def does_game_pass_filter(self, cl, game):
+        return cl.does_game_pass_filter(game)
 
 '''
 Helper class to act as the ladder with a reference to the real ladder in order to make the DB operations async

@@ -90,7 +90,7 @@ class Tasks(commands.Cog, name="tasks"):
                             odds_created_sent.append(bo)
                             continue
                         emb = self.bot.get_default_embed()
-                        emb = cb.get_initial_bet_card(bo, emb)
+                        emb = await self.bot.bridge.get_initial_bet_card(cb, bo, emb)
                         await channel.send(embed=emb)
                         odds_created_sent.append(bo)
 
@@ -106,7 +106,7 @@ class Tasks(commands.Cog, name="tasks"):
                                 odds_finished_sent.append(bo)
                                 continue
                             emb = self.bot.get_default_embed()
-                            emb = cb.get_bet_results_card(bo, emb)
+                            emb = await self.bot.bridge.get_bet_results_card(cb, bo, emb)
                             if emb:
                                 await channel.send(embed=emb)
                             odds_finished_sent.append(bo)
@@ -244,7 +244,7 @@ class Tasks(commands.Cog, name="tasks"):
                 try:
                     await self.bot.bridge.updateRealTimeLadderUpdateInProgress(child_tournament, True)
                     games = await self.bot.bridge.getGames(is_finished=False, tournament=tournament)
-                    for game in games.iterator():
+                    for game in games:
                         # process the game
                         # query the game status
                         child_tournament.process_game(game)
