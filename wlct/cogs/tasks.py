@@ -86,7 +86,7 @@ class Tasks(commands.Cog, name="tasks"):
                 if hasattr(self.bot, 'uptime') and channel:
                     bet_odds = await self.bot.bridge.getBetGameOddsOrderByCreatedTime(sent_created_notification=False, initial=True)
                     for bo in bet_odds:
-                        if not cl.does_game_pass_filter(bo.game):
+                        if not await self.bot.bridge.does_game_pass_filter(cl, bo.game):
                             odds_created_sent.append(bo)
                             continue
                         emb = self.bot.get_default_embed()
@@ -102,7 +102,7 @@ class Tasks(commands.Cog, name="tasks"):
                     print("Found {} finished bet game odds".format(bet_odds.count()))
                     for bo in bet_odds:
                         if bo.game.winning_team:
-                            if not cl.does_game_pass_filter(bo.game):
+                            if not await self.bot.bridge.does_game_pass_filter(cl, bo.game):
                                 odds_finished_sent.append(bo)
                                 continue
                             emb = self.bot.get_default_embed()
@@ -140,7 +140,7 @@ class Tasks(commands.Cog, name="tasks"):
                         # we have the game, construct the log text and send it to the channel
 
                         # Check if game passes player/clan filter
-                        if not cl.does_game_pass_filter(game):
+                        if not await self.bot.bridge.does_game_pass_filter(cl, game):
                             games_sent.append(game)
                             continue
 
