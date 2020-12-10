@@ -56,7 +56,7 @@ class CLOTBridge:
 
     @database_sync_to_async
     def getTournamentTeams(self, **kwargs):
-        return list(TournamentTeam.objects.filter(**kwargs).select_related('clan_league_clan'))
+        return list(TournamentTeam.objects.filter(**kwargs).select_related('clan_league_clan__clan'))
 
     @database_sync_to_async
     def getTournamentTeamsOrderByRatingWins(self, **kwargs):
@@ -171,11 +171,11 @@ class CLOTBridge:
 
     @database_sync_to_async
     def getBetGameOdds(self, **kwargs):
-        return list(BetGameOdds.objects.filter(**kwargs).select_related('game'))
+        return list(BetGameOdds.objects.filter(**kwargs).select_related('game__winning_team'))
 
     @database_sync_to_async
     def getBetGameOddsOrderByCreatedTime(self, **kwargs):
-        return list(BetGameOdds.objects.filter(**kwargs).order_by('created_time').select_related('game'))
+        return list(BetGameOdds.objects.filter(**kwargs).order_by('created_time').select_related('game__winning_team'))
 
     @database_sync_to_async
     def getBetTeamOdds(self, **kwargs):
