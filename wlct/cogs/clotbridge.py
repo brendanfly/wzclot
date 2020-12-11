@@ -372,7 +372,7 @@ class CLOTBridge:
         return get_team_data_no_clan(team)
 
     @database_sync_to_async
-    def get_games_finished_for_teams_since(self, team, tournament, days):
+    def get_games_finished_for_team_since(self, team, tournament, days):
         return get_games_finished_for_team_since(team, tournament, days)
 
     @database_sync_to_async
