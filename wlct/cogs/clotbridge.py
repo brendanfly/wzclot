@@ -151,6 +151,10 @@ class CLOTBridge:
         return list(ClanLeagueTournament.objects.filter(**kwargs).order_by('id'))
 
     @database_sync_to_async
+    def getMonthlyTemplateRotations(self, **kwargs):
+        return list(MonthlyTemplateRotation.objects.filter(**kwargs))
+
+    @database_sync_to_async
     def findTournamentById(self, id, search_all):
         tournament = find_tournament_by_id(id, search_all)
 
@@ -439,3 +443,7 @@ class RealTimeLadderBridge:
     @database_sync_to_async
     def get_player_data(self, discord_id):
         return self.ladder.get_player_data(discord_id)
+
+    @property
+    def id(self):
+        return self.ladder.id

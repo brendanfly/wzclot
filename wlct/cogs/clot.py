@@ -908,7 +908,7 @@ class Clot(commands.Cog, name="clot"):
                 return
 
             tournament = await self.bot.bridge.getMonthlyTemplateRotations(id=int(mtc_id))
-            if tournament:
+            if len(tournament):
                 await ctx.send("Gathering Monthly Template Rotation data....")
                 tournament = tournament[0]
                 tournamentteams = await self.bot.bridge.getTournamentTeamsOrderByRatingWins(tournament=tournament.id, active=True)
