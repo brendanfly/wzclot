@@ -204,7 +204,7 @@ class Ladders(commands.Cog, name="ladders"):
         processed_channels = []
         channels = await self.bot.bridge.getChannelTournamentLinks(tournament=ladder.ladder)
         if channels and len(channels) > 0:
-            await self.bot.bridge.log_bot_msg("Found {} channels to send RTL messages to.".format(channels.count()))
+            await self.bot.bridge.log_bot_msg("Found {} channels to send RTL messages to.".format(len(channels)))
         for rtl_channel in channels:
             channel = self.bot.get_channel(rtl_channel.channelid)
             if rtl_channel.id in processed_channels:
