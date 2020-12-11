@@ -28,11 +28,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # set up git/restart handling
         self.shutdown = False
-        self.continue_flush = True
-
-        print("Creating flushing and shutdown threads...")
-        self.flush_thread = threading.Thread(target=self.flush)
-        self.flush_thread.start()
 
         self.handle_shutdown_thread = threading.Thread(target=self.handle_shutdown)
         self.handle_shutdown_thread.start()
@@ -47,12 +42,6 @@ class Command(BaseCommand):
 
         self.worker_thread = threading.Thread(target=self.worker_routine)
         self.worker_thread.start()
-
-    def flush(self):
-        while True and not self.continue_flush:
-            sys.stdout.flush()
-            sys.stderr.flush()
-            time.sleep(5)
 
     def handle_shutdown(self):
         path = os.getcwd()
@@ -79,8 +68,11 @@ class Command(BaseCommand):
 
             # wait for all worker threads to complete
             self.worker_thread.join()
+            print("Worker thread completed")
             self.tournament_engine_real_time_thread.join()
+            print("Tournament real time engine thread completed")
             self.tournament_engine_thread.join()
+            print("Tournament engine thread completed")
             sys.exit(0)
 
     def worker_routine(self):
