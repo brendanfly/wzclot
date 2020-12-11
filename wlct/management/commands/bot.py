@@ -98,7 +98,7 @@ class WZBot(commands.AutoShardedBot):
             while cog.bg_task is not None and cog.bg_task.is_running():
                 pass
 
-            coro = await self.logout()
+            coro = self.logout()
             print("Background task finished...logging out...")
             future = asyncio.run_coroutine_threadsafe(coro, asyncio.get_event_loop())
             print("Waiting for final coroutine to finish")
