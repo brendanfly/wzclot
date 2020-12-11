@@ -66,7 +66,9 @@ class Command(BaseCommand):
         if self.shutdown is True:
             print('Waiting for all jobs to finish and shutting process down...')
 
+            print("Shutdown Event: {}".format(self.shutdown_event.is_set()))
             # wait for all worker threads to complete
+            
             self.worker_thread.join()
             print("Worker thread completed")
             self.tournament_engine_real_time_thread.join()
@@ -84,6 +86,7 @@ class Command(BaseCommand):
             except Exception:
                 log_exception()
 
+            print("[WAIT - WORKER]")
             self.shutdown_event.wait(timeout=get_run_time()*20)
 
     def process_mdl_games(self):
@@ -329,6 +332,8 @@ class Command(BaseCommand):
 
     def tournament_engine_real_time(self):
         while not self.shutdown:
+            print("[WAIT - TOURNAMENT ENGINE REAL-TIME]")
+            self.shutdown_event.wait(timeout=get_run_time()/3)
             try:
                 now_run_time = timezone.now()
                 self.check_games(has_started=True, multi_day=False, all_games_completed=False)
@@ -343,12 +348,10 @@ class Command(BaseCommand):
                                                                                                       total_run_time, next_run),
                     LogLevel.engine)
                 print("RT Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time, total_run_time, next_run))
-            print("[Tournament Real-Time Engine Sleeping]")
-            self.shutdown_event.wait(timeout=get_run_time()/3)
 
     def tournament_engine(self):
         while not self.shutdown:
-            print("[Tournament Engine Sleeping for {} seconds]".format(get_run_time()*10))
+            print("[WAIT - TOURNAMENT ENGINE]")
             self.shutdown_event.wait(timeout=get_run_time()*10)
             try:
                 engine = Engine.objects.all()
