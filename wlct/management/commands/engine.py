@@ -108,6 +108,7 @@ class Command(BaseCommand):
 
         data = json.loads(content)
         for index, game_data in enumerate(data['games']):
+            print("Found {} MDL games to process".format(len(data['games'])))
             gc.collect()
             # first check to see if the game has already been processed
             game = TournamentGame.objects.filter(tournament=ladder, gameid=game_data['game_id'])
@@ -182,10 +183,14 @@ class Command(BaseCommand):
             log("Starting process team vacation: {}".format(start_time), LogLevel.engine)
             tournaments = Tournament.objects.filter(is_finished=False, has_started=True)
             for t in tournaments:
+                if self.shutdown:
+                    return
                 gc.collect()
                 t = find_tournament_by_id(t.id, True)
                 teams = TournamentTeam.objects.filter(tournament=t)
                 for team in teams:
+                    if self.shutdown:
+                        return
                     team.on_vacation = t.is_team_on_vacation(team)
                     team.save()
             end_time = datetime.datetime.utcnow()
@@ -202,6 +207,8 @@ class Command(BaseCommand):
         log("Refreshing clans", LogLevel.engine)
         links = text_soup.findAll("a")
         for link in links:
+            if self.shutdown:
+                return
             try:
                 clan_id = link.attrs["href"].split('=')[1]
                 clan_href = link.attrs["href"]
