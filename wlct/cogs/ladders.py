@@ -27,40 +27,40 @@ class Ladders(commands.Cog, name="ladders"):
         await self.bot.bridge.log_bot_msg("Command: {}  Option: {} issued for ladder {}".format(cmd, option, ladder.id))
         if cmd == "-p":
             # display current players in the ladder
-            retStr = ladder.get_current_joined()
+            retStr = await ladder.get_current_joined()
         elif cmd == "-j":
-            retStr = ladder.join_ladder(discord_id, False)
-            current_joined = ladder.get_current_joined()
+            retStr = await ladder.join_ladder(discord_id, False)
+            current_joined = await ladder.get_current_joined()
             retStr += "\n\n" + current_joined + "\n"
             await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has joined the RTL. New team count: {}".format(ladder.id, ctx.message.author.name, teams))
-            if teams != ladder.get_active_team_count():
+            if teams != await ladder.get_active_team_count():
                 await self.send_ladder_message(current_joined, ladder, False, ctx.message)
         elif cmd == "-jl":
-            retStr = ladder.join_ladder(discord_id, True) + " (You will be removed once a game is created)"
-            current_joined = ladder.get_current_joined()
+            retStr = await ladder.join_ladder(discord_id, True) + " (You will be removed once a game is created)"
+            current_joined = await ladder.get_current_joined()
             retStr += "\n\n" + current_joined + "\n"
             await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has joined the RTL for one game. New Team count: {}".format(ladder.id, ctx.message.author.name, teams))
-            if teams != ladder.get_active_team_count():
+            if teams != await ladder.get_active_team_count():
                 await self.send_ladder_message(current_joined, ladder, False, ctx.message)
         elif cmd == "-l":
-            retStr = ladder.leave_ladder(discord_id)
-            current_joined = ladder.get_current_joined()
+            retStr = await ladder.leave_ladder(discord_id)
+            current_joined = await ladder.get_current_joined()
             await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has left the RTL. New Team count: {}".format(ladder.id, ctx.message.author.name, teams))
             retStr += "\n\n" + current_joined + "\n"
-            if not ladder.get_active_team_count():
+            if not await ladder.get_active_team_count():
                 await self.send_ladder_message(current_joined, ladder, False, ctx.message)
         elif cmd == "-t":
-            retStr = ladder.get_current_templates()
+            retStr = await ladder.get_current_templates()
             do_embed = True
             emb.title = "Current Templates - Ladder {}".format(ladder.name)
             self.bot.embed_list(emb, "Templates", retStr.split(embed_list_special_delimiter()))
         elif cmd == "-r":
             if option == "invalid_option":
                 option = "1"
-            retStr = ladder.get_current_rankings(option)
+            retStr = await ladder.get_current_rankings(option)
         elif cmd == "-g":
             do_embed = True
-            retStr = ladder.get_current_games()
+            retStr = await ladder.get_current_games()
             if not retStr[0]:
                 do_embed = False
                 retStr = retStr[1]
@@ -74,24 +74,24 @@ class Ladders(commands.Cog, name="ladders"):
                     emb.add_field(name="Last 10 games", value=finished_game_data)
         elif cmd == "-v":
             if option != "invalid_option":
-                retStr = ladder.veto_template(discord_id, option, False)
+                retStr = await ladder.veto_template(discord_id, option, False)
                 await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has vetoed template with id: {}".format(ladder.id, ctx.message.author.name, option))
             else:
                 # display the users current veto
-                retStr = ladder.get_current_vetoes(discord_id)
+                retStr = await ladder.get_current_vetoes(discord_id)
         elif cmd == "-vr":
             if option != "invalid_option":
-                retStr = ladder.veto_template(discord_id, option, True)
+                retStr = await ladder.veto_template(discord_id, option, True)
                 await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has vetoed template with id: {}".format(ladder.id, ctx.message.author.name, option))
             else:
                 # display the users current veto
-                retStr = ladder.get_current_vetoes(discord_id)
+                retStr = await ladder.get_current_vetoes(discord_id)
         elif cmd == "-ta":
             if option != "invalid_option":
                 # check to make sure the author has access here
                 if await is_tournament_creator(ctx.message.author.id, ladder):
                     await self.bot.bridge.log_bot_msg("[Ladder {}]: User {} has added template with id: {}".format(ladder.id, ctx.message.author.name, option))
-                    retStr = ladder.add_template(option)
+                    retStr = await ladder.add_template(option)
                 else:
                     retStr = "Only the tournament creator can use this command."
             else:
@@ -100,7 +100,7 @@ class Ladders(commands.Cog, name="ladders"):
             if option != "invalid_option":
                 # check for access
                 if await is_tournament_creator(discord_id, ladder):
-                    retStr = ladder.remove_template(option)
+                    retStr = await ladder.remove_template(option)
                 else:
                     retStr = "Only the tournament creator can use this command."
             else:
@@ -110,7 +110,7 @@ class Ladders(commands.Cog, name="ladders"):
                 if await is_tournament_creator(discord_id, ladder):
                     if option.isnumeric():
                         vetoes = int(option)
-                        ladder.update_max_vetoes(vetoes)
+                        await ladder.update_max_vetoes(vetoes)
                         retStr = "Updated {} # of vetoes to {} per team.".format(ladder.name, vetoes)
                     else:
                         retStr = "Please enter a valid # for updating veto count"
@@ -122,7 +122,7 @@ class Ladders(commands.Cog, name="ladders"):
             # me data returns a tuple of information
             # first is what rank/position you are
             # second is your last 10 games
-            me_data = ladder.get_player_data(discord_id)
+            me_data = await ladder.get_player_data(discord_id)
             if me_data[0]:  # success
                 retStr = me_data[1]
                 emb.title = "{} Ladder Stats".format(ladder.name)

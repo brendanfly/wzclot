@@ -447,3 +447,7 @@ class RealTimeLadderBridge:
     @property
     def id(self):
         return self.ladder.id
+
+    @property
+    def name(self):
+        return self.ladder.name

@@ -2502,13 +2502,19 @@ class RoundRobinTournament(Tournament):
         log = '<div style="padding-top:25px;">'.format(self.id)
         log += '<table class="table table-bordered table-condensed clot_table"><tr><td>{}</td>'.format(self.name)
         for team in teamsRow:
-            log += '<td>{}</td>'.format(get_team_data(team))
+            if team.clan_league_clan and team.clan_league_clan.clan:
+                log += '<td data-clan="{}">{}</td>'.format(team.clan_league_clan.clan.name, get_team_data(team))
+            else:
+                log += '<td>{}</td>'.format(get_team_data(team))
         log += '</tr>'
         teams_left_log = ""
         for team_left in teamsCol:
             teams_left_log += "TeamLeft: {}".format(get_team_data(team_left))
             log += '<tr>'
-            log += '<td>{}</td>'.format(get_team_data(team_left))
+            if team_left.clan_league_clan and team_left.clan_league_clan.clan:
+                log += '<td data-clan="{}">{}</td>'.format(team_left.clan_league_clan.clan.name, get_team_data(team_left))
+            else:
+                log += '<td>{}</td>'.format(get_team_data(team_left))
             for team_top in teamsRow:
                 teams_left_log += "TeamTop: {}".format(get_team_data(team_top))
                 bg_color = ""
@@ -3643,7 +3649,7 @@ class MonthlyTemplateRotation(Tournament):
                     if 'id' in data:
                         token = data['id']
                         player = TournamentPlayer.objects.filter(player__token=token)
-                        if player and player.team.id == team_id:
+                        if player and player[0].team.id == team_id:
                             # did we boot this past week?
                             if player[0].team.last_boot_time is not None:
                                 log_tournament("Last boot time by {} was {}".format(player[0].player.name, player[0].team.last_boot_time.replace(tzinfo=pytz.UTC)), self)
