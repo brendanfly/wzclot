@@ -102,7 +102,7 @@ class WZBot(commands.AutoShardedBot):
 
             coro = self.logout()
             print("Background task finished...logging out...")
-            future = asyncio.run_coroutine_threadsafe(coro, asyncio.get_event_loop())
+            future = asyncio.run(coro)
             print("Waiting for final coroutine to finish")
             try:
                 future.result()
