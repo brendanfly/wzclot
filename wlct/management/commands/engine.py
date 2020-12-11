@@ -312,6 +312,8 @@ class Command(BaseCommand):
         enddate = nowdate - datetime.timedelta(days=2)
 
         for log_type, value in vars(LogLevel).items():
+            if self.shutdown:
+                return
             if not log_type.startswith('__'):
                 if value == LogLevel.process_game or value == LogLevel.game or value == LogLevel.game_status:
                     games = TournamentGame.objects.filter(is_finished=True)

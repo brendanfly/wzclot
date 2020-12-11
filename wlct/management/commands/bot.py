@@ -5,6 +5,7 @@ from django.utils import timezone
 from wlct.logging import log_command_exception, log_exception, Logger, LogLevel
 import time, threading, sys, os, discord, traceback, json
 from wlct.cogs.clotbridge import CLOTBridge
+import asyncio
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -90,10 +91,23 @@ class WZBot(commands.AutoShardedBot):
                 time.sleep(10)
 
         if self.shutdown is True:
+            print("Shutting down background task")
             cog = self.get_cog("tasks")
             if cog:
                 cog.bg_task.stop()
+            while cog.bg_task is not None and cog.bg_task.is_running():
+                pass
+
+            coro = await self.logout()
+            print("Background task finished...logging out...")
+            future = asyncio.run_coroutine_threadsafe(coro, asyncio.get_event_loop())
+            print("Waiting for final coroutine to finish")
+            try:
+                future.result()
+            except:
+                pass
             sys.exit(0)
+
 
     def perf_counter(self, msg):
         if self.performance_counter:
