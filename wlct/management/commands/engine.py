@@ -68,7 +68,7 @@ class Command(BaseCommand):
 
             print("Shutdown Event: {}".format(self.shutdown_event.is_set()))
             # wait for all worker threads to complete
-            
+
             self.worker_thread.join()
             print("Worker thread completed")
             self.tournament_engine_real_time_thread.join()

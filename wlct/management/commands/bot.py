@@ -94,9 +94,11 @@ class WZBot(commands.AutoShardedBot):
             print("Shutting down background task")
             cog = self.get_cog("tasks")
             if cog:
+                print("Stopping task")
                 cog.bg_task.stop()
             while cog.bg_task is not None and cog.bg_task.is_running():
-                pass
+                print("Task is still running...")
+                time.sleep(10)
 
             coro = self.logout()
             print("Background task finished...logging out...")
