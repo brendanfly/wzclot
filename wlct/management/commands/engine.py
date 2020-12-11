@@ -81,8 +81,8 @@ class Command(BaseCommand):
         while not self.shutdown:
             try:
                 self.process_mdl_games()
-                self.process_team_vacations()
                 self.parse_and_update_clan_logo()
+                #self.process_team_vacations() # for now do not process any team vacations...that takes too long
             except Exception:
                 log_exception()
 
