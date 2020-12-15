@@ -124,6 +124,8 @@ class Clot(commands.Cog, name="clot"):
                       usage='''
                           bb!admin logs -pg <gameid> - shows last 2 ProcessGame logs for game
                           bb!admin logs -png <tournamentid> - shows last 2 ProcessNewGame logs for tournament
+                          bb!admin logs -tt <teamid> - list players a part of the tournament team
+                          bb!admin logs -debug on - turns on debug 
                           bb!admin mtc -p - shows current players on the MTC
                           bb!admin mtc -r <player_token> - removes player from MTC using wz token
                           bb!admin rtl -p - shows current players on the RTL
@@ -184,8 +186,20 @@ class Clot(commands.Cog, name="clot"):
                             await ctx.send("Unable to find team with id: {}".format(arg))
                     else:
                         await ctx.send("Please enter a valid tournament team id")
+                elif option == "-debug":
+                    if not is_clotadmin(ctx.message.author.id):
+                        await ctx.send("Only CLOT admins can use this command")
+                        return
+                    if arg == "on":
+                        self.bot.enable_debug_print = True
+                        await ctx.send("Debug print has been turned on")
+                    elif arg == "off":
+                        self.bot.enable_debug_print = False
+                        await ctx.send("Debug print has been turned off")
+                    else:
+                        await ctx.send("Please enter a valid switch (on, off)")
                 else:
-                    await ctx.send("Please enter a valid option (-pg or -png)")
+                    await ctx.send("Please enter a valid option (-pg, )")
             elif cmd == "mtc":
                 if not is_clotadmin(ctx.message.author.id):
                     await ctx.send("Only MTC admins can use this command.")

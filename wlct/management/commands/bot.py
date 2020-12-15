@@ -44,6 +44,7 @@ class WZBot(commands.AutoShardedBot):
         self.performance_counter = False
         self.running = True
         self.shutdown = False
+        self.enable_debug_print = False
 
         self.bridge = CLOTBridge()
 
@@ -71,6 +72,10 @@ class WZBot(commands.AutoShardedBot):
 
         # Outputs error message to discord for user context
         await ctx.send("An error has occurred:\n{}\nAsk -B#0292 or JustinR17#9950".format(err_msg))
+
+    def debug_print(self, msg):
+        if self.enable_debug_print:
+            print(msg)
 
     def handle_shutdown(self):
         path = os.getcwd()

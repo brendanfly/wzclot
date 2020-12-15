@@ -30,7 +30,7 @@ class Tasks(commands.Cog, name="tasks"):
             emb.set_footer(text="Bot created and maintained by -B#0292")
             for game in games:
                 data = ""
-                team1 = game.teams.split('.')[0]
+                team1 = game.teams.splhanit('.')[0]
                 team2 = game.teams.split('.')[1]
                 player1 = ladder.get_player_from_teamid(team1)
                 player2 = ladder.get_player_from_teamid(team2)
@@ -99,7 +99,7 @@ class Tasks(commands.Cog, name="tasks"):
                 channel = self.bot.get_channel(cl.channelid)
                 if hasattr(self.bot, 'uptime') and channel:
                     bet_odds = await self.bot.bridge.getBetGameOddsOrderByCreatedTime(sent_finished_notification=False, game__is_finished=True)
-                    print("Found {} finished bet game odds".format(len(bet_odds)))
+                    self.bot.debug_print("Found {} finished bet game odds".format(len(bet_odds)))
                     for bo in bet_odds:
                         if bo.game.winning_team:
                             if not await self.bot.bridge.does_game_pass_filter(cl, bo.game):
@@ -111,7 +111,7 @@ class Tasks(commands.Cog, name="tasks"):
                                 await channel.send(embed=emb)
                             odds_finished_sent.append(bo)
                         else:
-                            print("Game {} does not have a winning team, skipping".format(bo.game.gameid))
+                            self.bot.debug_print("Game {} does not have a winning team, skipping".format(bo.game.gameid))
         except Exception:
             await self.bot.bridge.log_exception()
         finally:
@@ -237,12 +237,14 @@ class Tasks(commands.Cog, name="tasks"):
                 msg = ""
 
     async def handle_rt_ladder(self):
+        self.bot.debug_print("Handling RTL Tasks")
         tournaments = await self.bot.bridge.getTournaments(has_started=True, is_finished=False)
         for tournament in tournaments:
             child_tournament = await self.bot.bridge.findTournamentById(tournament.id, True)
             if child_tournament and not child_tournament.should_process_in_engine():
                 try:
                     await self.bot.bridge.updateRealTimeLadderUpdateInProgress(child_tournament, True)
+                    self.bot.debug_print("RTL Update in progress")
                     games = await self.bot.bridge.getGames(is_finished=False, tournament=tournament)
                     for game in games:
                         # process the game
@@ -263,7 +265,7 @@ class Tasks(commands.Cog, name="tasks"):
             gc.collect()
             t = await self.bot.bridge.findTournamentById(self.bot.process_queue[i], True)
             if t:
-                print("Processing data for {}".format(t.name))
+                self.bot.debug_print("Processing data for {}".format(t.name))
                 games = await self.bot.bridge.getGames(is_finished=False, tournament=t)
                 for game in games:
                     # process the game
@@ -278,7 +280,7 @@ class Tasks(commands.Cog, name="tasks"):
             gc.collect()
             t = await self.bot.bridge.findTournamentById(self.bot.cache_queue[i], True)
             if t:
-                print("Caching data for {}".format(t.name))
+                self.bot.debug_print("Caching data for {}".format(t.name))
                 await self.bot.bridge.cache_data(t)
                 self.bot.cache_queue.pop(i)
 
@@ -320,6 +322,9 @@ class Tasks(commands.Cog, name="tasks"):
         day = (self.executions % (360*24) == 0)
         two_minute = (self.executions % 12 == 0)
 
+        self.bot.debug_print("Handling all tasks - executions: {}".format(self.executions))
+        self.bot.debug_print("Tasks to handle - 1 hour: {}, 4 hour: {}, 6 hour: {}, day: {}, 2 minute: {}".format(
+            hours, hours4, hours6, day, two_minute))
         try:
             if hours:
                 await self.handle_hours_tasks()
@@ -395,11 +400,11 @@ class Tasks(commands.Cog, name="tasks"):
                 discord_user = discord_user[0]
 
             if not discord_user.link_mention:
-                print("Sending welcome message to {}".format(member.name.encode('utf-8')))
+                self.bot.debug_print("Sending welcome message to {}".format(member.name.encode('utf-8')))
                 await member.send(embed=emb)
                 await self.bot.bridge.updateDiscordUserLinkMention(discord_user)
 
-    @tasks.loop(seconds=30.0)
+    @tasks.loop(seconds=10.0)
     async def bg_task(self):
         # runs every 10 seconds to check various things
         # are there any new games on the RTL that just got allocated?
@@ -409,6 +414,7 @@ class Tasks(commands.Cog, name="tasks"):
             await self.handle_all_tasks()
             self.last_task_run = timezone.now()
             self.executions += 1
+            self.bot.debug_print("Executions: {}".format(self.executions))
         except:
             print_exc()
             raise
