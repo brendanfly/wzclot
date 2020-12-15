@@ -127,6 +127,7 @@ class WZBot(commands.AutoShardedBot):
     async def on_disconnect(self):
         # we're going down...stop the task first
         cog = self.get_cog("tasks")
+        self.debug_print("On_Disconnect called...stopping task")
         if cog:
             cog.bg_task.stop()
 
