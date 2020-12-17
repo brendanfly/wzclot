@@ -125,11 +125,7 @@ class WZBot(commands.AutoShardedBot):
         return self.get_user(self.owner_id)
 
     async def on_disconnect(self):
-        # we're going down...stop the task first
-        cog = self.get_cog("tasks")
-        self.debug_print("On_Disconnect called...stopping task")
-        if cog:
-            cog.bg_task.stop()
+        self.bridge.log_bot_msg("[ON DISCONNECT]")
 
     async def on_message(self, msg):
         if not self.is_ready() or msg.author.bot:
@@ -154,7 +150,7 @@ class WZBot(commands.AutoShardedBot):
 
     async def on_ready(self):
         try:
-            print(f'[CONNECT] Logged in as:\n{self.user} (ID: {self.user.id})\n')
+            self.bridge.log_bot_msg(f'[CONNECT] Logged in as:\n{self.user} (ID: {self.user.id})\n')
 
             # cache all the guilds we're in when we login and the real-time-ladder channels
             for guild in self.guilds:

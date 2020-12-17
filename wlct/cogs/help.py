@@ -2,6 +2,7 @@ import discord
 
 from discord.ext import commands
 from wlct.logging import log_command_exception
+from channels.db import database_sync__to_async
 
 def setup(bot):
     bot.help_command = Help()
@@ -28,12 +29,16 @@ def get_help_embed(cog):
     emb.add_field(name="Useful Links:", value="[CLOT Website](http://wzclot.eastus.cloudapp.azure.com)", inline=False)
     return emb
 
+@database_sync_to_async
+def log_command_exception_async(msg):
+    log_command_exception(msg)
+
 async def handle_command_exception(ctx, err_msg):
     msg_channel = ctx.message.channel
     msg_info = "Channel/Server: " + msg_channel.name + "/" + msg_channel.guild.name
     msg_info += "\nUser: " + ctx.message.author.name + "#" + ctx.message.author.discriminator
     # Logs user and channel info to backend
-    log_command_exception(msg_info)
+    await log_command_exception_async(msg_info)
 
     # Outputs error message to discord for user context
     await ctx.send("An error has occurred:\n{}\nAsk -B#0292 or JustinR17#9950".format(err_msg))
