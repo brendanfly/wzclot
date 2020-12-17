@@ -2,7 +2,7 @@ import discord
 
 from discord.ext import commands
 from wlct.logging import log_command_exception
-from channels.db import database_sync__to_async
+from channels.db import database_sync_to_async
 
 def setup(bot):
     bot.help_command = Help()
