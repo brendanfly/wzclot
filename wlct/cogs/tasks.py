@@ -132,11 +132,10 @@ class Tasks(commands.Cog, name="tasks"):
         '''
         games_sent = []
         try:
-            if not hasattr(self.bot, 'uptime'):
-                return
-
             # First, grab all the finished games with no game logs sent
             games = await self.bot.bridge.getGameLogGamesAll()
+            if len(games):
+                print("Found {} games to try to send logs out...".format(len(games)))
             for game in games:
                 # We try catch in the loop here, so that we can continue on if we have sent partial logs for a game
                 try:
@@ -156,12 +155,12 @@ class Tasks(commands.Cog, name="tasks"):
                             await self.bot.bridge.deleteObj(cl)
                             continue
 
-                        if channel_link.name == "" or not channel_link.name:
+                        if cl.name or cl.name == "":
                             # no name set yet, populate it
-                            channel_link.name = "{}.{}".format(channel.guild.name, channel.name)
-                            await self.bot.bridge.saveObj(channel_link)
+                            cl.name = "{}.{}".format(channel.guild.name, channel.name)
+                            await self.bot.bridge.saveObject(cl)
 
-                        await self.both.bridge.log_bot_msg("Sending game {} log to {}.{}".format(game.gameid, channel_link.name))
+                        await self.bot.bridge.log_bot_msg("Sending game {} log to {}".format(game.gameid, cl.name))
 
                         # ok, we have the game and channel...look-up the game details and format the message
                         if not await self.bot.bridge.does_game_pass_filter(cl, game):
@@ -223,7 +222,8 @@ class Tasks(commands.Cog, name="tasks"):
                                 await self.bot.bridge.log_bot_msg("Exception: {} when sending message to server {}, channel {}".format(await self.bot.bridge.log_exception(), channel.guild.name, channel.name))
                 except Exception:
                     await self.bot.bridge.log_exception()
-            games_sent.append(game)
+                finally:
+                    games_sent.append(game)
         except Exception:
             await self.bot.bridge.log_exception()
         finally:
@@ -341,6 +341,8 @@ class Tasks(commands.Cog, name="tasks"):
             await self.bot.bridge.log_exception()
 
     async def handle_all_tasks(self):
+        if not hasattr(self.bot, 'uptime'):
+            return
         # calculate the time different here
         # determine if we need hours run or 4 hours run
         # for 1 hour, executions should be 360

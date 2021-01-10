@@ -132,8 +132,7 @@ class Clot(commands.Cog, name="clot"):
                           bb!admin rtl -r <discord_id> - removes player from RTL using Discord ID
                           bb!admin cache <tournament_id> - forcibly runs the cache on a tournament
                           bb!admin add <player_token> <tournament_id> - adds this player as an admin for the tournament
-                          bb!admin create_game <tournament_id> <round_number> <game_data> - creates a game with the game data in the specified round number
-                          bb!admin 
+                          bb!admin create_game <tournament_id> <round_number> <game_data> - creates a game with the game data in the specified round number 
                           ''',
                       category="clot")
     async def admin(self, ctx, cmd="", option="", arg="", arg2=""):
