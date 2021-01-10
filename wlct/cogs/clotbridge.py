@@ -91,8 +91,12 @@ class CLOTBridge:
         return list(TournamentGame.objects.filter(**kwargs).select_related('tournament', 'winning_team'))
 
     @database_sync_to_async
+    def getGameLogGamesForTournament(self):
+        return list(TournamentGame.objects.filter(is_finished=True, game_log_sent=False).select_releated('tournament', 'winning_team'))
+
+    @database_sync_to_async
     def getGamesForTournament(self, tournament, time_since):
-        return list(TournamentGame.objects.filter(is_finished=True, tournament=tournament, game_finished_time__gt=time_since, game_log_sent=False).select_related('tournament', 'winning_team'))
+        return list(TournamentGame.objects.filter(is_finished=True, tournament=tournament, game_log_sent=False).select_related('tournament', 'winning_team'))
 
     @database_sync_to_async
     def getGamesAll(self):
@@ -264,6 +268,10 @@ class CLOTBridge:
     '''
     Methods used to update the database as the bot performs work
     '''
+    @database_sync_to_async
+    def saveObject(self, obj):
+        obj.save()
+
     @database_sync_to_async
     def updateGameSeen(self, game):
         game.seen = True

@@ -121,28 +121,53 @@ class Tasks(commands.Cog, name="tasks"):
                 await self.bot.bridge.updateBetOddsSentFinished(odds)
 
     async def handle_game_logs(self):
-        channel_links = await self.bot.bridge.getChannelTournamentLinksAll()
+        '''
+        The logic is as follows:
+        1) Lookup all finished games that have not been checked for a log to be sent
+        2) For each game, lookup to see if there are channel tournament links for the tournament
+        3) If so, send the game log
+        4) Mark game log sent no matter what, and ignore errors when sending to a channel
+
+        Log the channel names for each tournament channel link and other useful information
+        '''
         games_sent = []
         try:
-            for cl in channel_links:
-                channel = self.bot.get_channel(cl.channelid)
-                # for each channel, see if there are any new games that have finished in the tournament that's linked
-                # only look at games that have finished times greater than when the bot started
-                game_log_text = ""
-                if hasattr(self.bot, 'uptime') and channel:
-                    time_since = self.bot.uptime-datetime.timedelta(days=3)
-                    games = await self.bot.bridge.getGamesForTournament(cl.tournament, time_since)
-                    if len(games) > 0:
-                        await self.bot.bridge.log_bot_msg("Found {} games to log in channel {}".format(len(games), channel.name))
-                    for game in games:
-                        if game.game_finished_time is None and game.winning_team or not game.winning_team:
-                            continue  # ignore games with no finished time (which might be 0 and returned in this query)
-                        # we have the game, construct the log text and send it to the channel
+            if not hasattr(self.bot, 'uptime'):
+                return
 
-                        # Check if game passes player/clan filter
-                        if not await self.bot.bridge.does_game_pass_filter(cl, game):
-                            games_sent.append(game)
+            # First, grab all the finished games with no game logs sent
+            games = await self.bot.bridge.getGameLogGamesAll()
+            for game in games:
+                # We try catch in the loop here, so that we can continue on if we have sent partial logs for a game
+                try:
+                    # Second, is there a channel tournament link for this game?
+                    if game.game_finished_time is None and game.winning_team or not game.winning_team:
+                        continue  # ignore games with no finished time (which might be 0 and returned in this query)
+
+                    channel_link = await self.bot.bridge.getChannelTournamentLinks(tournament=game.tournament.id)
+
+                    if len(channel_link) > 0:
+                        await self.bot.bridge.log_bot_msg(
+                            "Found {} channels to log game {}".format(len(channel_link), game.gameid))
+                    # Loop through all the channel links...if the channel doesn't exist for whatever reason we remove the link
+                    for cl in channel_link:
+                        channel = self.bot.get_channel(cl.channelid)
+                        if not channel:
+                            await self.bot.bridge.deleteObj(cl)
                             continue
+
+                        if channel_link.name == "" or not channel_link.name:
+                            # no name set yet, populate it
+                            channel_link.name = "{}.{}".format(channel.guild.name, channel.name)
+                            await self.bot.bridge.saveObj(channel_link)
+
+                        await self.both.bridge.log_bot_msg("Sending game {} log to {}.{}".format(game.gameid, channel_link.name))
+
+                        # ok, we have the game and channel...look-up the game details and format the message
+                        if not await self.bot.bridge.does_game_pass_filter(cl, game):
+                            continue
+
+                        game_log_text = ""
 
                         # bold the clans if any, and italicize
                         teams = game.teams.split('.')
@@ -190,16 +215,15 @@ class Tasks(commands.Cog, name="tasks"):
 
                         game_log_text += "\n<{}>".format(game.game_link)
 
-                        await self.bot.bridge.log_bot_msg("Looping through channels to log: {}, length: {}".format(game_log_text, len(game_log_text)))
                         if channel and len(game_log_text) > 0:
                             await self.bot.bridge.log_bot_msg("Sending game_log to channel: {}".format(channel.name))
                             try:
                                 await channel.send(game_log_text)
-                                games_sent.append(game)
-                                game_log_text = ""
                             except:
                                 await self.bot.bridge.log_bot_msg("Exception: {} when sending message to server {}, channel {}".format(await self.bot.bridge.log_exception(), channel.guild.name, channel.name))
-
+                except Exception:
+                    await self.bot.bridge.log_exception()
+            games_sent.append(game)
         except Exception:
             await self.bot.bridge.log_exception()
         finally:

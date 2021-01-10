@@ -26,6 +26,7 @@ class DiscordChannelTournamentLink(models.Model):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, blank=True, null=True)
     channelid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
     discord_user = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.DO_NOTHING)
+    name = models.CharField(default="", blank=True, null=True)
 
     def does_game_pass_filter(self, game):
         player_filters = DiscordChannelPlayerFilter.objects.filter(link=self)
