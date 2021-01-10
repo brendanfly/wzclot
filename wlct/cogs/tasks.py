@@ -133,7 +133,7 @@ class Tasks(commands.Cog, name="tasks"):
         games_sent = []
         try:
             # First, grab all the finished games with no game logs sent
-            games = await self.bot.bridge.getGameLogGamesAll()
+            games = await self.bot.bridge.getGameLogGamesSliced(10)
             if len(games):
                 print("Found {} games to try to send logs out...".format(len(games)))
             for game in games:
