@@ -332,6 +332,11 @@ class Tasks(commands.Cog, name="tasks"):
                     if channel:
                         await channel.send(u.update_text)
                 await self.bot.bridge.updateTournamentUpdateSent(u)
+
+            clan_league_tournaments = await self.bot.bridge.getClanLeagueTournaments(multi_day=False)
+            for t in clan_league_tournaments:
+                t.multi_day = True
+                await self.bot.bridge.saveObj(t)
         except:
             await self.bot.bridge.log_exception()
 
