@@ -91,8 +91,8 @@ class CLOTBridge:
         return list(TournamentGame.objects.filter(**kwargs).select_related('tournament', 'winning_team'))
 
     @database_sync_to_async
-    def getGameLogGamesSliced(self, num):
-        return list(TournamentGame.objects.filter(is_finished=True, game_log_sent=False).select_related('tournament', 'winning_team')[:num])
+    def getGameLogGamesSliced(self, num, time_since):
+        return list(TournamentGame.objects.filter(is_finished=True, game_log_sent=False, game_finished_time__gt=time_since).select_related('tournament', 'winning_team')[:num])
 
     @database_sync_to_async
     def getGamesForTournament(self, tournament, time_since):
