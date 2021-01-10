@@ -54,6 +54,13 @@ class DiscordChannelTournamentLink(models.Model):
                 return True
         return False
 
+    def __str__(self):
+        link_str = "Link for tournament {}".format(self.tournament.name)
+        if self.name:
+            link_str += " to {}".format(self.name)
+
+        return link_str
+
 # class to track text updates the bot will send out a single-time to channels linked to the tournament
 class DiscordTournamentUpdate(models.Model):
     update_text = models.TextField(default="", blank=True, null=True)
