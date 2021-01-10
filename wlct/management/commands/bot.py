@@ -150,7 +150,7 @@ class WZBot(commands.AutoShardedBot):
 
     async def on_ready(self):
         try:
-            self.bridge.log_bot_msg(f'[CONNECT] Logged in as:\n{self.user} (ID: {self.user.id})\n')
+            await self.bridge.log_bot_msg(f'[CONNECT] Logged in as:\n{self.user} (ID: {self.user.id})\n')
 
             # cache all the guilds we're in when we login and the real-time-ladder channels
             for guild in self.guilds:

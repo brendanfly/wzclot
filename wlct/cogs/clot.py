@@ -132,8 +132,7 @@ class Clot(commands.Cog, name="clot"):
                           bb!admin rtl -r <discord_id> - removes player from RTL using Discord ID
                           bb!admin cache <tournament_id> - forcibly runs the cache on a tournament
                           bb!admin add <player_token> <tournament_id> - adds this player as an admin for the tournament
-                          bb!admin create_game <tournament_id> <round_number> <game_data> - creates a game with the game data in the specified round number
-                          bb!admin 
+                          bb!admin create_game <tournament_id> <round_number> <game_data> - creates a game with the game data in the specified round number 
                           ''',
                       category="clot")
     async def admin(self, ctx, cmd="", option="", arg="", arg2=""):
@@ -582,7 +581,8 @@ class Clot(commands.Cog, name="clot"):
                             continue
                         await self.bot.bridge.createChannelTournamentLink(tournament=tournament,
                                                                             discord_user=discord_user,
-                                                                            channelid=ctx.message.channel.id)
+                                                                            channelid=ctx.message.channel.id,
+                                                                            name="{}.{}".format(ctx.message.channel.guild.name, ctx.message.channel.name))
                         total_successfully_updated += 1
                     elif arg == "-r":
                         discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(tournament=tournament,
@@ -685,7 +685,10 @@ class Clot(commands.Cog, name="clot"):
                         if len(discord_channel_link):
                             await ctx.send("You've already linked this channel to tournament: {}".format(tournament.name))
                             return
-                        discord_channel_link = await self.bot.bridge.createChannelTournamentLink(tournament=tournament, discord_user=discord_user, channelid=ctx.message.channel.id)
+                        discord_channel_link = await self.bot.bridge.createChannelTournamentLink(tournament=tournament,
+                                                                                                 discord_user=discord_user,
+                                                                                                 channelid=ctx.message.channel.id,
+                                                                                                 name="{}.{}".format(ctx.message.channel.guild.name, ctx.message.channel.name))
                         await ctx.send("You've linked this channel to tournament: {}. Game logs will now show-up here in real-time.".format(tournament.name))
                     elif arg == "-r":
                         total_filters_removed = 0
@@ -752,7 +755,7 @@ class Clot(commands.Cog, name="clot"):
                     message_data = ""
 
                 message_data += "{} (ID: {}) | {} (ID: {})\n".format(cf.clan.name, cf.clan.id, cf.link.tournament.name, cf.link.tournament.id)
-            
+
             # List all player filters
             message_data += "\nPlayer Filters:\n"
             for pf in player_filters:

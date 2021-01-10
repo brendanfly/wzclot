@@ -26,6 +26,7 @@ class DiscordChannelTournamentLink(models.Model):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE, blank=True, null=True)
     channelid = models.BigIntegerField(default=0, blank=True, null=True, db_index=True)
     discord_user = models.ForeignKey('DiscordUser', blank=True, null=True, on_delete=models.DO_NOTHING)
+    name = models.CharField(default="", blank=True, null=True, max_length=150)
 
     def does_game_pass_filter(self, game):
         player_filters = DiscordChannelPlayerFilter.objects.filter(link=self)
@@ -52,6 +53,13 @@ class DiscordChannelTournamentLink(models.Model):
             if player_filters_found or clan_filters_found:
                 return True
         return False
+
+    def __str__(self):
+        link_str = "Link for tournament {}".format(self.tournament.name)
+        if self.name:
+            link_str += " to {}".format(self.name)
+
+        return link_str
 
 # class to track text updates the bot will send out a single-time to channels linked to the tournament
 class DiscordTournamentUpdate(models.Model):
