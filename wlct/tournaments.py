@@ -4779,6 +4779,7 @@ class ClanLeagueTournament(RoundRobinTournament):
             return False
 
         # Rotate list to determine which player faces the bye
+        # 1st player vs last player; 2nd player vs 2nd last player; etc
         # If opponent of team_id is "-1", team_id gets bye
         team_list.append("-1")
         self.rotate_team_list(team_list, self.round_number)
