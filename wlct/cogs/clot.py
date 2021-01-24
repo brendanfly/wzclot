@@ -1,8 +1,6 @@
 import discord
 from discord.ext import commands
 from wlct.api import API
-from django.conf import settings
-from wlct.cogs.common import is_clotadmin, has_tournament_admin_access
 from wlct.cogs.common import is_clotadmin, has_tournament_admin_access
 from wlct.logging import ProcessGameLog, ProcessNewGamesLog
 from channels.db import database_sync_to_async
@@ -136,6 +134,7 @@ class Clot(commands.Cog, name="clot"):
                           bb!admin add <player_token> <tournament_id> - adds this player as an admin for the tournament
                           bb!admin create_game <tournament_id> <round_number> <game_data> - creates a game with the game data in the specified round number
                           bb!admin delete_game <game_id> - deletes a game from the clot and warzone if possible
+                          bb!admin sub <tournament_id> <new_player_id> <old_player_id> - subs the new player in place of the old player for specified tournament
                           bb!admin tournament_keys <tournament_id> - grabs tournament and team IDs for CL tournament
                           ''',
                       category="clot")
@@ -348,7 +347,7 @@ class Clot(commands.Cog, name="clot"):
                     await ctx.send("Please enter a valid tournament id")
                     return
 
-                game = TournamentGame.objects.get(gameid=option)
+                game = await self.bot.bridge.getGames(gameid=option)
                 if not game:
                     await ctx.send("Unable to find a game with id {}".format(option))
                     return
@@ -360,6 +359,33 @@ class Clot(commands.Cog, name="clot"):
                 game.delete()
                 await ctx.send("Deleted the game with ID {} on the CLOT".format(option))
                 return
+            elif cmd == "sub":
+                # option = tourney
+                # arg = new sub player id
+                # arg2 = old sub player id
+                if not is_clotadmin(ctx.message.author.id):
+                    await ctx.send("Only CLOT admins can use this command")
+                    return
+                tournament = await self.bot.bridge.findTournamentById(int(option), True)
+                new_player = await self.bot.bridge.getPlayers(id=arg)
+                old_player = await self.bot.bridge.getPlayers(id=arg2)
+
+                if not tournament:
+                    await ctx.send("Unable to find tournament with id {}".format(option))
+                    return
+                if not new_player:
+                    await ctx.send("Unable to find new player to sub in with id {}".format(arg))
+                    return
+                if not old_player:
+                    await ctx.send("Unable to find old player to sub out with id {}".format(arg2))
+                    return
+                tplayer = await self.bot.bridge.getTournamentPlayers(tournament=tournament, player=old_player)
+                if not tplayer:
+                    await ctx.send("Unable to find tournament player for tourney {} / player {}".format(option, arg2))
+                    return
+                tplayer.player = new_player
+                await self.bot.bridge.saveObject()
+                await ctx.send("Successfully subbed in {} ({}) for {} ({}) on {} ({})".format(new_player.name, new_player.id, old_player.name, old_player.id, tournament.name, tournament.id))
             elif cmd == "tournament_keys":
                 if not is_clotadmin(ctx.message.author.id):
                     await ctx.send("Only CLOT admins can use this command")
@@ -367,9 +393,9 @@ class Clot(commands.Cog, name="clot"):
                 if not option.isnumeric():
                     await ctx.send("Please enter a valid tournament id")
                     return
-                tournament = find_tournament_by_id(int(option), True)
+                tournament = await self.bot.bridge.findTournamentById(int(option), True)
                 if tournament is not None:
-                    teams = TournamentTeam.objects.filter(round_robin_tournament=tournament.id)
+                    teams = await self.bot.bridge.getTournamentTeams(round_robin_tournament=tournament.id)
                     if not teams:
                         await ctx.send("Could not find teams in tournament: {}, id: {}".format(tournament.name, tournament.id))
                         return
