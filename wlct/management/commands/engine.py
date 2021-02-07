@@ -4,6 +4,7 @@ import datetime
 from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog, TournamentGameLog, TournamentGameStatusLog, ProcessGameLog, ProcessNewGamesLog, BotLog, LogManager
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
+from wlct.api import API
 from wlct.models import Clan, Engine, Player
 from wlct.tournaments import ClanLeague, ClanLeagueTournament, find_tournament_by_id, Tournament, TournamentGame, TournamentPlayer, TournamentTeam, TournamentGameEntry, TournamentRound, get_multi_day_ladder
 from django.conf import settings
@@ -210,11 +211,12 @@ class Command(BaseCommand):
             if self.shutdown:
                 return
             try:
-                clan_id = link.attrs["href"].split('=')[1]
                 clan_href = link.attrs["href"]
-                if '/Clans' and '/Icon' in clan_href:
+                if '/Clans' in clan_href and link.contents[2].strip():
                     clan_name = link.contents[2].strip()
-                    image = link.findAll("img")[0].attrs["src"]
+
+                    # Not all clans have an img
+                    image = link.findAll("img")[0].attrs["src"] if len(link.findAll("img")) else ""
                     clan_exist = Clan.objects.filter(name=clan_name)
                     if not clan_exist:
                         clan = Clan(name=clan_name, icon_link=clan_href, image_path=image)
@@ -223,6 +225,33 @@ class Command(BaseCommand):
                     elif clan_exist and clan_exist[0].image_path != image:  # updated image code path
                         clan_exist[0].image_path = image
                         clan_exist[0].save()
+            except:
+                continue
+
+    def update_player_clans(self):
+        players = Player.objects.all()
+        api = API()
+
+        for player in players:
+            if self.shutdown:
+                return
+            try:
+                # Get player info
+                p_data = api.api_validate_invite_token(player.id).json()
+
+                if "clan" in p_data:
+                    # If clan exists, check if matches clan on player object
+                    clan = Clan.objects.filter(name=p_data["clan"])
+                    if clan and clan[0] != player.clan:
+                        log("Added clan for player: {} ({})".format(player.name, player.id), LogLevel.engine)
+                        player.clan = clan
+                        player.save()
+                else:
+                    # Player is not in clan... Remove clan from player obj if exists
+                    if player.clan:
+                        log("Updated clan for player: {} ({})".format(player.name, player.id), LogLevel.engine)
+                        player.clan = None
+                        player.save()
             except:
                 continue
 
