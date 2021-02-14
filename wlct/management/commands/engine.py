@@ -4,8 +4,7 @@ import datetime
 from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog, TournamentGameLog, TournamentGameStatusLog, ProcessGameLog, ProcessNewGamesLog, BotLog, LogManager
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
-from wlct.api import API
-from wlct.models import Clan, Engine, Player
+from wlct.models import Clan, Engine, Player, update_player_clans
 from wlct.tournaments import ClanLeague, ClanLeagueTournament, find_tournament_by_id, Tournament, TournamentGame, TournamentPlayer, TournamentTeam, TournamentGameEntry, TournamentRound, get_multi_day_ladder
 from django.conf import settings
 import pytz
@@ -83,6 +82,7 @@ class Command(BaseCommand):
             try:
                 self.process_mdl_games()
                 self.parse_and_update_clan_logo()
+                self.update_all_player_clans()
                 #self.process_team_vacations() # for now do not process any team vacations...that takes too long
             except Exception:
                 log_exception()
@@ -228,32 +228,13 @@ class Command(BaseCommand):
             except:
                 continue
 
-    def update_player_clans(self):
+    def update_all_player_clans(self):
+        if self.shutdown:
+            return
+
+        log("Updating player clans for all players", LogLevel.engine)
         players = Player.objects.all()
-        api = API()
-
-        for player in players:
-            if self.shutdown:
-                return
-            try:
-                # Get player info
-                p_data = api.api_validate_invite_token(player.id).json()
-
-                if "clan" in p_data:
-                    # If clan exists, check if matches clan on player object
-                    clan = Clan.objects.filter(name=p_data["clan"])
-                    if clan and clan[0] != player.clan:
-                        log("Added clan for player: {} ({})".format(player.name, player.id), LogLevel.engine)
-                        player.clan = clan
-                        player.save()
-                else:
-                    # Player is not in clan... Remove clan from player obj if exists
-                    if player.clan:
-                        log("Updated clan for player: {} ({})".format(player.name, player.id), LogLevel.engine)
-                        player.clan = None
-                        player.save()
-            except:
-                continue
+        update_player_clans(players)
 
     def is_correct_player(self, player_token, player_team):
         try:

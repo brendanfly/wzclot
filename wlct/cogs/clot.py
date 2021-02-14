@@ -131,6 +131,7 @@ class Clot(commands.Cog, name="clot"):
                           bb!admin rtl -p - shows current players on the RTL
                           bb!admin rtl -r <discord_id> - removes player from RTL using Discord ID
                           bb!admin cache <tournament_id> - forcibly runs the cache on a tournament
+                          bb!admin update_clan <clan_id> - forcibly update player clans in specified clan
                           bb!admin add <player_token> <tournament_id> - adds this player as an admin for the tournament
                           bb!admin create_game <tournament_id> <round_number> <game_data> - creates a game with the game data in the specified round number 
                           ''',
@@ -268,6 +269,18 @@ class Clot(commands.Cog, name="clot"):
                         await ctx.send("Successfully queued up {} to be re-cached".format(tournament.name))
                     else:
                         await ctx.send("Tournament {} does not exist.")
+                else:
+                    await ctx.send("Please enter a numeric id.")
+            elif cmd == "update_clan":
+                # set clan to queue for updating player clans
+                if option.isnumeric():
+                    # option is the clan id to run updating on
+                    clan = await self.bot.bridge.getClans(id=int(option))
+                    if clan:
+                        self.bot.players_clan_queue.append(clan[0].id)
+                        await ctx.send("Successfully queued up {} to have player clans updated".format(clan[0].name))
+                    else:
+                        await ctx.send("Clan {} does not exist.".format(option))
                 else:
                     await ctx.send("Please enter a numeric id.")
             elif cmd == "process":

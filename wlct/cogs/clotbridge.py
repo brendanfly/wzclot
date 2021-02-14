@@ -372,6 +372,10 @@ class CLOTBridge:
         tournament.cache_data()
 
     @database_sync_to_async
+    def update_player_clans(self, clan):
+        clan.update_player_clans()
+
+    @database_sync_to_async
     def get_team_data(self, team):
         return get_team_data(team)
 
