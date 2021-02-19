@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib import admin
 from django.utils import timezone
+from wlct.api import API
+from wlct.logging import log, LogLevel
 
 invalid_token_string = "invalid"
 invalid_clan_string = "clan+#!invalid"
@@ -90,6 +92,10 @@ class Clan(models.Model):
     def __str__(self):
         return self.name
 
+    def update_player_clans(self):
+        players = Player.objects.filter(clan=self)
+        update_player_clans(players)
+
 class ClanAdmin(admin.ModelAdmin):
     pass
 
@@ -134,6 +140,30 @@ class Player(models.Model):
             return self.name + "({}), discord id: {}".format(self.token, self.discord_member.memberid)
         else:
             return self.name + "({})".format(self.token)
+
+def update_player_clans(players):
+    api = API()
+
+    for player in players:
+        try:
+            # Get player info
+            p_data = api.api_validate_invite_token(player.token).json()
+
+            if "clan" in p_data:
+                # If clan exists, check if matches clan on player object
+                clan = Clan.objects.filter(name=p_data["clan"])
+                if clan and clan[0] != player.clan:
+                    log("Updated clan for player: {} ({}) to {}".format(player.name, player.token, clan[0].name), LogLevel.engine)
+                    player.clan = clan[0]
+                    player.save()
+            else:
+                # Player is not in clan... Remove clan from player obj if exists
+                if player.clan:
+                    log("Updated clan for player: {} ({}) to None".format(player.name, player.token), LogLevel.engine)
+                    player.clan = None
+                    player.save()
+        except:
+            continue
 
 class PlayerAdmin(admin.ModelAdmin):
     search_fields = ['name', 'token', 'clan__name']
