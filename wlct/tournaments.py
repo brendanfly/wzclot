@@ -2465,7 +2465,7 @@ class RoundRobinTournament(Tournament):
         if len(possible_matchups) > 0 and len(games_created) != len(teams_list):
             self.handle_no_games_created()
 
-        return [games_created, game_data1, game_data2]
+        return games_created, game_data1, game_data2
 
     def handle_no_games_created(self):
         pass
@@ -2711,7 +2711,7 @@ class RoundRobinTournament(Tournament):
 
         # cache all the games we know about so far that are in progress
         team_game_data = defaultdict(list)
-        games = TournamentGame.objects.filter(tournament=self, is_finished=False)
+        games = TournamentGame.objects.filter(tournament=self)
         for game in games:
             team1 = int(game.teams.split('.')[0])
             team2 = int(game.teams.split('.')[1])
@@ -2744,15 +2744,10 @@ class RoundRobinTournament(Tournament):
 
         # Find new games for RR tourney
         # Sub-classed to allow iteration on CL tournaments only (where all teams require games in waves)
-        [games_created, game_data1, game_data2] = self.find_new_game_matchups(possible_matchups, team_game_data, teams_list, round)
+        games_created, game_data1, game_data2 = self.find_new_game_matchups(possible_matchups, team_game_data, teams_list, round)
 
         log_tournament("Teams with games created so far: {}, teams in division: {}, byes: {}".format(len(games_created), self.number_teams, self.uses_byes()), self)
-        if self.uses_byes():
-            # we always try to create the games as sometimes there will not be a fixed # due to the way byes
-            # and match-ups happen
-            self.create_games(game_data1, game_data2, round[0])
-        else:
-            self.create_games(game_data1, game_data2, round[0])
+        self.create_games(game_data1, game_data2, round[0])
 
     def get_team_table(self, allow_buttons, logged_in, request_player):
         if not self.has_started:
@@ -4773,6 +4768,10 @@ class ClanLeagueTournament(RoundRobinTournament):
             team_list.insert(1, team_list.pop())
 
     def should_player_get_bye(self, team):
+        # Need to check CL tournaments for if tourney was started before latest matchmaking algo change
+        if not self.tournament_team_order:
+            return not team.has_had_bye
+
         team_list = self.tournament_team_order.split(".")
         # If list is even, no byes required
         if len(team_list) % 2 == 0:
@@ -4802,6 +4801,58 @@ class ClanLeagueTournament(RoundRobinTournament):
                 return False
         return True
 
+    def find_new_game_matchups_OLD(self, possible_matchups, team_game_data, teams_list, round):
+        # Need to support the old matchmaking algo for old CL tournaments
+        # This func is only called if no self.tournament_team_order field exists
+        games_created = []
+        game_data1 = []
+        game_data2 = []
+
+        # For CL, we must iterate until all teams have gotten matches
+        # If valid pairing not found after 50 iterations, send warning
+        iterations = 0
+        while iterations < 50:
+            team_game_data_copy = team_game_data.copy()
+            for matchup in possible_matchups:
+                team1 = matchup[0]
+                team2 = matchup[1]
+
+                # see if both opponents have an available slot to play
+                log_tournament("Current games team {}: {}, team {}: {}".format(team1, len(team_game_data_copy[team1]), team2,
+                                                                        len(team_game_data_copy[team2])), self)
+                if len(team_game_data_copy[team1]) < self.games_at_once and len(team_game_data_copy[team2]) < self.games_at_once:
+                    # go ahead and create the new game
+                    log_tournament("Games created for team {}: {}, team {}: {}".format(team1, games_created.count(team1),
+                                                                            team2, games_created.count(team2)), self)
+
+                    if games_created.count(team1) < self.games_created_at_once() and games_created.count(team2) < self.games_created_at_once():
+                        # need to update game lists with newly created games
+                        # otherwise teams will get too many games
+                        team_game_data_copy[team1].append(team2)
+                        team_game_data_copy[team2].append(team1)
+                        games_created.append(team1)
+                        games_created.append(team2)
+                        game_data1.append(team1)
+                        game_data2.append(team2)
+                        log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
+
+            # Check if enough games were found... Redo if not
+            if len(teams_list) == len(games_created):
+                break
+            else:
+                # Not enough games were created... Redo the matchups
+                log_tournament("Retrying matchups... {} teams matched but {} teams in total".format(len(games_created), len(teams_list)), self)
+                games_created.clear()
+                game_data1.clear()
+                game_data2.clear()
+                shuffle(possible_matchups)
+                iterations += 1
+        log_tournament("Teams with matchups: {}... Teams list: {}".format(games_created, teams_list), self)
+        if iterations == 50:
+            # Was unable to find enough games for tournament... BAD
+            self.handle_no_games_created()
+        return games_created, game_data1, game_data2
+
     def find_new_game_matchups(self, possible_matchups, team_game_data, teams_list, round):
         games_created = []
         game_data1 = []
@@ -4816,8 +4867,9 @@ class ClanLeagueTournament(RoundRobinTournament):
         # https://en.wikipedia.org/wiki/Round-robin_tournament
 
         if not self.tournament_team_order:
-            log_tournament("No tournament_team_order found... Initializing value", self)
-            self.initialize_tournament_team_order()
+            # Tournaments created before the new matchmaking algo will need to follow old matchmaking algo
+            log_tournament("No tournament_team_order found for tournament {}... Running old algorithm".format(self.id), self)
+            return self.find_new_game_matchups_OLD(possible_matchups, team_game_data, teams_list, round)
         team_order = self.tournament_team_order.split(".")
 
         # If list is odd, we must add a dummy 'competitor' to act as bye
@@ -4852,7 +4904,7 @@ class ClanLeagueTournament(RoundRobinTournament):
 
         log_tournament("Team List: {}... Game list 1: {}... Game list 2: {}... Round: {}".format(team_order, game_data1, game_data2, self.round_number), self)
 
-        return [games_created, game_data1, game_data2]
+        return games_created, game_data1, game_data2
 
     def handle_no_games_created(self):
         log("Unable to find game matchups in {} [ID: {}]".format(self.name, self.id), LogLevel.critical)

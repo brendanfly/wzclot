@@ -362,7 +362,7 @@ class Command(BaseCommand):
             self.shutdown_event.wait(timeout=get_run_time()*10)
             try:
                 engine = Engine.objects.all()
-                if engine and engine.count() == 0:
+                if not engine or engine.count() == 0:
                     # create the engine object!
                     engine = Engine()
                     engine.save()
