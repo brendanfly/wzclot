@@ -4,7 +4,7 @@ import datetime
 from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog, TournamentGameLog, TournamentGameStatusLog, ProcessGameLog, ProcessNewGamesLog, BotLog, LogManager
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
-from wlct.models import Clan, Engine, Player
+from wlct.models import Clan, Engine, Player, update_player_clans
 from wlct.tournaments import ClanLeague, ClanLeagueTournament, find_tournament_by_id, Tournament, TournamentGame, TournamentPlayer, TournamentTeam, TournamentGameEntry, TournamentRound, get_multi_day_ladder
 from django.conf import settings
 import pytz
@@ -82,6 +82,7 @@ class Command(BaseCommand):
             try:
                 self.process_mdl_games()
                 self.parse_and_update_clan_logo()
+                self.update_all_player_clans()
                 #self.process_team_vacations() # for now do not process any team vacations...that takes too long
             except Exception:
                 log_exception()
@@ -210,11 +211,12 @@ class Command(BaseCommand):
             if self.shutdown:
                 return
             try:
-                clan_id = link.attrs["href"].split('=')[1]
                 clan_href = link.attrs["href"]
-                if '/Clans' and '/Icon' in clan_href:
+                if '/Clans' in clan_href and link.contents[2].strip():
                     clan_name = link.contents[2].strip()
-                    image = link.findAll("img")[0].attrs["src"]
+
+                    # Not all clans have an img
+                    image = link.findAll("img")[0].attrs["src"] if len(link.findAll("img")) else ""
                     clan_exist = Clan.objects.filter(name=clan_name)
                     if not clan_exist:
                         clan = Clan(name=clan_name, icon_link=clan_href, image_path=image)
@@ -225,6 +227,14 @@ class Command(BaseCommand):
                         clan_exist[0].save()
             except:
                 continue
+
+    def update_all_player_clans(self):
+        if self.shutdown:
+            return
+
+        log("Updating player clans for all players", LogLevel.engine)
+        players = Player.objects.all()
+        update_player_clans(players)
 
     def is_correct_player(self, player_token, player_team):
         try:

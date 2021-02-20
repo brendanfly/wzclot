@@ -310,6 +310,13 @@ class Tasks(commands.Cog, name="tasks"):
                 await self.bot.bridge.cache_data(t)
                 self.bot.cache_queue.pop(i)
 
+    async def handle_players_clan_queue(self):
+        while len(self.bot.players_clan_queue):
+            clan = await self.bot.bridge.getClans(id=self.bot.players_clan_queue[0])
+            self.bot.debug_print("Updating player clans for players in {}".format(clan[0].name))
+            await self.bot.bridge.update_player_clans(clan[0])
+            self.bot.players_clan_queue.pop(0)
+
     async def handle_critical_errors(self):
         logs = await self.bot.bridge.getLogs(level=LogLevel.critical, bot_seen=False)
         for log in logs:
@@ -398,6 +405,10 @@ class Tasks(commands.Cog, name="tasks"):
         await self.handle_cache_queue()
         end = datetime.datetime.utcnow()
         self.bot.perf_counter("Cache queue took {} total seconds".format((end-start).total_seconds()))
+        start = datetime.datetime.utcnow()
+        await self.handle_players_clan_queue()
+        end = datetime.datetime.utcnow()
+        self.bot.perf_counter("Player Clan Update Queue took {} total seconds".format((end - start).total_seconds()))
         start = datetime.datetime.utcnow()
         await self.handle_process_queue()
         end = datetime.datetime.utcnow()

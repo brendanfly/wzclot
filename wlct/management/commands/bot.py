@@ -38,6 +38,7 @@ class WZBot(commands.AutoShardedBot):
         self.game_log_channels = []
         self.last_task_run = timezone.now()
         self.cache_queue = []
+        self.players_clan_queue = []
         self.process_queue = []
         self.clot_server = None
         self.executions = 0
