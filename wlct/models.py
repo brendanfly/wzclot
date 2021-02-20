@@ -141,26 +141,36 @@ class Player(models.Model):
         else:
             return self.name + "({})".format(self.token)
 
-def update_player_clans(players):
+def update_player_clans(players, engine=None):
     api = API()
 
     for player in players:
         try:
+            if engine and engine.shutdown:
+                return
+
             # Get player info
             p_data = api.api_validate_invite_token(player.token).json()
 
+            if "name" in p_data and p_data["name"] != player.name:
+                # Update player name if it has changed
+                log("Updated name for player: {} ({}) to {}".format(player.name, player.token, p_data["name"]), LogLevel.engine)
+                player.name = p_data["name"]
+                player.save()
             if "clan" in p_data:
                 # If clan exists, check if matches clan on player object
                 clan = Clan.objects.filter(name=p_data["clan"])
                 if clan and clan[0] != player.clan:
                     log("Updated clan for player: {} ({}) to {}".format(player.name, player.token, clan[0].name), LogLevel.engine)
                     player.clan = clan[0]
+                    player.clan_text = clan[0].name
                     player.save()
             else:
                 # Player is not in clan... Remove clan from player obj if exists
                 if player.clan:
                     log("Updated clan for player: {} ({}) to None".format(player.name, player.token), LogLevel.engine)
                     player.clan = None
+                    player.clan_text = ""
                     player.save()
         except:
             continue

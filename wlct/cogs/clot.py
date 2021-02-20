@@ -382,9 +382,8 @@ class Clot(commands.Cog, name="clot"):
                     await ctx.send("Only CLOT admins can use this command")
                     return
                 tournament = await self.bot.bridge.findTournamentById(int(option), True)
-                new_player = await self.bot.bridge.getPlayers(id=arg)
-                old_player = await self.bot.bridge.getPlayers(id=arg2)
-
+                new_player = await self.bot.bridge.getPlayers(token=arg)
+                old_player = await self.bot.bridge.getPlayers(token=arg2)
                 if not tournament:
                     await ctx.send("Unable to find tournament with id {}".format(option))
                     return
@@ -394,13 +393,14 @@ class Clot(commands.Cog, name="clot"):
                 if not old_player:
                     await ctx.send("Unable to find old player to sub out with id {}".format(arg2))
                     return
-                tplayer = await self.bot.bridge.getTournamentPlayers(tournament=tournament, player=old_player)
+                tplayer = await self.bot.bridge.getTournamentPlayers(team__round_robin_tournament=tournament, player__token=old_player[0].token)
+
                 if not tplayer:
                     await ctx.send("Unable to find tournament player for tourney {} / player {}".format(option, arg2))
                     return
-                tplayer.player = new_player
-                await self.bot.bridge.saveObject()
-                await ctx.send("Successfully subbed in {} ({}) for {} ({}) on {} ({})".format(new_player.name, new_player.id, old_player.name, old_player.id, tournament.name, tournament.id))
+                tplayer[0].player = new_player[0]
+                await self.bot.bridge.saveObject(tplayer[0])
+                await ctx.send("Successfully subbed in {} ({}) for {} ({}) on {} ({})".format(new_player[0].name, new_player[0].token, old_player[0].name, old_player[0].token, tournament.name, tournament.id))
             elif cmd == "tournament_keys":
                 if not is_clotadmin(ctx.message.author.id):
                     await ctx.send("Only CLOT admins can use this command")
