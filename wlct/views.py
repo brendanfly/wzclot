@@ -1041,7 +1041,6 @@ def create_new_form_submit_view(request):
 
                 try:
                     type = request.POST['type']
-                    print(request.POST)
                     if type == "1":
                         form = GroupTournamentForm(request.POST)
                     elif type == "2":
