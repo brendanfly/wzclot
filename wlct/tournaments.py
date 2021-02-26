@@ -326,7 +326,7 @@ def find_tournaments_by_division_id(id):
     try:
         division = ClanLeagueDivision.objects.filter(pk=id)
         if division:
-            return ClanLeagueTournament.objects.filter(division=division[0])
+            return ClanLeagueTournament.objects.filter(division=division[0]).select_related("parent_tournament")
 
     except:
         # tournament wasn't found
@@ -350,19 +350,19 @@ def find_tournament_by_id(id, query_all=False):
         if child_tourney:
             return child_tourney[0]
 
-        child_tourney = ClanLeagueTournament.objects.filter(pk=id)
+        child_tourney = ClanLeagueTournament.objects.filter(pk=id).select_related("parent_tournament")
         if child_tourney:
             return child_tourney[0]
 
-        child_tourney = PromotionalRelegationLeagueTournament.objects.filter(pk=id)
+        child_tourney = PromotionalRelegationLeagueTournament.objects.filter(pk=id).select_related("parent_tournament")
         if child_tourney:
             return child_tourney[0]
 
-        child_tourney = RoundRobinRandomTeams.objects.filter(pk=id)
+        child_tourney = RoundRobinRandomTeams.objects.filter(pk=id).select_related("parent_tournament")
         if child_tourney:
             return child_tourney[0]
 
-        child_tourney = RoundRobinTournament.objects.filter(pk=id)
+        child_tourney = RoundRobinTournament.objects.filter(pk=id).select_related("parent_tournament")
         if child_tourney:
             return child_tourney[0]
 
