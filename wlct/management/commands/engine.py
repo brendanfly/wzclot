@@ -43,6 +43,9 @@ class Command(BaseCommand):
         self.worker_thread = threading.Thread(target=self.worker_routine)
         self.worker_thread.start()
 
+        self.update_player_thread = threading.Thread(target=self.update_player_profiles_routine)
+        self.update_player_thread.start()
+
     def handle_shutdown(self):
         path = os.getcwd()
         path += "\\shutdown_file.txt"
@@ -69,6 +72,8 @@ class Command(BaseCommand):
             print("Shutdown Event: {}".format(self.shutdown_event.is_set()))
             # wait for all worker threads to complete
 
+            self.update_player_thread.join()
+            print("Player update thread completed")
             self.worker_thread.join()
             print("Worker thread completed")
             self.tournament_engine_real_time_thread.join()
@@ -77,12 +82,22 @@ class Command(BaseCommand):
             print("Tournament engine thread completed")
             sys.exit(0)
 
+    def update_player_profiles_routine(self):
+        while not self.shutdown:
+            try:
+                # Updates every player's name and clan
+                self.update_all_player_clans()
+            except:
+                log_exception()
+            print("[WAIT - PLAYER PROFILE UPDATE]")
+            # Run once a day
+            self.shutdown_event.wait(timeout=get_run_time()*480)
+
     def worker_routine(self):
         while not self.shutdown:
             try:
                 self.process_mdl_games()
                 self.parse_and_update_clan_logo()
-                self.update_all_player_clans()
                 #self.process_team_vacations() # for now do not process any team vacations...that takes too long
             except Exception:
                 log_exception()
@@ -234,7 +249,7 @@ class Command(BaseCommand):
 
         log("Updating player clans for all players", LogLevel.engine)
         players = Player.objects.all()
-        update_player_clans(players)
+        update_player_clans(players, self)
 
     def is_correct_player(self, player_token, player_team):
         try:
@@ -372,7 +387,7 @@ class Command(BaseCommand):
             self.shutdown_event.wait(timeout=get_run_time()*10)
             try:
                 engine = Engine.objects.all()
-                if engine and engine.count() == 0:
+                if not engine or engine.count() == 0:
                     # create the engine object!
                     engine = Engine()
                     engine.save()

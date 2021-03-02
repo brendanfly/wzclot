@@ -382,9 +382,8 @@ class Clot(commands.Cog, name="clot"):
                     await ctx.send("Only CLOT admins can use this command")
                     return
                 tournament = await self.bot.bridge.findTournamentById(int(option), True)
-                new_player = await self.bot.bridge.getPlayers(id=arg)
-                old_player = await self.bot.bridge.getPlayers(id=arg2)
-
+                new_player = await self.bot.bridge.getPlayers(token=arg)
+                old_player = await self.bot.bridge.getPlayers(token=arg2)
                 if not tournament:
                     await ctx.send("Unable to find tournament with id {}".format(option))
                     return
@@ -394,13 +393,14 @@ class Clot(commands.Cog, name="clot"):
                 if not old_player:
                     await ctx.send("Unable to find old player to sub out with id {}".format(arg2))
                     return
-                tplayer = await self.bot.bridge.getTournamentPlayers(tournament=tournament, player=old_player)
+                tplayer = await self.bot.bridge.getTournamentPlayers(team__round_robin_tournament=tournament, player__token=old_player[0].token)
+
                 if not tplayer:
                     await ctx.send("Unable to find tournament player for tourney {} / player {}".format(option, arg2))
                     return
-                tplayer.player = new_player
-                await self.bot.bridge.saveObject()
-                await ctx.send("Successfully subbed in {} ({}) for {} ({}) on {} ({})".format(new_player.name, new_player.id, old_player.name, old_player.id, tournament.name, tournament.id))
+                tplayer[0].player = new_player[0]
+                await self.bot.bridge.saveObject(tplayer[0])
+                await ctx.send("Successfully subbed in {} ({}) for {} ({}) on {} ({})".format(new_player[0].name, new_player[0].token, old_player[0].name, old_player[0].token, tournament.name, tournament.id))
             elif cmd == "tournament_keys":
                 if not is_clotadmin(ctx.message.author.id):
                     await ctx.send("Only CLOT admins can use this command")
@@ -638,9 +638,8 @@ class Clot(commands.Cog, name="clot"):
                             player = player[0]
                             if hasattr(tournament, 'parent_tournament'):
                                 if tournament.parent_tournament:
-                                    print("Tournament Parent ID {}".format(tournament.parent_tournament_id))
-                                if player.id != tournament.created_by_id and (
-                                        tournament.parent_tournament and tournament.parent_tournament_id != 369):  # hard code this for clan league
+                                    print("Tournament Parent ID {}".format(tournament.parent_tournament.id))
+                                if player.id != tournament.created_by_id and (tournament.parent_tournament and tournament.parent_tournament.id != 490):  # hard code this for clan league
                                     await ctx.send(
                                         "The creator of the tournament is the only one who can link private tournaments: {}".format(
                                             tournament.name))
@@ -751,7 +750,7 @@ class Clot(commands.Cog, name="clot"):
                             if hasattr(tournament, 'parent_tournament'):
                                 if tournament.parent_tournament:
                                     print("Tournament Parent ID {}".format(tournament.parent_tournament_id))
-                                if player.id != tournament.created_by_id and (tournament.id != 168) and (tournament.id != 109) and (tournament.id != 167) and (tournament.parent_tournament and tournament.parent_tournament_id != 369):  # hard code this for clan league
+                                if player.id != tournament.created_by_id and (tournament.id != 168) and (tournament.id != 109) and (tournament.id != 167) and (tournament.parent_tournament and tournament.parent_tournament_id != 490):  # hard code this for clan league
                                     await ctx.send("The creator of the tournament is the only one who can link private tournaments.")
                                     return
                             else:
@@ -911,7 +910,7 @@ class Clot(commands.Cog, name="clot"):
             await ctx.send("Gathering tournament data....")
             division_data = "Clan League Divisions\n"
 
-            cl = await self.bot.bridge.getClanLeagues(id=369)
+            cl = await self.bot.bridge.getClanLeagues(id=490)
             if len(cl):
                 divisions = await self.bot.bridge.getClanLeagueDivisionsOrderByTitle(league=cl[0])
 
@@ -988,7 +987,7 @@ class Clot(commands.Cog, name="clot"):
                         if child_tournament.has_started and not child_tournament.private:
                             tournament_data += "{} (Id: {}) | <{}>\n".format(child_tournament.name, child_tournament.id, link_text)
                     elif option == "-cl":  # only in progress
-                        if child_tournament.id == 369 and child_tournament.has_started:
+                        if child_tournament.id == 490 and child_tournament.has_started:
                             cl_tourneys = await self.bot.bridge.getClanLeagueTournamentsOrderById(parent_tournament=child_tournament)
                             for cl_tourney in cl_tourneys:
                                 tournament_data += "{} (Id: {})\n".format(cl_tourney.name, cl_tourney.id)
