@@ -2711,7 +2711,7 @@ class RoundRobinTournament(Tournament):
 
         # cache all the games we know about so far that are in progress
         team_game_data = defaultdict(list)
-        games = TournamentGame.objects.filter(tournament=self)
+        games = TournamentGame.objects.filter(tournament=self, is_finished=False)
         for game in games:
             team1 = int(game.teams.split('.')[0])
             team2 = int(game.teams.split('.')[1])
