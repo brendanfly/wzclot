@@ -639,7 +639,7 @@ class Clot(commands.Cog, name="clot"):
                             if hasattr(tournament, 'parent_tournament'):
                                 if tournament.parent_tournament:
                                     print("Tournament Parent ID {}".format(tournament.parent_tournament.id))
-                                if player.id != tournament.created_by_id and (tournament.parent_tournament and tournament.parent_tournament.id != 490):  # hard code this for clan league
+                                if player.id != tournament.created_by_id and (tournament.parent_tournament and tournament.parent_tournament.id != 490 and tournament.parent_tournament.id != 369):  # hard code for current and last CL
                                     await ctx.send(
                                         "The creator of the tournament is the only one who can link private tournaments: {}".format(
                                             tournament.name))
@@ -728,11 +728,11 @@ class Clot(commands.Cog, name="clot"):
                         links += link.tournament.name + "\n"
                 await ctx.send(links)
                 return
-            elif arg != "-a" and arg != "-r":
-                await ctx.send("Please enter a valid option for the command (-a or -r).")
+            elif arg != "-a" and arg != "-r" and arg != "-rall":
+                await ctx.send("Please enter a valid option for the command (-a or -r or -rall).")
                 return
 
-            if arg2 == "invalid_id" or not arg2.isnumeric():
+            if arg != "-rall" and (arg2 == "invalid_id" or not arg2.isnumeric()):
                 await ctx.send("Please enter a valid tournament or league id to link to this channel.")
                 return
 
@@ -740,61 +740,101 @@ class Clot(commands.Cog, name="clot"):
             # validate that here
             if ctx.message.author.guild_permissions.administrator or is_clotadmin(ctx.message.author.id):
                 # user is a server admin, process to create the channel -> tournament link
-                tournament = await self.bot.bridge.findTournamentById(int(arg2), True)
-                if tournament:
-                    # if a private tournament, the person sending this command must be linked and be the creator
-                    if tournament.private:
-                        player = await self.bot.bridge.getPlayers(discord_member__memberid=ctx.message.author.id)
-                        if len(player):
-                            player = player[0]
-                            if hasattr(tournament, 'parent_tournament'):
-                                if tournament.parent_tournament:
-                                    print("Tournament Parent ID {}".format(tournament.parent_tournament_id))
-                                if player.id != tournament.created_by_id and (tournament.id != 168) and (tournament.id != 109) and (tournament.id != 167) and (tournament.parent_tournament and tournament.parent_tournament_id != 490):  # hard code this for clan league
-                                    await ctx.send("The creator of the tournament is the only one who can link private tournaments.")
-                                    return
+                if arg != "-rall":
+                    tournament = await self.bot.bridge.findTournamentById(int(arg2), True)
+                    if tournament:
+                        # if a private tournament, the person sending this command must be linked and be the creator
+                        if tournament.private:
+                            player = await self.bot.bridge.getPlayers(discord_member__memberid=ctx.message.author.id)
+                            if len(player):
+                                player = player[0]
+                                if hasattr(tournament, 'parent_tournament'):
+                                    if tournament.parent_tournament:
+                                        print("Tournament Parent ID {}".format(tournament.parent_tournament_id))
+                                    if player.id != tournament.created_by_id and (tournament.id != 168) and (tournament.id != 109) and (tournament.id != 167) and (tournament.parent_tournament and tournament.parent_tournament_id != 490 and tournament.parent_tournament.id != 369):  # hard code this for clan league
+                                        await ctx.send("The creator of the tournament is the only one who can link private tournaments.")
+                                        return
+                                else:
+                                    # no parent tournament, must be creator
+                                    if player.id != tournament.created_by_id:
+                                        await ctx.send(
+                                            "The creator of the tournament is the only one who can link private tournaments.")
+                                        return
                             else:
-                                # no parent tournament, must be creator
-                                if player.id != tournament.created_by_id:
-                                    await ctx.send(
-                                        "The creator of the tournament is the only one who can link private tournaments.")
-                                    return
-                        else:
-                            await ctx.send("Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions.")
-                            return
-                    if arg == "-a":
-                        # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
-                        # already a tournament hooked up to this channel. We don't even check, just add this tournament
-                        # as a link to this channel
-                        discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(tournament=tournament, channelid=ctx.message.channel.id)
-                        if len(discord_channel_link):
-                            await ctx.send("You've already linked this channel to tournament: {}".format(tournament.name))
-                            return
-                        discord_channel_link = await self.bot.bridge.createChannelTournamentLink(tournament=tournament,
-                                                                                                 discord_user=discord_user,
-                                                                                                 channelid=ctx.message.channel.id,
-                                                                                                 name="{}.{}".format(ctx.message.channel.guild.name, ctx.message.channel.name))
-                        await ctx.send("You've linked this channel to tournament: {}. Game logs will now show-up here in real-time.".format(tournament.name))
-                    elif arg == "-r":
-                        total_filters_removed = 0
-                        discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(tournament=tournament, channelid=ctx.message.channel.id)
-                        if discord_channel_link:
-                            discord_channel_link = discord_channel_link[0]
-                            clan_filters = await self.bot.bridge.getDiscordChannelClanFilters(link=discord_channel_link)
-                            for cf in clan_filters:
-                                total_filters_removed += 1
-                                await self.bot.bridge.deleteObject(cf)
-                            player_filters = await self.bot.bridge.getDiscordChannelPlayerFilters(link=discord_channel_link)
-                            for pf in player_filters:
-                                total_filters_removed += 1
-                                await self.bot.bridge.deleteObject(pf)
+                                await ctx.send("Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions.")
+                                return
+                        if arg == "-a":
+                            # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
+                            # already a tournament hooked up to this channel. We don't even check, just add this tournament
+                            # as a link to this channel
+                            discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(tournament=tournament, channelid=ctx.message.channel.id)
+                            if len(discord_channel_link):
+                                await ctx.send("You've already linked this channel to tournament: {}".format(tournament.name))
+                                return
+                            discord_channel_link = await self.bot.bridge.createChannelTournamentLink(tournament=tournament,
+                                                                                                     discord_user=discord_user,
+                                                                                                     channelid=ctx.message.channel.id,
+                                                                                                     name="{}.{}".format(ctx.message.channel.guild.name, ctx.message.channel.name))
+                            await ctx.send("You've linked this channel to tournament: {}. Game logs will now show-up here in real-time.".format(tournament.name))
+                        elif arg == "-r":
+                            total_filters_removed = 0
+                            discord_channel_link = await self.bot.bridge.getChannelTournamentLinks(tournament=tournament, channelid=ctx.message.channel.id)
+                            if discord_channel_link:
+                                discord_channel_link = discord_channel_link[0]
+                                clan_filters = await self.bot.bridge.getDiscordChannelClanFilters(link=discord_channel_link)
+                                for cf in clan_filters:
+                                    total_filters_removed += 1
+                                    await self.bot.bridge.deleteObject(cf)
+                                player_filters = await self.bot.bridge.getDiscordChannelPlayerFilters(link=discord_channel_link)
+                                for pf in player_filters:
+                                    total_filters_removed += 1
+                                    await self.bot.bridge.deleteObject(pf)
 
-                            await self.bot.bridge.deleteObject(discord_channel_link)
-                            await ctx.send("You've removed the link from this channel and {} filters".format(total_filters_removed))
-                        else:
-                            await ctx.send("There is no existing link for tournament {} and this channel.".format(tournament.name))
-                else:
-                    await ctx.send("Please enter a valid tournament or league id to link to this channel.")
+                                await self.bot.bridge.deleteObject(discord_channel_link)
+                                await ctx.send("You've removed the link from this channel and {} filters".format(total_filters_removed))
+                            else:
+                                await ctx.send("There is no existing link for tournament {} and this channel.".format(tournament.name))
+                    else:
+                        await ctx.send("Please enter a valid tournament or league id to link to this channel.")
+                elif arg == "-rall":
+                    # Remove all tournament links and filters
+                    total_filters_removed = 0
+                    total_links_removed = 0
+                    discord_channel_links = await self.bot.bridge.getChannelTournamentLinks(channelid=ctx.message.channel.id)
+                    for dcl in discord_channel_links:
+                        # if a private tournament, the person sending this command must be linked and be the creator
+                        tournament = dcl.tournament
+                        if tournament.private:
+                            player = await self.bot.bridge.getPlayers(discord_member__memberid=ctx.message.author.id)
+                            if len(player):
+                                player = player[0]
+                                if hasattr(tournament, 'parent_tournament'):
+                                    if tournament.parent_tournament:
+                                        print("Tournament Parent ID {}".format(tournament.parent_tournament_id))
+                                    if player.id != tournament.created_by_id and (tournament.id != 168) and (tournament.id != 109) and (tournament.id != 167) and (tournament.parent_tournament and tournament.parent_tournament_id != 490 and tournament.parent_tournament.id != 369):  # hard code this for clan league
+                                        await ctx.send("The creator of {} (ID: {}) is the only one who can link private tournaments.".format(tournament.name, tournament.id))
+                                        continue
+                                else:
+                                    # no parent tournament, must be creator
+                                    if player.id != tournament.created_by_id:
+                                        await ctx.send("The creator of {} (ID: {}) is the only one who can link private tournaments.".format(tournament.name, tournament.id))
+                                        continue
+                            else:
+                                await ctx.send("Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions.")
+                                return
+
+                        clan_filters = await self.bot.bridge.getDiscordChannelClanFilters(link=dcl)
+                        for cf in clan_filters:
+                            total_filters_removed += 1
+                            await self.bot.bridge.deleteObject(cf)
+                        player_filters = await self.bot.bridge.getDiscordChannelPlayerFilters(link=dcl)
+                        for pf in player_filters:
+                            total_filters_removed += 1
+                            await self.bot.bridge.deleteObject(pf)
+
+                        total_links_removed += 1
+                        await self.bot.bridge.deleteObject(dcl)
+                    await ctx.send("You've removed {} links and {} filters from this channel".format(total_links_removed, total_filters_removed))
             else:
                 await ctx.send("Sorry, you must be a server administrator to use this command.")
         except Exception as e:
