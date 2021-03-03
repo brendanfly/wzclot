@@ -4993,8 +4993,9 @@ class ClanLeagueTournament(RoundRobinTournament):
             number_of_rounds -= 1
 
         # now we must create date intervals for each of the games. first games start now, with the following logic
-        # Team games: 10/25/35/50/60/75/85/100 etc...
-        # 1v1 games: 7/14/21/28/35/42 etc...
+        # 3v3s: 15/35/50/70/85/105/...
+        # 2v2s: 15/30/45/60/75/90/...
+        # 1v1s: 10/25/35/50/60/75/...
 
         # today is
         today = datetime.datetime.now()
@@ -5003,21 +5004,28 @@ class ClanLeagueTournament(RoundRobinTournament):
         log_tournament("Starting tournament on: {}/{}/{}".format(today.month, today.day, today.year), self)
 
         creation_dates = "{}.{}.{};".format(today.month, today.day, today.year)
-        if self.players_per_team == 1:
-            # hook up logic so that games are created every 7 days for as many teams as there are (everyone get a bye)
+        if self.players_per_team == 2:
+            # 2v2 games -- interval is 15d
             for i in range(1, number_of_rounds):
-                next_date = today + datetime.timedelta(days=10)
+                next_date = today + datetime.timedelta(days=15)
                 creation_dates += "{}.{}.{};".format(next_date.month, next_date.day, next_date.year)
                 log_tournament("Creation dates after iteration {}: {}".format(i, creation_dates), self)
                 today = next_date
         else:
+            if self.players_per_team == 1:
+                # 1v1 games -- alternate between 10d/15d
+                interval = 10
+            else:
+                # 3v3 games -- alternate between 15d/20d
+                interval = 15
+
             for i in range(1, number_of_rounds):
                 if i % 2 == 1:
-                    # increment 10 for odd numbers
-                    next_date = today + datetime.timedelta(days=10)
+                    # increment interval for odd numbers
+                    next_date = today + datetime.timedelta(days=interval)
                 else:
-                    # increment 15
-                    next_date = today + datetime.timedelta(days=15)
+                    # increment interval + 5 for even numbers
+                    next_date = today + datetime.timedelta(days=interval+5)
                 creation_dates += "{}.{}.{};".format(next_date.month, next_date.day, next_date.year)
                 log_tournament("Creation dates after iteration {}: {}".format(i, creation_dates), self)
                 today = next_date
