@@ -995,7 +995,7 @@ class Tournament(models.Model):
                                         elif settings['DirectBoot'] is not None and settings['DirectBoot'] != 'none':
                                             turn_time_in_minutes = settings['DirectBoot']
 
-                                    processGameLog += "{} invited to game ".format(player_to_use.player.name)
+                                    processGameLog += "{} invited to game ".format(player[0].name)
 
 
                                     boot_time = last_turn_time + datetime.timedelta(minutes=turn_time_in_minutes)
@@ -1044,7 +1044,7 @@ class Tournament(models.Model):
                                             if player_to_use.team.id not in teams_lost and len(teams_won) == 0:
                                                 teams_won.append(player_to_use.team.id)
 
-                                        processGameLog += "\n{} failed to join, forcing loss and deleting game ".format(player_to_use.player.name)
+                                        processGameLog += "\n{} failed to join, forcing loss and deleting game ".format(player[0].name)
                                         game_status.update({'needsRemoval': '{}'.format(player_to_use.team.id)})  # tells the child tournament which team was booted
                                         game.finish_game_with_info(game_status)
                                         game.save()
@@ -4982,6 +4982,11 @@ class ClanLeagueTournament(RoundRobinTournament):
             return table
 
     def start(self):
+        if self.has_started:
+            # can't start twice, just log here so we can keep track of how often this happens
+            log("Tournament ID {} Name {} already started, and trying to start again!".format(self.name, self.id), LogLevel.critical)
+            return
+
         print("Starting Clan League Tournament, with template {}".format(self.clan_league_template.name))
         self.games_at_once = 100
 
