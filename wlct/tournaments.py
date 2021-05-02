@@ -995,7 +995,7 @@ class Tournament(models.Model):
                                         elif settings['DirectBoot'] is not None and settings['DirectBoot'] != 'none':
                                             turn_time_in_minutes = settings['DirectBoot']
 
-                                    processGameLog += "{} invited to game ".format(player_to_use.player.name)
+                                    processGameLog += "{} invited to game ".format(player[0].name)
 
 
                                     boot_time = last_turn_time + datetime.timedelta(minutes=turn_time_in_minutes)
@@ -1044,7 +1044,7 @@ class Tournament(models.Model):
                                             if player_to_use.team.id not in teams_lost and len(teams_won) == 0:
                                                 teams_won.append(player_to_use.team.id)
 
-                                        processGameLog += "\n{} failed to join, forcing loss and deleting game ".format(player_to_use.player.name)
+                                        processGameLog += "\n{} failed to join, forcing loss and deleting game ".format(player[0].name)
                                         game_status.update({'needsRemoval': '{}'.format(player_to_use.team.id)})  # tells the child tournament which team was booted
                                         game.finish_game_with_info(game_status)
                                         game.save()
@@ -2526,14 +2526,26 @@ class RoundRobinTournament(Tournament):
                 game = TournamentGameEntry.objects.filter(team=team_top, team_opp=team_left, tournament=self)
                 if game:
                     game = game[0]
+
+                    # strings only applicable if game is done
+                    date_str = ""
+                    player_str = ""
                     if game.game.is_finished:
+                        if game.game.players and game.game.winning_team is not None:
+                            # Make sure winning players are always first
+                            if str(game.game.winning_team.id) == game.game.teams.split(".")[0]:
+                                player_str = 'data-players="{}"'.format(game.game.players)
+                            else:
+                                player_str = 'data-players="{}"'.format("-".join(game.game.players.split("-")[::-1]))
+
+                        date_str = 'data-date="{}"'.format(game.game.game_finished_time.strftime("%Y/%m/%d %H:%M:%S"))
                         if game.game.winning_team is not None and game.game.winning_team.id == team_left.id:
                             bg_color = "#cde5b6;"  # light green - win
                         else:
                             bg_color = "#FBDFDF;"  # light red - lose
                     else:
                         bg_color = "#ffe7a3;"  # light yellow - in progress
-                    log += '<td style="background-color:{}"><a href="{}" target="_blank">Game Link</a></td>'.format(bg_color, game.game.game_link)
+                    log += '<td {} {} style="background-color:{}"><a href="{}" target="_blank">Game Link</a></td>'.format(date_str, player_str, bg_color, game.game.game_link)
                 else:
                     # empty cell
                     log += '<td></td>'
@@ -2782,8 +2794,10 @@ class RoundRobinTournament(Tournament):
             self.create_game(round, game_data)
 
     def start(self):
-        # start the round robin tournament
-        super(RoundRobinTournament, self).start()
+        if self.has_started:
+            # can't start twice, just log here so we can keep track of how often this happens
+            log("Tournament ID {} Name {} already started, and trying to start again!".format(self.name, self.id), LogLevel.critical)
+            return
 
         # There should be number_teams-1 games which is stored in self.number_rounds as well
         # based off of this start pairing up giving players no more than 2 games
@@ -2796,8 +2810,14 @@ class RoundRobinTournament(Tournament):
                                            number_games=self.number_teams)
         tournament_round.save()
 
+        # Remove empty teams... Done in parent super call but need to run before processing games
+        self.remove_partial_teams()
+
         # now just process the games, which will in turn create them
         self.process_new_games()
+
+        # start the round robin tournament
+        super(RoundRobinTournament, self).start()
 
     def should_create_game(self):
         return True
@@ -4982,6 +5002,11 @@ class ClanLeagueTournament(RoundRobinTournament):
             return table
 
     def start(self):
+        if self.has_started:
+            # can't start twice, just log here so we can keep track of how often this happens
+            log("Tournament ID {} Name {} already started, and trying to start again!".format(self.name, self.id), LogLevel.critical)
+            return
+
         print("Starting Clan League Tournament, with template {}".format(self.clan_league_template.name))
         self.games_at_once = 100
 

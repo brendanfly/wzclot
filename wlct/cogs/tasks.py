@@ -30,7 +30,7 @@ class Tasks(commands.Cog, name="tasks"):
             emb.set_footer(text="Bot created and maintained by -B#0292")
             for game in games:
                 data = ""
-                team1 = game.teams.splhanit('.')[0]
+                team1 = game.teams.split('.')[0]
                 team2 = game.teams.split('.')[1]
                 player1 = ladder.get_player_from_teamid(team1)
                 player2 = ladder.get_player_from_teamid(team2)
