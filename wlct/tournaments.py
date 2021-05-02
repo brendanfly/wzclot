@@ -2794,8 +2794,10 @@ class RoundRobinTournament(Tournament):
             self.create_game(round, game_data)
 
     def start(self):
-        # start the round robin tournament
-        super(RoundRobinTournament, self).start()
+        if self.has_started:
+            # can't start twice, just log here so we can keep track of how often this happens
+            log("Tournament ID {} Name {} already started, and trying to start again!".format(self.name, self.id), LogLevel.critical)
+            return
 
         # There should be number_teams-1 games which is stored in self.number_rounds as well
         # based off of this start pairing up giving players no more than 2 games
@@ -2808,8 +2810,14 @@ class RoundRobinTournament(Tournament):
                                            number_games=self.number_teams)
         tournament_round.save()
 
+        # Remove empty teams... Done in parent super call but need to run before processing games
+        self.remove_partial_teams()
+
         # now just process the games, which will in turn create them
         self.process_new_games()
+
+        # start the round robin tournament
+        super(RoundRobinTournament, self).start()
 
     def should_create_game(self):
         return True
