@@ -149,6 +149,11 @@ class WZBot(commands.AutoShardedBot):
     def get_default_embed(self):
         return self.get_embed(self.user)
 
+    async def send_no_winning_team_logs(self):
+        cog = self.get_cog("tasks")
+        if cog:
+            cog.handle_no_winning_team_games()
+
     async def on_ready(self):
         try:
             await self.bridge.log_bot_msg(f'[CONNECT] Logged in as:\n{self.user} (ID: {self.user.id})\n')
