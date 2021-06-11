@@ -440,6 +440,11 @@ class Clot(commands.Cog, name="clot"):
                                 await ctx.send("Added {} as a {} admin successfully.".format(player[0].name, tournament.name))
                                 return
                 await ctx.send("Please enter a valid player token and tournament id.")
+            elif cmd == "ntwl":
+                if not is_clotadmin(ctx.message.author.id):
+                    await ctx.send("Only CLOT admins can use this command.")
+                    return
+                await self.bot.send_no_winning_team_logs()
             else:
                 await ctx.send("Please enter a valid command. Use ``bb!help admin`` to see commands.")
 
