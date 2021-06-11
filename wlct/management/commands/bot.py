@@ -152,7 +152,7 @@ class WZBot(commands.AutoShardedBot):
     async def send_no_winning_team_logs(self):
         cog = self.get_cog("tasks")
         if cog:
-            cog.handle_no_winning_team_games()
+            await cog.handle_no_winning_team_games()
 
     async def on_ready(self):
         try:
