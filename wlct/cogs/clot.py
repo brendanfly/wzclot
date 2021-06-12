@@ -124,14 +124,10 @@ class Clot(commands.Cog, name="clot"):
 
     @commands.command(brief="Admin commands to manage and debug CLOT",
                       usage='''
-                          bb!admin logs -pg <gameid> - shows last 2 ProcessGame logs for game
-                          bb!admin logs -png <tournamentid> - shows last 2 ProcessNewGame logs for tournament
-                          bb!admin logs -tt <teamid> - list players a part of the tournament team
+                          bb!admin logs -pg|-png|-tt <gameid>|<tournamentid>|<teamid> - shows last 2 logs or players
                           bb!admin logs -debug on - turns on debug 
-                          bb!admin mtc -p - shows current players on the MTC
-                          bb!admin mtc -r <player_token> - removes player from MTC using wz token
-                          bb!admin rtl -p - shows current players on the RTL
-                          bb!admin rtl -r <discord_id> - removes player from RTL using Discord ID
+                          bb!admin mtc|rtl -p - shows current players on the MTC|RTL
+                          bb!admin mtc|rtl -r <player_token>|<discord_id> - removes player from MTC using wz token
                           bb!admin cache <tournament_id> - forcibly runs the cache on a tournament
                           bb!admin update_clan <clan_id> - forcibly update player clans in specified clan
                           bb!admin add <player_token> <tournament_id> - adds this player as an admin for the tournament
@@ -584,7 +580,7 @@ class Clot(commands.Cog, name="clot"):
     @staticmethod
     async def send_log_message(ctx, log_type, logs):
         if len(logs) == 1:
-            ctx.send("One {} log found: [{} UTC]:\n{}".format(log_type, logs[0].timestamp, logs[0].msg[:1900]))
+            await ctx.send("One {} log found: [{} UTC]:\n{}".format(log_type, logs[0].timestamp, logs[0].msg[:1900]))
         else:
             await ctx.send("Last two {} logs: ".format(log_type))
             for log in logs:
@@ -636,30 +632,6 @@ class Clot(commands.Cog, name="clot"):
                         "Please enter a valid division id to link to this channel. Use ``bb!divisions`` to see list of divisions.")
                     return
                 for tournament in tournaments:
-                    # if a private tournament, the person sending this command must be linked and be the creator
-                    if tournament.private:
-                        player = await self.bot.bridge.getPlayers(discord_member__memberid=ctx.message.author.id)
-                        if len(player):
-                            player = player[0]
-                            if hasattr(tournament, 'parent_tournament'):
-                                if tournament.parent_tournament:
-                                    print("Tournament Parent ID {}".format(tournament.parent_tournament.id))
-                                if player.id != tournament.created_by_id and (tournament.parent_tournament and tournament.parent_tournament.id != 490 and tournament.parent_tournament.id != 369):  # hard code for current and last CL
-                                    await ctx.send(
-                                        "The creator of the tournament is the only one who can link private tournaments: {}".format(
-                                            tournament.name))
-                                    continue
-                            else:
-                                # no parent tournament, must be creator
-                                if player.id != tournament.created_by_id:
-                                    await ctx.send(
-                                        "The creator of the tournament is the only one who can link private tournaments: {}".format(
-                                            tournament.name))
-                                    continue
-                        else:
-                            await ctx.send(
-                                "Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions.")
-                            return
                     if arg == "-a":
                         # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
                         # already a tournament hooked up to this channel. We don't even check, just add this tournament
@@ -748,26 +720,6 @@ class Clot(commands.Cog, name="clot"):
                 if arg != "-rall":
                     tournament = await self.bot.bridge.findTournamentById(int(arg2), True)
                     if tournament:
-                        # if a private tournament, the person sending this command must be linked and be the creator
-                        if tournament.private:
-                            player = await self.bot.bridge.getPlayers(discord_member__memberid=ctx.message.author.id)
-                            if len(player):
-                                player = player[0]
-                                if hasattr(tournament, 'parent_tournament'):
-                                    if tournament.parent_tournament:
-                                        print("Tournament Parent ID {}".format(tournament.parent_tournament_id))
-                                    if player.id != tournament.created_by_id and (tournament.id != 168) and (tournament.id != 109) and (tournament.id != 167) and (tournament.parent_tournament and tournament.parent_tournament_id != 490 and tournament.parent_tournament.id != 369):  # hard code this for clan league
-                                        await ctx.send("The creator of the tournament is the only one who can link private tournaments.")
-                                        return
-                                else:
-                                    # no parent tournament, must be creator
-                                    if player.id != tournament.created_by_id:
-                                        await ctx.send(
-                                            "The creator of the tournament is the only one who can link private tournaments.")
-                                        return
-                            else:
-                                await ctx.send("Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions.")
-                                return
                         if arg == "-a":
                             # there can be a many:1 relationship from tournaments to channel, so it's completely ok if there's
                             # already a tournament hooked up to this channel. We don't even check, just add this tournament
@@ -947,16 +899,16 @@ class Clot(commands.Cog, name="clot"):
 
     @commands.command(brief="Displays division data from the CLOT",
                       usage='''
-                          bb!divisions : Displays CL Divisions
+                          bb!divisions [id] : Displays CL Divisions. If [id] of league is not provided, output defaults to official CL
                           ''',
                       category="clot")
-    async def divisions(self, ctx):
+    async def divisions(self, ctx, id=490):
         try:
             await ctx.send("Gathering tournament data....")
-            division_data = "Clan League Divisions\n"
 
-            cl = await self.bot.bridge.getClanLeagues(id=490)
+            cl = await self.bot.bridge.getClanLeagues(id=id)
             if len(cl):
+                division_data = "{} Divisions\n".format(cl[0].name)
                 divisions = await self.bot.bridge.getClanLeagueDivisionsOrderByTitle(league=cl[0])
 
                 for division in divisions:
