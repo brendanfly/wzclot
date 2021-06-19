@@ -5868,14 +5868,14 @@ class RealTimeLadder(Tournament):
                 templates_list_copy.remove(entry.game.templateid)
 
         log_tournament("Template list after prune: {}".format(templates_list_copy), self)
-        while True:
-            shuffle(templates_list_copy)
-            for tid in templates_list_copy:
-                log_tournament("Picked new template out of the list: {}".format(tid), self)
-                if self.is_template_allowed(tid, team1) and self.is_template_allowed(tid, team2):
-                    log_tournament("Picked FINAL template for game: {}".format(tid), self)
-                    return tid
-
+        shuffle(templates_list_copy)
+        for tid in templates_list_copy:
+            log_tournament("Picked new template out of the list: {}".format(tid), self)
+            if self.is_template_allowed(tid, team1) and self.is_template_allowed(tid, team2):
+                log_tournament("Picked FINAL template for game: {}".format(tid), self)
+                return tid
+        # If player is not eligible on any templates, return nothing
+        return None
 
     def process_new_games(self):
         # handles creating new ladder games between players
@@ -5930,7 +5930,7 @@ class RealTimeLadder(Tournament):
 
                             game_data = "{}.{}".format(team1.id, team2.id)
 
-                            if get_games_against_since_hours(team1, team2, self, 1) == 0:
+                            if get_games_against_since_hours(team1, team2, self, 1) == 0 and tid:
                                 extra_settings = self.get_game_extra_settings()
                                 game = self.create_game_with_template_and_data(round, game_data, tid, extra_settings)
                                 if game:
