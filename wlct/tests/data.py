@@ -26,7 +26,6 @@ class PlayerDataHelper:
             # create a random player, use the iterator as the token and <Player i> as the player's name
             random_string = generate_random_token()
             while random_string in tokens:
-                print("creating new string for players")
                 random_string = generate_random_token()
             name = "Player {}".format(random_string)
             if hasattr(self, 'clan_id'):
@@ -67,7 +66,6 @@ class ClanDataHelper:
             # create a random player, use the iterator as the token and <Player i> as the player's name
             random_string = generate_random_token()
             while random_string in tokens:
-                print("creating new string for clans")
                 random_string = generate_random_token()
             name = "Clan {}".format(random_string)
 
@@ -109,7 +107,6 @@ class TournamentDataHelper:
 
         self.created_clans = {}
         self.tournament_id = 0
-        print("after tdata ctor")
 
 
     def populate(self):
@@ -156,32 +153,28 @@ class TournamentDataHelper:
                 for i in range(int(num_1v1s)):
                     template_id = generate_random_template()
                     while template_id in unique_template_ids:
-                        print("creating new string for 1v1s")
                         template_id = generate_random_template()
                     unique_template_ids.append(template_id)
 
-                    ClanLeagueTemplate(templateid=int(template_id), league=cl, players_per_team=1, name="Template {} - 1v1".format(template_id))
+                    ClanLeagueTemplate.objects.create(templateid=int(template_id), league=cl, players_per_team=1, name="Template {} - 1v1".format(template_id))
 
                 for i in range(int(num_2v2s)):
                     template_id = generate_random_template()
                     while template_id in unique_template_ids:
-                        print("creating new string for 2v2s")
                         template_id = generate_random_template()
                     unique_template_ids.append(template_id)
 
-                    ClanLeagueTemplate(templateid=int(template_id), league=cl, players_per_team=2, name="Template {} - 2v2".format(template_id))
+                    ClanLeagueTemplate.objects.create(templateid=int(template_id), league=cl, players_per_team=2, name="Template {} - 2v2".format(template_id))
 
                 for i in range(int(num_3v3s)):
                     template_id = generate_random_template()
                     while template_id in unique_template_ids:
-                        print("creating new string for 3v3s")
                         template_id = generate_random_template()
                     unique_template_ids.append(template_id)
 
-                    ClanLeagueTemplate(templateid=int(template_id), league=cl, players_per_team=3, name="Template {} - 3v3".format(template_id))
+                    ClanLeagueTemplate.objects.create(templateid=int(template_id), league=cl, players_per_team=3, name="Template {} - 3v3".format(template_id))
 
         # Return self to allow chaining
-        print("after tdata populate")
         return self
 
     # Pre: CL has been started (divisions/templates added)
@@ -192,36 +185,18 @@ class TournamentDataHelper:
             if self.tournament_id == 0 or not cl or not cl.has_started:
                 raise Exception("Tournament does not exist or was not started")
 
-            divisions = ClanLeagueDivision.objects.filter(league=cl)
-            templates = ClanLeagueTemplate.objects.filter(league=cl)
+            tournaments = ClanLeagueTournament.objects.filter(parent_tournament=cl)
 
-            for division in divisions:
+            # Keep track of index of players used... Use unique player on each slot
+            player_idx = 0
+            for tournament in tournaments:
+                # each tournament should already have teams able to be set up here (for round robin)
+                # create the empty teams in the the rr_tourney, size of teams in division as all teams will play the template
+                teams = TournamentTeam.objects.filter(round_robin_tournament=tournament)
 
-                # Keep track of index of players used... Use unique player on each slot
-                player_idx = 0
-                clans_in_div = ClanLeagueDivisionClan.objects.filter(division=division)
-                for template in templates:
-                    # create a tournament here
-                    tournament_name = "{} - {}".format(division.title, template.name)
-                    cl_tourney = ClanLeagueTournament(multi_day=True, division=division, created_by=cl.created_by,
-                                                      template=template.templateid,
-                                                      players_per_team=template.players_per_team,
-                                                      max_players=clans_in_div.count() * template.players_per_team,
-                                                      private=True, parent_tournament=self, name=tournament_name,
-                                                      teams_per_game=2, clan_league_template=template)
-                    cl_tourney.save()
-
-                    # each tournament should already have teams able to be set up here (for round robin)
-                    # create the empty teams in the the rr_tourney, size of teams in division as all teams will play the template
-                    for clan in clans_in_div:
-                        team = TournamentTeam(clan_league_clan=clan, clan_league_division=division,
-                                              players=cl_tourney.players_per_team, tournament=self,
-                                              round_robin_tournament=cl_tourney,
-                                              max_games_at_once=clans_in_div.count())
-                        team.save()
-
-                        for i in range(0, cl_tourney.players_per_team):
-                            player = Player.objects.get(id=self.created_clans[clan.id][player_idx+i])
-                            tplayer = TournamentPlayer(player=player, tournament=self, team=team)
-                            tplayer.save()
-                    player_idx += template.players_per_team
+                for team in teams:
+                    tplayers = list(TournamentPlayer.objects.filter(team=team))
+                    for i in range(len(tplayers)):
+                        tplayers[i].player = Player.objects.get(id=self.created_clans[team.clan_league_clan.clan.id][player_idx+i])
+                        tplayers[i].save()
+                player_idx += tournament.players_per_team
