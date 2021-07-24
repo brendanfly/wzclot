@@ -1110,6 +1110,11 @@ class Tournament(models.Model):
             pgl = ProcessGameLog(game=game, msg=processGameLog, level=LogLevel.process_game)
             pgl.save()
 
+    def process_all_games(self):
+        games = TournamentGame.objects.filter(is_finished=False, tournament=self)
+        for game in games.iterator():
+            self.process_game(game)
+
     def get_tournament_logs(self):
         return self.tournament_logs
 

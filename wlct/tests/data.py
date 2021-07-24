@@ -10,6 +10,9 @@ def generate_random_token():
 def generate_random_template():
     return ''.join(random.choice(string.digits) for x in range(6))
 
+def get_current_day_str():
+    today = datetime.datetime.now()
+    return "{}.{}.{}".format(today.day, today.month, today.year)
 
 # This class handles pre-populating players in the test database
 class PlayerDataHelper:
