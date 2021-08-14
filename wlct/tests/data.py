@@ -108,6 +108,10 @@ class TournamentDataHelper:
         if 'num_clans'in kwargs:
             self.num_clans = int(kwargs['num_clans'])
 
+        self.num_templates = 2
+        if 'num_templates' in kwargs:
+            self.num_templates = int(kwargs['num_templates'])
+
         self.created_clans = {}
         self.tournament_id = 0
 
@@ -153,7 +157,7 @@ class TournamentDataHelper:
 
                 # Create templates for cl division
                 unique_template_ids = []
-                for i in range(int(num_1v1s)):
+                for j in range(int(num_1v1s)):
                     template_id = generate_random_template()
                     while template_id in unique_template_ids:
                         template_id = generate_random_template()
@@ -161,7 +165,7 @@ class TournamentDataHelper:
 
                     ClanLeagueTemplate.objects.create(templateid=int(template_id), league=cl, players_per_team=1, name="Template {} - 1v1".format(template_id))
 
-                for i in range(int(num_2v2s)):
+                for j in range(int(num_2v2s)):
                     template_id = generate_random_template()
                     while template_id in unique_template_ids:
                         template_id = generate_random_template()
@@ -169,13 +173,25 @@ class TournamentDataHelper:
 
                     ClanLeagueTemplate.objects.create(templateid=int(template_id), league=cl, players_per_team=2, name="Template {} - 2v2".format(template_id))
 
-                for i in range(int(num_3v3s)):
+                for j in range(int(num_3v3s)):
                     template_id = generate_random_template()
                     while template_id in unique_template_ids:
                         template_id = generate_random_template()
                     unique_template_ids.append(template_id)
 
                     ClanLeagueTemplate.objects.create(templateid=int(template_id), league=cl, players_per_team=3, name="Template {} - 3v3".format(template_id))
+            elif self.type == TournamentType.real_time_ladder:
+                rtl = RealTimeLadder.objects.create(name=name, created_by=creator, description=description)
+                self.tournament_id = rtl.id
+
+                # Generate templates for the RTL
+                unique_template_ids = []
+                for j in range(self.num_templates):
+                    template_id = generate_random_template()
+                    while template_id in unique_template_ids:
+                        template_id = generate_random_template()
+                    unique_template_ids.append(template_id)
+                    RealTimeLadderTemplate.objects.create(template=template_id, ladder=rtl, name="Template {}".format(template_id))
 
         # Return self to allow chaining
         return self

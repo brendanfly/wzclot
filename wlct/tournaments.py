@@ -407,6 +407,7 @@ class TournamentType:
     mtc = "Monthly Template Circuit"
     round_robin = "Round Robin"
     clan_league = "Clan League"
+    real_time_ladder = "Real-Time Ladder"
 
 
 class Tournament(models.Model):
@@ -6054,11 +6055,13 @@ class RealTimeLadder(Tournament):
             elif not tplayer.team.active and not join:
                 return "You're currently not on the ladder."
         else:
-            team = TournamentTeam(tournament=self, players=self.players_per_team, active=True, max_games_at_once=1, joined_time=timezone.now(), leave_after_game=leave_after_game)
-            team.save()
+            team = TournamentTeam.objects.create(tournament=self, players=self.players_per_team, active=False, max_games_at_once=1, joined_time=timezone.now(), leave_after_game=leave_after_game)
             # Check if player can play on any templates
             if not self.can_play_any_template(player.token, team):
                 raise RealTimeLadder.LockedTemplatesException()
+
+            team.active = True
+            team.save()
             tplayer = TournamentPlayer(player=player, tournament=self, team=team)
             tplayer.save()
             self.number_players += 1
