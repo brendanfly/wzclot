@@ -407,6 +407,7 @@ class TournamentType:
     mtc = "Monthly Template Circuit"
     round_robin = "Round Robin"
     clan_league = "Clan League"
+    real_time_ladder = "Real-Time Ladder"
 
 
 class Tournament(models.Model):
@@ -5618,6 +5619,9 @@ class RealTimeLadder(Tournament):
     type = models.CharField(max_length=255, default="Real-Time Ladder")
     max_vetoes = models.IntegerField(default=1)
 
+    class LockedTemplatesException(Exception):
+        pass
+
     def get_active_team_count(self):
         num_teams = TournamentTeam.objects.filter(tournament=self, active=True).count()
         self.number_players = num_teams
@@ -5873,14 +5877,14 @@ class RealTimeLadder(Tournament):
                 templates_list_copy.remove(entry.game.templateid)
 
         log_tournament("Template list after prune: {}".format(templates_list_copy), self)
-        while True:
-            shuffle(templates_list_copy)
-            for tid in templates_list_copy:
-                log_tournament("Picked new template out of the list: {}".format(tid), self)
-                if self.is_template_allowed(tid, team1) and self.is_template_allowed(tid, team2):
-                    log_tournament("Picked FINAL template for game: {}".format(tid), self)
-                    return tid
-
+        shuffle(templates_list_copy)
+        for tid in templates_list_copy:
+            log_tournament("Picked new template out of the list: {}".format(tid), self)
+            if self.is_template_allowed(tid, team1) and self.is_template_allowed(tid, team2):
+                log_tournament("Picked FINAL template for game: {}".format(tid), self)
+                return tid
+        # If player is not eligible on any templates, return nothing
+        return None
 
     def process_new_games(self):
         # handles creating new ladder games between players
@@ -5935,7 +5939,7 @@ class RealTimeLadder(Tournament):
 
                             game_data = "{}.{}".format(team1.id, team2.id)
 
-                            if get_games_against_since_hours(team1, team2, self, 1) == 0:
+                            if get_games_against_since_hours(team1, team2, self, 1) == 0 and tid:
                                 extra_settings = self.get_game_extra_settings()
                                 game = self.create_game_with_template_and_data(round, game_data, tid, extra_settings)
                                 if game:
@@ -6022,6 +6026,9 @@ class RealTimeLadder(Tournament):
         tplayer = TournamentPlayer.objects.filter(player=player, tournament=self)
         if tplayer:
             tplayer = tplayer[0]
+            # Check if player can play on any templates
+            if not self.can_play_any_template(player.token, tplayer.team):
+                raise RealTimeLadder.LockedTemplatesException()
             # TODO for team ladder all players will have to be active
             if tplayer.team.active and join:
                 return "You're already on the ladder!"
@@ -6048,7 +6055,12 @@ class RealTimeLadder(Tournament):
             elif not tplayer.team.active and not join:
                 return "You're currently not on the ladder."
         else:
-            team = TournamentTeam(tournament=self, players=self.players_per_team, active=True, max_games_at_once=1, joined_time=timezone.now(), leave_after_game=leave_after_game)
+            team = TournamentTeam.objects.create(tournament=self, players=self.players_per_team, active=False, max_games_at_once=1, joined_time=timezone.now(), leave_after_game=leave_after_game)
+            # Check if player can play on any templates
+            if not self.can_play_any_template(player.token, team):
+                raise RealTimeLadder.LockedTemplatesException()
+
+            team.active = True
             team.save()
             tplayer = TournamentPlayer(player=player, tournament=self, team=team)
             tplayer.save()
@@ -6060,6 +6072,8 @@ class RealTimeLadder(Tournament):
         try:
             player = Player.objects.get(discord_member__memberid=discord_id)
             return self.join_leave_player(player, join, leave_after_game)
+        except RealTimeLadder.LockedTemplatesException:
+            return "You are unable to join the RTL due to not having any templates unlocked or unvetoed."
         except ObjectDoesNotExist:
             return "Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions."
 
@@ -6092,6 +6106,15 @@ class RealTimeLadder(Tournament):
                 print("{} is {} allowed to play template {}".format(player.name.encode('utf-8'), allowed_join, t.template))
                 if allowed_join:
                     return True
+        return False
+
+    def can_play_any_template(self, playerid, team):
+        # Check if current player has any valid templates (if not, prevent user from joining)
+        templates = RealTimeLadderTemplate.objects.filter(ladder=self)
+        for template in templates:
+            veto = RealTimeLadderVeto.objects.filter(team=team, ladder=self, template__template=int(template.template))
+            if not veto.exists() and is_player_allowed_join_by_token(playerid, template.template):
+                return True
         return False
 
     def is_template_allowed(self, templateid, team):

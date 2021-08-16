@@ -32,20 +32,23 @@ class Tasks(commands.Cog, name="tasks"):
                 data = ""
                 team1 = game.teams.split('.')[0]
                 team2 = game.teams.split('.')[1]
-                player1 = ladder.get_player_from_teamid(team1)
-                player2 = ladder.get_player_from_teamid(team2)
-                if player1.discord_member and player2.discord_member:
-                    data += "<@{}> vs. <@{}> [Game Link]({})\n".format(player1.discord_member.memberid, player2.discord_member.memberid,
-                                                                       game.game_link)
-                elif player1.discord_member:
-                    data += "<@{}> vs. <{}> [Game Link]({})\n".format(player1.discord_member.memberid, player2.name,
-                                                                       game.game_link)
-                elif player2.discord_member:
-                    data += "<{}> vs. <@{}> [Game Link]({})\n".format(player1.name, player2.discord_member.memberid,
-                                                                       game.game_link)
-                else:
-                    await self.bot.bridge.updateGameMentioned(game)
-                    return
+                player1 = await self.bot.bridge.getTournamentPlayers(team=int(team1))
+                player2 = await self.bot.bridge.getTournamentPlayers(team=int(team2))
+                if player1 and player2:
+                    player1 = player1[0].player
+                    player2 = player2[0].player
+                    if player1.discord_member and player2.discord_member:
+                        data += "<@{}> vs. <@{}> [Game Link]({})\n".format(player1.discord_member.memberid, player2.discord_member.memberid,
+                                                                           game.game_link)
+                    elif player1.discord_member:
+                        data += "<@{}> vs. <{}> [Game Link]({})\n".format(player1.discord_member.memberid, player2.name,
+                                                                           game.game_link)
+                    elif player2.discord_member:
+                        data += "<{}> vs. <@{}> [Game Link]({})\n".format(player1.name, player2.discord_member.memberid,
+                                                                           game.game_link)
+                    else:
+                        await self.bot.bridge.updateGameMentioned(game)
+                        return
                 emb.add_field(name="Game", value=data, inline=True)
                 if player1 and player1.discord_member:
                     user = self.bot.get_user(player1.discord_member.memberid)
