@@ -6,6 +6,7 @@ from wlct.logging import log_command_exception, log_exception, Logger, LogLevel
 import time, threading, sys, os, discord, traceback, json
 from wlct.cogs.clotbridge import CLOTBridge
 import asyncio
+import _thread
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -89,6 +90,8 @@ class WZBot(commands.AutoShardedBot):
                 f = open(path)
                 print("Found shutdown file...")
                 self.shutdown = True
+                # interrupt to call "close" and shutdown the task
+                _thread.interrupt_main()
             except IOError:
                 print("Shutdown file does not exist...sleeping and trying again")
             finally:
@@ -96,6 +99,8 @@ class WZBot(commands.AutoShardedBot):
                     f.close()
                 time.sleep(10)
 
+    async def close(self):
+        # override the close method
         if self.shutdown is True:
             print("Shutting down background task")
             cog = self.get_cog("tasks")
@@ -106,16 +111,7 @@ class WZBot(commands.AutoShardedBot):
                 print("Task is still running...")
                 time.sleep(10)
 
-            coro = self.logout()
-            print("Background task finished...logging out...")
-            future = asyncio.run(coro)
-            print("Waiting for final coroutine to finish")
-            try:
-                future.result()
-            except:
-                pass
-            sys.exit(0)
-
+            self.close()
 
     def perf_counter(self, msg):
         if self.performance_counter:
