@@ -111,7 +111,7 @@ class WZBot(commands.AutoShardedBot):
                 print("Task is still running...")
                 time.sleep(10)
 
-            self.close()
+            await self.close()
 
     def perf_counter(self, msg):
         if self.performance_counter:
