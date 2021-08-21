@@ -4616,6 +4616,7 @@ class ClanLeagueTemplate(models.Model):
     players_per_team = models.IntegerField(default=1, blank=True, null=True)
     league = models.ForeignKey('ClanLeague', on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=255, blank=True, default="", null=True)
+    game_start_interval = models.TextField(default="15", blank=True, null=True)
 
     def get_template_settings_dict(self):
         if self.template_settings is not None:
@@ -5007,32 +5008,12 @@ class ClanLeagueTournament(RoundRobinTournament):
             table += "</table>"
             return table
 
-    def start(self):
-        if self.has_started:
-            # can't start twice, just log here so we can keep track of how often this happens
-            log("Tournament ID {} Name {} already started, and trying to start again!".format(self.name, self.id), LogLevel.critical)
-            return
-
-        print("Starting Clan League Tournament, with template {}".format(self.clan_league_template.name))
-        self.games_at_once = 100
-
-        # Determine number of rounds needed
-        # If number of teams is even, n-1 rounds needed (no byes -- each team gets a game each round)
-        # Else number of teams is odd, n rounds needed (each team gets a bye)
-        number_of_rounds = self.number_teams
-        if (self.number_teams % 2 == 0):
-            number_of_rounds -= 1
-
+    def init_default_game_starts(self, today, number_of_rounds):
         # now we must create date intervals for each of the games. first games start now, with the following logic
         # 3v3s: 15/35/50/70/85/105/...
         # 2v2s: 15/30/45/60/75/90/...
         # 1v1s: 10/25/35/50/60/75/...
 
-        # today is
-        today = datetime.datetime.now()
-        today_str = "{}.{}.{}".format(today.day, today.month, today.year)
-
-        log_tournament("Starting tournament on: {}/{}/{}".format(today.month, today.day, today.year), self)
 
         creation_dates = "{}.{}.{};".format(today.month, today.day, today.year)
         if self.players_per_team == 2:
@@ -5056,13 +5037,51 @@ class ClanLeagueTournament(RoundRobinTournament):
                     next_date = today + datetime.timedelta(days=interval)
                 else:
                     # increment interval + 5 for even numbers
-                    next_date = today + datetime.timedelta(days=interval+5)
+                    next_date = today + datetime.timedelta(days=interval + 5)
                 creation_dates += "{}.{}.{};".format(next_date.month, next_date.day, next_date.year)
                 log_tournament("Creation dates after iteration {}: {}".format(i, creation_dates), self)
                 today = next_date
 
         creation_dates = creation_dates[:-1]
-        self.games_start_times = creation_dates
+        return creation_dates
+
+
+    def start(self):
+        if self.has_started:
+            # can't start twice, just log here so we can keep track of how often this happens
+            log("Tournament ID {} Name {} already started, and trying to start again!".format(self.name, self.id), LogLevel.critical)
+            return
+
+        print("Starting Clan League Tournament, with template {}".format(self.clan_league_template.name))
+        self.games_at_once = 100
+
+        # Determine number of rounds needed
+        # If number of teams is even, n-1 rounds needed (no byes -- each team gets a game each round)
+        # Else number of teams is odd, n rounds needed (each team gets a bye)
+        number_of_rounds = self.number_teams
+        if (self.number_teams % 2 == 0):
+            number_of_rounds -= 1
+
+        # today is
+        today = datetime.datetime.now()
+        today_str = "{}.{}.{}".format(today.day, today.month, today.year)
+
+        log_tournament("Starting tournament on: {}/{}/{}".format(today.month, today.day, today.year), self)
+
+        if self.clan_league_template.game_start_interval:
+            # Grab defined interval from template
+            intervals = [int(e) for e in self.clan_league_template.game_start_interval.split("/")]
+
+            creation_dates = "{}.{}.{};".format(today.month, today.day, today.year)
+            for i in range(1, number_of_rounds):
+                next_date = today + datetime.timedelta(days=intervals[i % len(intervals)])
+                creation_dates += "{}.{}.{};".format(next_date.month, next_date.day, next_date.year)
+                log_tournament("Creation dates after iteration {}: {}".format(i, creation_dates), self)
+                today = next_date
+            self.games_start_times = creation_dates[:-1]
+        else:
+            self.games_start_times = self.init_default_game_starts(today, number_of_rounds)
+
         log_tournament("Game Start times: {}".format(self.games_start_times), self)
         self.round_number = 0
         self.save()
@@ -5255,6 +5274,29 @@ class ClanLeague(Tournament):
         else:
             raise Exception("Division not found to remove!")
 
+    def validate_game_start_interval(self, game_interval):
+        components = game_interval.split("/")
+        for component in components:
+            if not component.isdigit() or int(component) > 30 or int(component) < 1:
+                return False
+        return True
+
+    def get_default_game_start_interval(self, players_per_team):
+        # now we must create date intervals for each of the games. first games start now, with the following logic
+        # 3v3s: 15/35/50/70/85/105/...
+        # 2v2s: 15/30/45/60/75/90/...
+        # 1v1s: 10/25/35/50/60/75/...
+
+        if players_per_team == 1:
+            return "10/15"
+        elif players_per_team == 2:
+            return "15"
+        elif players_per_team == 3:
+            return "15/20"
+        else:
+            return "15"
+
+
     def add_template(self, request):
         # check the parameters
         if 'templateid' in request.POST and 'templatesettings' in request.POST and 'players_per_team' in request.POST and 'templatename' in request.POST:
@@ -5268,12 +5310,20 @@ class ClanLeague(Tournament):
                 raise Exception("You must enter in a valid template id.")
             elif len(templatename) < 3 or len(templatename) > 250:
                 raise Exception("Template name must be between 3-250 characters")
+            if 'game_start_interval' in request.POST and request.POST['game_start_interval'] != "":
+                if self.validate_game_start_interval(request.POST['game_start_interval']):
+                    game_interval = request.POST['game_start_interval']
+                else:
+                    raise Exception("Invalid game interval provided. Value must be a '/' delimited string containing integers between [1, 30]")
+            else:
+                game_interval = self.get_default_game_start_interval(players_per_team)
+
             # has this template been added before? that is not allowed
             template = ClanLeagueTemplate.objects.filter(templateid=int(templateid), league=self)
             if template:
                 raise Exception("This template has already been added to your Clan League. Please add another template")
             else:
-                template = ClanLeagueTemplate(templateid=int(templateid), template_settings=templatesettings, league=self, players_per_team=players_per_team, name=templatename)
+                template = ClanLeagueTemplate(templateid=int(templateid), template_settings=templatesettings, league=self, players_per_team=players_per_team, name=templatename, game_start_interval=game_interval)
                 template.save()
         else:
             raise Exception("Invalid arguments provided!")
@@ -5307,6 +5357,7 @@ class ClanLeague(Tournament):
             data += '<th>Template Name</th>'
             data += '<th>Template Link</th>'
             data += '<th>Players Per Team</th>'
+            data += '<th>Game Intervals</th>'
             data += '<th>Next Game</th>'
             data += '</tr>'
 
@@ -5333,6 +5384,7 @@ class ClanLeague(Tournament):
                     data += '<td>{}</td>'.format(template.name)
                 data += '<td><a href="https://warzone.com/MultiPlayer?TemplateID={}" target="_blank" class="badge badge-primary">Template</a></td>'.format(template.templateid)
                 data += '<td>{}</td>'.format(template.players_per_team)
+                data += '<td>{}</td>'.format(template.game_start_interval)
 
                 # compute the countdown until the next game date
                 time_to_game = game_allocation_date

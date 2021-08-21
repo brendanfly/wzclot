@@ -201,7 +201,8 @@ function update_cl_templates(type, obj)
         var templateid = $("#templateid").val();
         var templatesettings = $("#templatesettings").val();
         var templatename = $("#templatename").val();
-        data = {"tournamentid" : tournamentid, "templateid": templateid, "players_per_team": players_per_team, "optype": type, "templatesettings" : templatesettings, "templatename" : templatename};
+        var game_start_interval = $("#game_start_interval").val();
+        data = {"tournamentid" : tournamentid, "templateid": templateid, "players_per_team": players_per_team, "optype": type, "templatesettings" : templatesettings, "templatename" : templatename, "game_start_interval": game_start_interval};
     }
     else if (type == "remove")
     {
@@ -220,6 +221,7 @@ function update_cl_templates(type, obj)
                 $("#templateid").val('');
                 $("#templatesettings").val('');
                 $("#templatename").val('');
+                $("#game_start_interval").val('');
                 hook_clan_league_buttons();
                 hook_pr_buttons();
             }
