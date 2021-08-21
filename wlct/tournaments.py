@@ -5073,7 +5073,7 @@ class ClanLeagueTournament(RoundRobinTournament):
             intervals = [int(e) for e in self.clan_league_template.game_start_interval.split("/")]
 
             creation_dates = "{}.{}.{};".format(today.month, today.day, today.year)
-            for i in range(1, number_of_rounds):
+            for i in range(0, number_of_rounds-1):
                 next_date = today + datetime.timedelta(days=intervals[i % len(intervals)])
                 creation_dates += "{}.{}.{};".format(next_date.month, next_date.day, next_date.year)
                 log_tournament("Creation dates after iteration {}: {}".format(i, creation_dates), self)
