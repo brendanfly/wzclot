@@ -163,7 +163,7 @@ class TournamentDataHelper:
                         template_id = generate_random_template()
                     unique_template_ids.append(template_id)
 
-                    ClanLeagueTemplate.objects.create(templateid=int(template_id), league=cl, players_per_team=1, name="Template {} - 1v1".format(template_id))
+                    ClanLeagueTemplate.objects.create(templateid=int(template_id), league=cl, players_per_team=1, name="Template {} - 1v1".format(template_id), game_start_interval="10/15")
 
                 for j in range(int(num_2v2s)):
                     template_id = generate_random_template()
@@ -171,7 +171,7 @@ class TournamentDataHelper:
                         template_id = generate_random_template()
                     unique_template_ids.append(template_id)
 
-                    ClanLeagueTemplate.objects.create(templateid=int(template_id), league=cl, players_per_team=2, name="Template {} - 2v2".format(template_id))
+                    ClanLeagueTemplate.objects.create(templateid=int(template_id), league=cl, players_per_team=2, name="Template {} - 2v2".format(template_id), game_start_interval="15")
 
                 for j in range(int(num_3v3s)):
                     template_id = generate_random_template()
@@ -179,7 +179,7 @@ class TournamentDataHelper:
                         template_id = generate_random_template()
                     unique_template_ids.append(template_id)
 
-                    ClanLeagueTemplate.objects.create(templateid=int(template_id), league=cl, players_per_team=3, name="Template {} - 3v3".format(template_id))
+                    ClanLeagueTemplate.objects.create(templateid=int(template_id), league=cl, players_per_team=3, name="Template {} - 3v3".format(template_id), game_start_interval="15/20")
             elif self.type == TournamentType.real_time_ladder:
                 rtl = RealTimeLadder.objects.create(name=name, created_by=creator, description=description)
                 self.tournament_id = rtl.id
@@ -219,3 +219,7 @@ class TournamentDataHelper:
                         tplayers[i].player = Player.objects.get(id=self.created_clans[team.clan_league_clan.clan.id][player_idx+i])
                         tplayers[i].save()
                 player_idx += tournament.players_per_team
+
+class MockedRequest:
+    def __init__(self, **kwargs):
+        self.POST = kwargs['data']

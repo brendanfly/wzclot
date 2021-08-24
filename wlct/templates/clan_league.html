@@ -167,7 +167,7 @@
                       </div>
                 </div>
                 <br/>
-                <div class="form-group row">
+                <div class="form-group row" style="padding-top: 25px;">
                     <div class="input-group">
                         <label class="col-form-label" for="players_per_team"><b>Players Per Team:&nbsp;</b></label>
                         <select name="players_per_team" id="players_per_team" style="padding:10px;">
@@ -176,7 +176,16 @@
                             <option value="3">3</option>
                         </select>
                     </div>
-                    <div class="input-group" style="padding-top:25px;">
+                    <div class="input-group" style="padding-top: 25px;">
+                        <label class="col-form-label" for="game_start_interval"><b>Game Start Interval:&nbsp;</b></label>
+                        <input name="game_start_interval" id="game_start_interval" style="padding:10px;">
+                        <p style="padding-top: 5px;">
+                            Game start interval must be a "/" delimited string containing integers in the range [1,30]. Ex: "15" means games are created every 15 days; "15/20" means game creation alternates every 15 days & 20 days.
+                            <br>
+                            <span style="padding-top: 3px">* Leave blank for default CL intervals.</span>
+                        </p>
+                    </div>
+                    <div class="input-group" style="padding-top:50px;">
                         <button type="button" class="btn btn-sm btn-success" id="create-cl-template">+ Add New Template</button>
                     </div>
                 </div>
