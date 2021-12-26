@@ -311,7 +311,7 @@ class Command(BaseCommand):
 
             # if we get this far, we actually need to check the tournament
             child_tournament = find_tournament_by_id(tournament.id, True)
-            if child_tournament and child_tournament.should_process_in_engine():
+            if child_tournament and child_tournament.should_process_in_engine() and child_tournament.process_new_games_allowed:
                 try:
                     games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
                     games_in_progress = games.count()
