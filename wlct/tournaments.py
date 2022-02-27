@@ -484,7 +484,7 @@ class Tournament(models.Model):
         game_log += '<thead><tr><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
         game_log += '<tbody>'
 
-        for game in self.game_log_json["games"]:
+        for game in self.game_log_json["g"]:
             game_log += '<tr>'
             # create the match-up text for the game
             game_log += self.format_common_game_log_row(game)
@@ -501,7 +501,7 @@ class Tournament(models.Model):
         for game in games:
             games_list.append(game.parse_game_json())
 
-        game_log_json["games"] = games_list
+        game_log_json["g"] = games_list
         self.game_log_json = game_log_json
         self.save()
 
@@ -1437,47 +1437,72 @@ class Tournament(models.Model):
 
     def format_common_game_log_row(self, game):
         game_log = ""
-        if "players" in game:
-            if "clan" in game["players"][0]:
-                game_log += '<td data-search="{} {} {} {}">{}</td>'.format(game["players"][0]["clan"],
-                                                                           game["players"][1]["clan"],
-                                                                           game["players"][0]["data_no_clan"],
-                                                                           game["players"][1]["data_no_clan"],
+        if "p" in game:
+            # Format the data contain team1
+            team1_player_str = []
+            for player in game["p"][0]["p"]:
+                p_str = ""
+                if "cn" in player:
+                    p_str += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(player["il"],
+                                                                                                                    player["ip"],
+                                                                                                                    player["cn"])
+                p_str += '&nbsp;<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(player["t"], player["n"])
+                team1_player_str.append(p_str)
+            # Format the data contain team1
+            team2_player_str = []
+            for player in game["p"][1]["p"]:
+                p_str = ""
+                if "cn" in player:
+                    p_str += '<a href="https://warzone.com{}" target="_blank"><img src="{}" alt="{}" /></a>'.format(
+                        player["il"],
+                        player["ip"],
+                        player["cn"])
+                p_str += '&nbsp;<a href="/stats/{}" target="_blank">{}</a>&nbsp;'.format(player["t"], player["n"])
+                team2_player_str.append(p_str)
+
+            team_strs = [team1_player_str, team2_player_str]
+
+            if "c" in game["p"][0]:
+                game_log += '<td data-search="{} {} {} {}">{}</td>'.format(game["p"][0]["c"],
+                                                                           game["p"][1]["c"],
+                                                                           " ".join(map(lambda e: e["n"], game["p"][0]["p"])),
+                                                                           " ".join(map(lambda e: e["n"], game["p"][1]["p"])),
                                                                            get_matchup_data_from_data(
-                                                                            game["players"][0]["data"],
-                                                                            game["players"][1]["data"]
+                                                                            "<br/>".join(team_strs[0]),
+                                                                            "<br/>".join(team_strs[1]),
                                                                            ))
             else:
-                game_log += '<td data-search="{} {}">{}</td>'.format(game["players"][0]["data_no_clan"],
-                                                                     game["players"][1]["data_no_clan"],
+                game_log += '<td data-search="{} {}">{}</td>'.format(" ".join(map(lambda e: e["n"], game["p"][0]["p"])),
+                                                                     " ".join(map(lambda e: e["n"], game["p"][1]["p"])),
                                                                      get_matchup_data_from_data(
-                                                                         game["players"][0]["data"],
-                                                                         game["players"][1]["data"]
+                                                                         "<br/>".join(team_strs[0]),
+                                                                         "<br/>".join(team_strs[1]),
                                                                      ))
-        game_log += '<td><a href="{}" target="_blank">Game Link</a></td>'.format(game["game_link"])
-        if game["is_finished"]:
+        game_log += '<td><a href="{}" target="_blank">Game Link</a></td>'.format(game["l"])
+        if game["if"]:
             finished_text = '<span class="text-success"><b>Finished</b></span>'
         else:
-            finished_text = '<span class="text-info">{}</span>'.format(game["current_state"])
+            finished_text = '<span class="text-info">{}</span>'.format(game["state"])
         game_log += '<td>{}</td>'.format(finished_text)
 
-        if "is_finished" in game and "winner" in game:
-            winning_team = '{}'.format(game["players"][game["winner"]]["data"])
+        if "if" in game and "w" in game:
+            # TODO update the winning_team
+            winning_team = '{}'.format("<br/>".join(team_strs[game["w"]]))
         else:
             winning_team = ''
         game_log += '<td>{}</td>'.format(winning_team)
 
-        unix_start_time = time.mktime(datetime.datetime.strptime(game["start_time"], "%b %d, %Y %H:%M:%S %p").timetuple())
-        if game["end_time"] != "N/A":
-            unix_end_time = time.mktime(datetime.datetime.strptime(game["end_time"], "%b %d, %Y %H:%M:%S %p").timetuple())
+        unix_start_time = time.mktime(datetime.datetime.strptime(game["st"], "%b %d, %Y %H:%M:%S %p").timetuple())
+        if game["et"] != "N/A":
+            unix_end_time = time.mktime(datetime.datetime.strptime(game["et"], "%b %d, %Y %H:%M:%S %p").timetuple())
         else:
             # If game has not ended, set date far in the future so sorting puts these at the end
             unix_end_time = time.mktime(datetime.datetime(2050, 1, 1).timetuple())
 
-        game_log += '<td data-order={}>{}</td>'.format(unix_start_time, game["start_time"])
+        game_log += '<td data-order={}>{}</td>'.format(unix_start_time, game["st"])
 
         # game.game_finished_time check is redundant but is done for backwards compability with bad existing data
-        game_log += '<td data-order={}>{}</td>'.format(unix_end_time, game["end_time"])
+        game_log += '<td data-order={}>{}</td>'.format(unix_end_time, game["st"])
         return game_log
 
 
@@ -2383,10 +2408,10 @@ class GroupStageTournament(Tournament):
         game_log = '<br/><table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table">'
         game_log += '<thead><tr><th>Group</th><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
         game_log += '<tbody>'
-        for t in self.game_log_json["tournaments"]:
-            for game in t["games"]:
+        for t in self.game_log_json["t"]:
+            for game in t["g"]:
                 game_log += '<tr>'
-                game_log += '<td>{}</td>'.format(t["name"])
+                game_log += '<td>{}</td>'.format(t["n"])
                 game_log += self.format_common_game_log_row(game)
                 game_log += '</tr>'
 
@@ -2401,16 +2426,16 @@ class GroupStageTournament(Tournament):
         round_robin_tournaments = RoundRobinTournament.objects.filter(parent_tournament=self)
         for t in round_robin_tournaments:
             tournament_obj = dict()
-            tournament_obj["name"] = t.get_group().get_name()
+            tournament_obj["n"] = t.get_group().get_name()
 
             games_list = []
             games = TournamentGame.objects.filter(tournament=t)
             for game in games:
                 games_list.append(game.parse_game_json())
 
-            tournament_obj["games"] = games_list
+            tournament_obj["g"] = games_list
             tournaments_list.append(tournament_obj)
-        game_log_json["tournaments"] = tournaments_list
+        game_log_json["t"] = tournaments_list
         self.game_log_json = game_log_json
         self.save()
 
@@ -3460,38 +3485,68 @@ class TournamentGame(models.Model):
     # Returns a dictionary containing JSON data required for game log tables
     def parse_game_json(self):
         game_obj = dict()
-        game_obj["current_state"] = self.current_state
-        game_obj["start_time"] = self.game_start_time.strftime("%b %d, %Y %H:%M:%S %p")
-        game_obj["end_time"] = self.game_finished_time.strftime(
+        game_obj["state"] = self.current_state
+        game_obj["st"] = self.game_start_time.strftime("%b %d, %Y %H:%M:%S %p")
+        game_obj["et"] = self.game_finished_time.strftime(
             "%b %d, %Y %H:%M:%S %p") if self.is_finished and self.game_finished_time else 'N/A'
-        game_obj["is_finished"] = self.is_finished
-        game_obj["game_link"] = self.game_link
+        game_obj["if"] = self.is_finished
+        game_obj["l"] = self.game_link
 
         game_data = self.teams.split('.')
         team1 = game_data[0]
         team2 = game_data[1]
         team_1 = TournamentTeam.objects.filter(id=int(team1))
         if team_1:
+            team1_players_list = []
+            players = TournamentPlayer.objects.filter(team=team_1[0])
+            for player in players:
+                if player.player.clan is not None:
+                    team1_players_list.append({
+                        "il": player.player.clan.icon_link,
+                        "ip": player.player.clan.image_path,
+                        "cn": player.player.clan.name,
+                        "t": player.player.token,
+                        "n": player.player.name
+                    })
+                else:
+                    team1_players_list.append({
+                        "t": player.player.token,
+                        "n": player.player.name
+                    })
             team1_obj = {
-                "data_no_clan": get_team_data_no_clan(team_1[0]),
-                "data": get_team_data(team_1[0])
+                "p": team1_players_list
             }
             if team_1[0].clan_league_clan is not None:
-                team1_obj["clan"] = team_1[0].clan_league_clan.clan.name
+                team1_obj["c"] = team_1[0].clan_league_clan.clan.name
 
             team_2 = TournamentTeam.objects.filter(id=int(team2))
             if team_2:
+                team2_players_list = []
+                players = TournamentPlayer.objects.filter(team=team_2[0])
+                for player in players:
+                    if player.player.clan is not None:
+                        team2_players_list.append({
+                            "il": player.player.clan.icon_link,
+                            "ip": player.player.clan.image_path,
+                            "cn": player.player.clan.name,
+                            "t": player.player.token,
+                            "n": player.player.name
+                        })
+                    else:
+                        team2_players_list.append({
+                            "t": player.player.token,
+                            "n": player.player.name
+                        })
                 team2_obj = {
-                    "data_no_clan": get_team_data_no_clan(team_2[0]),
-                    "data": get_team_data(team_2[0])
+                    "p": team2_players_list
                 }
                 if team_2[0].clan_league_clan is not None:
-                    team2_obj["clan"] = team_2[0].clan_league_clan.clan.name
-                game_obj["players"] = [team1_obj, team2_obj]
+                    team2_obj["c"] = team_2[0].clan_league_clan.clan.name
+                game_obj["p"] = [team1_obj, team2_obj]
 
 
         if self.is_finished:
-            game_obj["winner"] = 0 if self.winning_team.id == int(team1) else 1
+            game_obj["w"] = 0 if self.winning_team.id == int(team1) else 1
         return game_obj
 
 # Object to represent a tournament player
@@ -4052,7 +4107,7 @@ class MonthlyTemplateRotation(Tournament):
         game_log += '</tr></thead>'
         game_log += '<tbody>'
 
-        for game in self.game_log_json["games"]:
+        for game in self.game_log_json["g"]:
             game_log += '<tr>'
 
             game_log += '<td><a href = "https://warzone.com/MultiPlayer?TemplateID={}" target="_blank" class="badge badge-primary">{} Template</a>'.format(game["tid"], game["date"])
@@ -4079,7 +4134,7 @@ class MonthlyTemplateRotation(Tournament):
             games_list.append(game_data)
             games_output.append(entry.game.id)
 
-        game_log_json["games"] = games_list
+        game_log_json["g"] = games_list
         self.game_log_json = game_log_json
         self.save()
 
@@ -5410,10 +5465,10 @@ class ClanLeague(Tournament):
         game_log = '<table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table"><thead><tr><th>Tournament</th><th>Division</th><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
         game_log += '<tbody>'
 
-        for game in self.game_log_json["games"]:
+        for game in self.game_log_json["g"]:
             game_log += '<tr>'
-            game_log += '<td>{}</td>'.format(game["template"])
-            game_log += '<td>{}</td>'.format(game["division"])
+            game_log += '<td>{}</td>'.format(game["t"])
+            game_log += '<td>{}</td>'.format(game["d"])
             game_log += self.format_common_game_log_row(game)
             game_log += '</tr>'
 
@@ -5435,12 +5490,12 @@ class ClanLeague(Tournament):
             games = TournamentGame.objects.filter(tournament=t)
             for game in games:
                 game_data = game.parse_game_json()
-                game_data["template"] = t.clan_league_template.name
-                game_data["division"] = t.division.title
+                game_data["t"] = t.clan_league_template.name
+                game_data["d"] = t.division.title
 
                 games_list.append(game_data)
 
-        game_log_json["games"] = games_list
+        game_log_json["g"] = games_list
         self.game_log_json = game_log_json
         self.save()
 
