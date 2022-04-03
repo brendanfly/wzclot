@@ -484,11 +484,12 @@ class Tournament(models.Model):
         game_log += '<thead><tr><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
         game_log += '<tbody>'
 
-        for game in self.game_log_json["g"]:
-            game_log += '<tr>'
-            # create the match-up text for the game
-            game_log += self.format_common_game_log_row(game)
-            game_log += '</tr>'
+        if "g" in self.game_log_json:
+            for game in self.game_log_json["g"]:
+                game_log += '<tr>'
+                # create the match-up text for the game
+                game_log += self.format_common_game_log_row(game)
+                game_log += '</tr>'
 
         game_log += '</tbody></table>'
         return game_log
@@ -1696,6 +1697,9 @@ class SwissTournament(Tournament):
 
     def update_game_log(self):
         self.game_log = ""
+
+    def get_game_log(self):
+        return ""
 
     def get_bracket_game_data(self):
         return self.bracket_game_data
@@ -3149,10 +3153,42 @@ class RoundRobinRandomTeams(RoundRobinTournament):
             team1 = game_data[0]
             team2 = game_data[1]
 
-            game_obj["players"][0]["data_no_clan"] = get_team_data_no_clan_player_list(players1)
-            game_obj["players"][1]["data_no_clan"] = get_team_data_no_clan_player_list(players2)
-            game_obj["players"][0]["data"] = get_team_data_player_list(players1)
-            game_obj["players"][1]["data"] = get_team_data_player_list(players2)
+            team1_data = []
+            for token in players1:
+                player = Player.objects.get(token=token)
+                if player.clan:
+                    team1_data.append({
+                        "il": player.clan.icon_link,
+                        "ip": player.clan.image_path,
+                        "cn": player.clan.name,
+                        "t": player.token,
+                        "n": player.name
+                    })
+                else:
+                    team1_data.append({
+                        "t": player.token,
+                        "n": player.name
+                    })
+
+            team2_data = []
+            for token in players2:
+                player = Player.objects.get(token=token)
+                if player.clan:
+                    team2_data.append({
+                        "il": player.clan.icon_link,
+                        "ip": player.clan.image_path,
+                        "cn": player.clan.name,
+                        "t": player.token,
+                        "n": player.name
+                    })
+                else:
+                    team2_data.append({
+                        "t": player.token,
+                        "n": player.name
+                    })
+
+            # Overwrite stored players
+            game_obj["p"] = [{"p": team1_data}, {"p": team2_data}]
 
             winning_team_id = 0
             if game.winning_team:
@@ -3163,7 +3199,7 @@ class RoundRobinRandomTeams(RoundRobinTournament):
 
             games_list.append(game_obj)
 
-        game_log_json["games"] = games_list
+        game_log_json["g"] = games_list
         self.game_log_json = game_log_json
         self.save()
 
@@ -3545,7 +3581,7 @@ class TournamentGame(models.Model):
                 game_obj["p"] = [team1_obj, team2_obj]
 
 
-        if self.is_finished:
+        if self.is_finished and self.winning_team:
             game_obj["w"] = 0 if self.winning_team.id == int(team1) else 1
         return game_obj
 
@@ -4178,6 +4214,16 @@ class PromotionalRelegationLeague(Tournament):
     @property
     def season_in_progress(self):
         return False
+
+    def get_join_leave(self, allow_buttons, logged_in, request_player):
+        return ""
+
+    def get_bracket_game_data(self):
+        return self.bracket_game_data
+    
+    def update_bracket_game_data(self):
+        self.bracket_game_data = ""
+        self.save()
 
     def create_season(self, season_name, games_at_once):
         if len(season_name) < 3 or len(season_name) > 251:
