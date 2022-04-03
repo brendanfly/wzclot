@@ -302,7 +302,7 @@ def league_display_view(request, id):
                 context.update({'pause_resume_buttons': league.get_pause_resume(player)})
                 context.update({'tournament': league})
                 return render(request, 'clan_league.html', context)
-            elif league.type == "Promotion/Relegation League":
+            elif league.type == "Promotional/Relegation League":
                 context.update({'pause_resume_buttons' : league.get_pause_resume(player)})
                 context.update({'tournament': league})
                 return render(request, 'pr.html', context)
