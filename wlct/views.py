@@ -3,7 +3,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from wlct.form_message_handling import FormError
 from wlct.api import API, get_account_token
 from wlct.models import Player, Clan
-from wlct.tournaments import SwissTournament, GroupStageTournament, SeededTournament, PromotionalRelegationLeagueSeason, TournamentInvite, TournamentPlayer, find_tournament_by_id, Tournament, find_league_by_id, is_player_allowed_join, TournamentGameEntry, get_matchup_data, RealTimeLadder, RoundRobinRandomTeams
+from wlct.tournaments import SwissTournament, GroupStageTournament, SeededTournament, PromotionalRelegationLeagueSeason, TournamentInvite, TournamentPlayer, TournamentType, find_tournament_by_id, Tournament, find_league_by_id, TournamentGameEntry, get_matchup_data, RealTimeLadder
 from wlct.forms import SwissTournamentForm, SeededTournamentForm, GroupTournamentForm, MonthlyTemplateCircuitForm, PromotionRelegationLeagueForm, ClanLeagueForm, RoundRobinRandomTeamsForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
@@ -12,9 +12,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from wlct.logging import log, LogLevel, log_exception
 import traceback
 from django.conf import settings
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.jobstores.base import ConflictingIdError
-from django_apscheduler.jobstores import DjangoJobStore
 import string
 import random
 import json
@@ -298,11 +295,11 @@ def league_display_view(request, id):
             # clan-league is a special case, as it contains many sub-leagues underneath it
             # with the right requirements...if the league type is of clan league
             # we want to display this separately on a different page.
-            if league.type == "Clan League":
+            if league.type == TournamentType.clan_league:
                 context.update({'pause_resume_buttons': league.get_pause_resume(player)})
                 context.update({'tournament': league})
                 return render(request, 'clan_league.html', context)
-            elif league.type == "Promotion/Relegation League":
+            elif league.type == TournamentType.pr:
                 context.update({'pause_resume_buttons' : league.get_pause_resume(player)})
                 context.update({'tournament': league})
                 return render(request, 'pr.html', context)
@@ -992,13 +989,13 @@ def create_new_league_specific_view(request, encoded_url=None):
         context = {}
         if encoded_url == "mtc":
             # pass the context
-            return render(request, 'create_new_league.html', {'type': 'mtc', 'league_type': 'Monthly Template Circuit'})
+            return render(request, 'create_new_league.html', {'type': 'mtc', 'league_type': TournamentType.mtc})
         elif encoded_url == "pr":
             # pass the context
-            return render(request, 'create_new_league.html', {'type': 'pr', 'league_type': 'Promotion/Relegation League'})
+            return render(request, 'create_new_league.html', {'type': 'pr', 'league_type': TournamentType.pr})
         elif encoded_url == "cl":
             # pass the context
-            return render(request, 'create_new_league.html', {'type': 'cl', 'league_type': 'Clan League'})
+            return render(request, 'create_new_league.html', {'type': 'cl', 'league_type': TournamentType.clan_league})
     else:
         return render(request, 'create_new_league.html')
 
@@ -1017,16 +1014,16 @@ def create_new_view(request, type=None):
     log("Creating tourney type: {}".format(type), LogLevel.informational)
     if type == 1:
         # creating a group stage tourney
-        return render(request, 'create_new.html', {'type': '1', 'tournament_type': "Group Stage"})
+        return render(request, 'create_new.html', {'type': '1', 'tournament_type': TournamentType.group_stage})
     elif type == 2:
         # creating a swiss tournament
-        return render(request, 'create_new.html', {'type': '2', 'tournament_type': "Swiss"})
+        return render(request, 'create_new.html', {'type': '2', 'tournament_type': TournamentType.swiss})
     elif type == 3:
         # creating a seeded tournament
-        return render(request, 'create_new.html', {'type': '3', 'tournament_type': "Seeded"})
+        return render(request, 'create_new.html', {'type': '3', 'tournament_type': TournamentType.seeded})
     elif type == 4:
         # creating a random teams round robin
-        return render(request, 'create_new.html', {'type': '4', 'tournament_type': 'Random Teams'})
+        return render(request, 'create_new.html', {'type': '4', 'tournament_type': TournamentType.random_teams})
     else:
         return render(request, 'create_new.html')
 

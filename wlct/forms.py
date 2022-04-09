@@ -1,5 +1,5 @@
 from django.forms import ModelForm
-from wlct.tournaments import SwissTournament, Tournament, TournamentTeam, SeededTournament, GroupStageTournament, GroupStageTournamentGroup, MonthlyTemplateRotation, PromotionalRelegationLeague, ClanLeague, RoundRobinTournament, RoundRobinRandomTeams
+from wlct.tournaments import SwissTournament, TournamentTeam, TournamentType, SeededTournament, GroupStageTournament, MonthlyTemplateRotation, PromotionalRelegationLeague, ClanLeague, RoundRobinRandomTeams
 from wlct.form_message_handling import FormError
 from wlct.validators import get_int, get_dropdown_to_boolean
 import math
@@ -137,7 +137,7 @@ class SeededTournamentForm(TournamentForm):
 class SwissTournamentForm(TournamentForm):
 
     def __init__(self, formdata):
-        self.tournament_type = "Swiss"
+        self.tournament_type = TournamentType.swiss
         self.extra_rounds = int(formdata['extra_rounds'])
         print("Found extra rounds for swiss tournamnent: {}".format(self.extra_rounds))
         super(SwissTournamentForm, self).__init__(formdata, SwissTournament.min_teams)
@@ -229,7 +229,7 @@ class LeagueForm:
 
 class MonthlyTemplateCircuitForm(LeagueForm):
     def __init__(self, formdata):
-        self.tournament_type = "Monthly Template Circuit"
+        self.tournament_type = TournamentType.mtc
         print("Creating Monthly Template Circuit: {}".format(formdata))
         super(MonthlyTemplateCircuitForm, self).__init__(formdata)
 
@@ -255,7 +255,7 @@ class MonthlyTemplateCircuitForm(LeagueForm):
 
 class PromotionRelegationLeagueForm(LeagueForm):
     def __init__(self, formdata):
-        self.tournament_type = "Promotion/Relegation League"
+        self.tournament_type = TournamentType.mtc
         formdata_copy = formdata.copy()
         print("Creating Promotional Relegation League: {}".format(formdata_copy))
         formdata_copy.update({'templateid': 0})  # fill this in as there is no template for P/R league until a season is created
@@ -272,7 +272,7 @@ class PromotionRelegationLeagueForm(LeagueForm):
 
 class ClanLeagueForm(LeagueForm):
     def __init__(self, formdata):
-        self.tournament_type = "Clan League"
+        self.tournament_type = TournamentType.clan_league
         print("Creating Clan League: {}".format(formdata))
         super(ClanLeagueForm, self).__init__(formdata)
 

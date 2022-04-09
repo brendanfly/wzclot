@@ -408,6 +408,7 @@ class TournamentType:
     round_robin = "Round Robin"
     clan_league = "Clan League"
     real_time_ladder = "Real-Time Ladder"
+    random_teams = "Random Teams"
 
 
 class Tournament(models.Model):
@@ -596,11 +597,10 @@ class Tournament(models.Model):
                                              team_game=team_game, tournament=self, round=tournament_round,
                                              teams=game, players=player_ids, templateid=tid)
             tournament_game.save_with_entry()
-            log_game(
-                "Game {} created in tournament {}. Teams: {}, gameID: {}, round: {}".format(gameID, self.id,
-                                                                                            game, gameID,
-                                                                                            tournament_round.round_number),
-                self, tournament_game)
+            log_game("Game {} created in tournament {}. Teams: {}, gameID: {}, round: {}".format(gameID, self.id,
+                                                                                                game, gameID,
+                                                                                                tournament_round.round_number),
+                     self, tournament_game)
 
             # we need to create the initial lines for the match-up
             self.post_create_games()
@@ -1528,6 +1528,7 @@ class SwissTournament(Tournament):
                         else:
                             team_list2 = team_list.copy()
 
+                        new_games_log_msg = ""
                         for team in team_list:
                             for team2 in team_list2:
                                 # first condition is they can't have played this team before, and we need to be looking for a game
@@ -1536,9 +1537,8 @@ class SwissTournament(Tournament):
                                         if team2 not in games_created_for:
                                             if team2 not in team_matchups[team]:
                                                 if teams_look_for_games[team2] == teams_look_for_games[team]:
-                                                    log_tournament("Creating game {} in round {} for {} and {}".format(
-                                                        (len(games_created_for) / 2) + 1, teams_look_for_games[team],
-                                                        team, team2), self)
+                                                    new_games_log_msg += "Creating round {} for {} and {}\n".format(teams_look_for_games[team],
+                                                                                                                    team, team2)
 
                                                     game = "{}.{};".format(team, team2)
                                                     game_data_grid += game
@@ -1548,6 +1548,7 @@ class SwissTournament(Tournament):
                                     break
                             if len(games_created_for) == len(teams_look_for_games):
                                 break
+                        log_tournament(new_games_log_msg, self)
                     else:
                         # we have a list of buckets determined by teams_wins[x] where x is the list of teams with
                         # that number of wins. What we want to do is copy that list, and run through them
@@ -1561,6 +1562,7 @@ class SwissTournament(Tournament):
                             shuffle(team_bucket1)  # why not
 
                             log_tournament("Processing bucket {} of {} teams".format(bucket, len(team_bucket1)), self)
+                            new_game_log_msg = ""
                             # have both bucket, loop through the first and try to make pairs
                             for team in team_bucket1:
                                 for team2 in team_bucket2:
@@ -1570,7 +1572,9 @@ class SwissTournament(Tournament):
                                             if team2 not in games_created_for:
                                                 if team2 not in team_matchups[team]:
                                                     if teams_look_for_games[team2] == teams_look_for_games[team]:
-                                                        log_tournament("Creating game {} in round {} for {} and {}".format((len(games_created_for)/2)+1, teams_look_for_games[team], team, team2), self)
+                                                        new_games_log_msg += "Creating round {} for {} and {}\n".format(
+                                                            teams_look_for_games[team],
+                                                            team, team2)
 
                                                         game = "{}.{};".format(team, team2)
                                                         game_data_grid += game
@@ -1580,6 +1584,7 @@ class SwissTournament(Tournament):
                                         break
                                 if len(games_created_for) == len(teams_look_for_games):
                                     break
+                            log_tournament(new_games_log_msg, self)
 
                     # we've built a list of the games we've "created", now, we need to see if this matches the total
                     # number of games we'd expect
@@ -2441,6 +2446,7 @@ class RoundRobinTournament(Tournament):
         games_created = []
         game_data1 = []
         game_data2 = []
+
         for matchup in possible_matchups:
             if round:
                 team1 = matchup[0]
@@ -2450,11 +2456,8 @@ class RoundRobinTournament(Tournament):
                 break
 
             # see if both opponents have an available slot to play
-            log_tournament("Current games team {}: {}, team {}: {}".format(team1, len(team_game_data[team1]), team2, len(team_game_data[team2])), self)
             if len(team_game_data[team1]) < self.games_at_once and len(team_game_data[team2]) < self.games_at_once:
                 # go ahead and create the new game
-                log_tournament("Games created for team {}: {}, team {}: {}".format(team1, games_created.count(team1),
-                                                                                   team2, games_created.count(team2)), self)
                 if games_created.count(team1) < self.games_created_at_once() and games_created.count(team2) < self.games_created_at_once():
                     # need to update game lists with newly created games
                     # otherwise teams will get too many games
@@ -2464,9 +2467,6 @@ class RoundRobinTournament(Tournament):
                     games_created.append(team2)
                     game_data1.append(team1)
                     game_data2.append(team2)
-                    log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
-
-        log_tournament("Teams with matchups: {}... Teams list: {}".format(games_created, teams_list), self)
 
         if len(possible_matchups) > 0 and len(games_created) != len(teams_list):
             self.handle_no_games_created()
@@ -2594,7 +2594,7 @@ class RoundRobinTournament(Tournament):
                     teams_with_byes = TournamentTeam.objects.filter(round_robin_tournament=self, has_had_bye=True)
                     if self.use_all_teams_in_last_round() and teams_with_byes.count() == len(shuffled_team_list_read_only):
                         # all teams have byes now, so include them all to make sure all games get created
-                        log_tournament("Last team to get a bye: {}, add it to the list and make sure all games are created".format(shuffled_team_list_read_only[i].id), self)
+                        log_tournament("Last team to get a bye: {}".format(shuffled_team_list_read_only[i].id), self)
                         teams_list.append(shuffled_team_list_read_only[i].id)
                 else:
                     teams_list.append(shuffled_team_list_read_only[i].id)
@@ -2608,8 +2608,6 @@ class RoundRobinTournament(Tournament):
         # first, are we finished?
         games = TournamentGame.objects.filter(tournament=self, is_finished=True)
         if games.count() == self.total_games and not self.is_finished:
-            log_tournament("Found {} finished games with {} total in the RR, ending".format(games.count(), self.total_games), self)
-
             # we need to figure out the buchholz for every team in case there are ties
             # this will be used as the tie breaker
 
@@ -2617,7 +2615,7 @@ class RoundRobinTournament(Tournament):
             # first, lookup all teams and cache their wins/losses
             team_wins = {}
             team_losses = {}
-            log_tournament("Total teams to iterate for caching wins/losses: {}".format(tournament_teams.count()), self)
+            log_tournament("Team count to cache standings: {}".format(tournament_teams.count()), self)
             for team in tournament_teams:
                 team_wins[team.id] = team.wins
                 team_losses[team.id] = team.losses
@@ -2740,7 +2738,6 @@ class RoundRobinTournament(Tournament):
         # we need to remove all matchups from our list that cannot happen again
         # finished or in progress both count here
         possible_matchups = []
-        log_tournament("Matchups before removing: {}".format(matchups), self)
         for matchup in matchups:
             game_data = "{}.{}".format(matchup[0], matchup[1])
             game = TournamentGame.objects.filter(tournament=self, teams=game_data)
@@ -2794,7 +2791,7 @@ class RoundRobinTournament(Tournament):
         # we have reached the point where we have enough games to create...create them, whatever we have
         for i in range(0, len(game_data1)):
             log_tournament(
-                "Creating Round Robin game for tournament {} between {}  and {}".format(self.id, game_data1[i], game_data2[i]),
+                "Creating RR game for tournament {} between {} and {}".format(self.id, game_data1[i], game_data2[i]),
                 self)
             game_data = "{}.{}".format(game_data1[i], game_data2[i])
             self.create_game(round, game_data)
@@ -2923,7 +2920,7 @@ class RoundRobinRandomTeams(RoundRobinTournament):
 
             round = TournamentRound.objects.filter(tournament=self, round_number=1)
             if not round:
-                log("Error finding round for RoundRobinRandomTeams...bailing from process_new_games", LogLevel.critical)
+                log("Error finding round for RRRandomTeams...bailing from process_new_games", LogLevel.critical)
                 return
             round = round[0]
 
@@ -3476,7 +3473,7 @@ class TournamentGame(models.Model):
                 losing_players = self.players.split('-')[0].split('.')
                 winning_players = self.players.split('-')[1].split('.')
 
-            log("Team {} won, {} lost. Updating individual TournamentPlayer ratings".format(winning_team_id, losing_team_id), LogLevel.game)
+            log("Team {} won, {} lost".format(winning_team_id, losing_team_id), LogLevel.game)
             average_tplayer_win_rating = 0
             average_tplayer_loss_rating = 0
 
@@ -4286,7 +4283,6 @@ class PromotionalRelegationLeagueSeason(Tournament):
     games_at_once = models.IntegerField(default=2)
 
     def start(self, tournament_data):
-        log_tournament("Starting {}".format(self.name), self)
         tournaments = PromotionalRelegationLeagueTournament.objects.filter(parent_tournament=self)
         if tournaments.count() > 0 or self.has_started:
             log_tournament("Cannot start {}, tournament count: {}, and self.has_started: {}".format(self.name, tournaments.count(), self.has_started), self)
@@ -4295,8 +4291,7 @@ class PromotionalRelegationLeagueSeason(Tournament):
         self.has_started = True
         self.save()
 
-        log_tournament("{}.has_started = True...creating RR for divisions".format(self.name), self)
-
+        log_tournament("Started {} ({})".format(self.name, self.id), self)
         divisions = ClanLeagueDivision.objects.filter(pr_season=self)
         for div in divisions:
             teams = TournamentTeam.objects.filter(clan_league_division=div, tournament=self)
@@ -4587,7 +4582,6 @@ class PromotionalRelegationLeagueTournament(RoundRobinTournament):
 
     def get_game_name(self):
         # get the current number of games
-        log_tournament("PR Game Name: {} | {}".format(self.division.pr_season.name, self.division.title), self)
         return "{} | {}".format(self.division.pr_season.name, self.division.title)
 
     def has_force_vacation_interval(self):
@@ -4844,13 +4838,8 @@ class ClanLeagueTournament(RoundRobinTournament):
                 team2 = matchup[1]
 
                 # see if both opponents have an available slot to play
-                log_tournament("Current games team {}: {}, team {}: {}".format(team1, len(team_game_data_copy[team1]), team2,
-                                                                        len(team_game_data_copy[team2])), self)
                 if len(team_game_data_copy[team1]) < self.games_at_once and len(team_game_data_copy[team2]) < self.games_at_once:
                     # go ahead and create the new game
-                    log_tournament("Games created for team {}: {}, team {}: {}".format(team1, games_created.count(team1),
-                                                                            team2, games_created.count(team2)), self)
-
                     if games_created.count(team1) < self.games_created_at_once() and games_created.count(team2) < self.games_created_at_once():
                         # need to update game lists with newly created games
                         # otherwise teams will get too many games
@@ -4860,7 +4849,6 @@ class ClanLeagueTournament(RoundRobinTournament):
                         games_created.append(team2)
                         game_data1.append(team1)
                         game_data2.append(team2)
-                        log_tournament("After game was validated, following teams have games created: {}".format(games_created), self)
 
             # Check if enough games were found... Redo if not
             if len(teams_list) == len(games_created):
@@ -4919,7 +4907,6 @@ class ClanLeagueTournament(RoundRobinTournament):
         # Check if enough games were found
         if len(teams_list) != len(games_created) or not self.validate_matchups(game_data1, game_data2, team_game_data):
             # Not enough games were created... Should never happen with format
-            log_tournament("Invalid matchups in tournament... Team List: {}... Game list 1: {}... Game list 2: {}... Round: {}".format(team_order, game_data1, game_data2, self.round_number), self)
             self.handle_no_games_created()
             games_created.clear()
             game_data1.clear()
@@ -4928,7 +4915,7 @@ class ClanLeagueTournament(RoundRobinTournament):
             self.round_number += 1
             self.save()
 
-        log_tournament("Team List: {}... Game list 1: {}... Game list 2: {}... Round: {}".format(team_order, game_data1, game_data2, self.round_number), self)
+        log_tournament("Team List: {}... Game list 1: {}... Game list 2: {}".format(team_order, game_data1, game_data2), self)
 
         return games_created, game_data1, game_data2
 
@@ -5040,7 +5027,6 @@ class ClanLeagueTournament(RoundRobinTournament):
             for i in range(1, number_of_rounds):
                 next_date = today + datetime.timedelta(days=15)
                 creation_dates += "{}.{}.{};".format(next_date.month, next_date.day, next_date.year)
-                log_tournament("Creation dates after iteration {}: {}".format(i, creation_dates), self)
                 today = next_date
         else:
             if self.players_per_team == 1:
@@ -5058,12 +5044,11 @@ class ClanLeagueTournament(RoundRobinTournament):
                     # increment interval + 5 for even numbers
                     next_date = today + datetime.timedelta(days=interval+5)
                 creation_dates += "{}.{}.{};".format(next_date.month, next_date.day, next_date.year)
-                log_tournament("Creation dates after iteration {}: {}".format(i, creation_dates), self)
                 today = next_date
+        log_tournament("Creation dates: {}".format(creation_dates), self)
 
         creation_dates = creation_dates[:-1]
         self.games_start_times = creation_dates
-        log_tournament("Game Start times: {}".format(self.games_start_times), self)
         self.round_number = 0
         self.save()
 
@@ -5483,7 +5468,6 @@ class ClanLeague(Tournament):
             players = TournamentPlayer.objects.filter(tournament=self)
             self.number_players = players.count()
             self.save()
-        log('Updating game log for Clan League "{}" (id={})'.format(self.name, self.id), LogLevel.informational)
         game_log = '<table class="table table-bordered table-condensed clot_table compact stripe cell-border" id="game_log_data_table"><thead><tr><th>Tournament</th><th>Division</th><th>Match-Up</th><th>Game Link</th><th>State</th><th>Winning Team</th><th>Start Time</th><th>End Time</th></tr></thead>'
         game_log += '<tbody>'
         tournaments = ClanLeagueTournament.objects.filter(parent_tournament=self)
@@ -5879,7 +5863,6 @@ class RealTimeLadder(Tournament):
         log_tournament("Template list after prune: {}".format(templates_list_copy), self)
         shuffle(templates_list_copy)
         for tid in templates_list_copy:
-            log_tournament("Picked new template out of the list: {}".format(tid), self)
             if self.is_template_allowed(tid, team1) and self.is_template_allowed(tid, team2):
                 log_tournament("Picked FINAL template for game: {}".format(tid), self)
                 return tid
@@ -6123,7 +6106,6 @@ class RealTimeLadder(Tournament):
             log_tournament("Found template veto {} for team {}".format(templateid, team.id), self)
             return False
         else:
-            log_tournament("Template {} was not vetoed by team {}...checking requirements..".format(templateid, team.id), self)
             # check to see if the player can even play this template....
             tplayer = TournamentPlayer.objects.filter(team=team)
             if tplayer:
