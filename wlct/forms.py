@@ -255,7 +255,7 @@ class MonthlyTemplateCircuitForm(LeagueForm):
 
 class PromotionRelegationLeagueForm(LeagueForm):
     def __init__(self, formdata):
-        self.tournament_type = TournamentType.mtc
+        self.tournament_type = TournamentType.pr
         formdata_copy = formdata.copy()
         print("Creating Promotional Relegation League: {}".format(formdata_copy))
         formdata_copy.update({'templateid': 0})  # fill this in as there is no template for P/R league until a season is created
