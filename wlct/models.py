@@ -97,7 +97,7 @@ class Clan(models.Model):
         update_player_clans(players)
 
 class ClanAdmin(admin.ModelAdmin):
-    pass
+    search_fields = ['name']
 
 
 admin.site.register(Clan, ClanAdmin)

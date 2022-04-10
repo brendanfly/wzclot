@@ -194,13 +194,10 @@ class CLOTBook(models.Model):
             decimal1 = self.prob_to_decimal_odds(probs1)
             decimal2 = self.prob_to_decimal_odds(probs2)
 
-            log_cb_msg("Decimal odds for gameid {}: {} {}".format(game.gameid, decimal1, decimal2))
-
             american1 = self.decimal_odds_to_american(decimal1)
             american2 = self.decimal_odds_to_american(decimal2)
 
             # round the american to the nearest 5 or 0, and change that back into decimal
-            log_cb_msg("American odds for gameid {} before rounding: {} {}".format(game.gameid, american1, american2))
             american1 = self.round_to_nearest_multiple(american1)
             american2 = self.round_to_nearest_multiple(american2)
             american_odds = "{}!{}".format(american1, american2)
@@ -223,7 +220,6 @@ class CLOTBook(models.Model):
             team_odds2 = BetTeamOdds(bet_game=bet_game, players_index=1, decimal_odds=decimal2, american_odds=american2, players=players2)
             team_odds2.save()
 
-            log_cb_msg("Created initial odds for gameid {}".format(game.gameid))
         except:
             log_exception()
 
