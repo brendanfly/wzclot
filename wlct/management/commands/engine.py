@@ -87,6 +87,7 @@ class Command(BaseCommand):
             try:
                 # Updates every player's name and clan
                 self.update_all_player_clans()
+                self.patch_tournament_game_logs()
             except:
                 log_exception()
             print("[WAIT - PLAYER PROFILE UPDATE]")
@@ -266,6 +267,18 @@ class Command(BaseCommand):
         except:
             log_exception()
             return False
+
+    def patch_tournament_game_logs(self):
+        log("Running patch_tournament_game_logs to reset game_logs", LogLevel.engine)
+        tournaments = Tournament.objects.all()
+        patch_count = 0
+        for tournament in tournaments:
+            if tournament.game_log:
+                patch_count += 1
+                tournament.game_log = ""
+
+                tournament.save()
+        log("Finished patch_tournament_game_logs with {} updates".format(patch_count), LogLevel.engine)
 
     def cache_games(self, **kwargs):
         tournaments = Tournament.objects.filter(**kwargs)
