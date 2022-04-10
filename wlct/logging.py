@@ -1,9 +1,7 @@
 from django.db import models
-from django.contrib import admin
 import datetime
 import traceback
 from django.conf import settings
-from enum import Enum
 import pytz
 from django.utils import timezone
 
@@ -18,6 +16,7 @@ class LogLevel:
     game = "TournamentGame"
     game_status = "TournamentGameStatus"
     engine = "Engine"
+    schedule = "Schedule"
     bot = "Bot"
     clean_logs = "Log Cleanup"
     process_game = "Process Game"
@@ -77,6 +76,7 @@ def log_bot_msg(msg):
         print("{} log: {}".format(logger.level, msg))
     logger.save()
 
+
 class Logger(models.Model):
 
     msg = models.TextField()
@@ -90,14 +90,19 @@ class Logger(models.Model):
     def __str__(self):
         return "[Time: {} Level: {}]: {}".format(self.timestamp, self.level, self.msg)
 
+
 class ProcessGameLog(Logger):
     game = models.ForeignKey('TournamentGame', on_delete=models.CASCADE)
 
     def __str__(self):
         return "[Time: {} Level: {}]: GameID: {}".format(self.timestamp, self.level, self.game.gameid)
 
+
 class ProcessNewGamesLog(Logger):
     tournament = models.ForeignKey('Tournament', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "[{}] Tournament {}-{}: {}".format(self.timestamp, self.tournament.id, self.tournament.name, self.msg)
 
 
 class TournamentLog(Logger):

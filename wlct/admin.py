@@ -11,18 +11,19 @@ class LogFilter(SimpleListFilter):
       # This is where you create filter options; we have two:
       # also loop through all tournaments and display those IDs here
         return [
-            ('informational', 'Informational'),
-            ('critical', 'Critical'),
-            ('error', 'Errors'),
-            ('warning', 'Warning'),
-            ('tournament', 'Tournament'),
-            ('tournament_game', 'Tournament Game'),
-            ('tournament_game_status', 'Tournament Game Status'),
-            ('engine', 'Engine'),
+            ('api', 'API'),
             ('bot', 'Bot'),
             ('clean_logs', 'Log Cleanup'),
             ('clotbook', 'CLOTBook'),
-            ('api', 'API'),
+            ('critical', 'Critical'),
+            ('engine', 'Engine'),
+            ('error', 'Errors'),
+            ('informational', 'Informational'),
+            ('schedule', 'Scheduling'),
+            ('tournament', 'Tournament'),
+            ('tournament_game', 'Tournament Game'),
+            ('tournament_game_status', 'Tournament Game Status'),
+            ('warning', 'Warning'),
             ('webhook', 'Webhook')
         ]
 
@@ -52,6 +53,8 @@ class LogFilter(SimpleListFilter):
             return queryset.distinct().filter(level=LogLevel.api)
         if self.value() == 'webhook':
             return queryset.distinct().filter(level=LogLevel.webhook)
+        if self.value() == 'schedule':
+            return queryset.distinct().filter(level=LogLevel.schedule)
 
 class LogAdmin(admin.ModelAdmin):
     list_filter = (LogFilter, )
@@ -167,7 +170,7 @@ admin.site.register(TournamentGameEntry, TournamentGameEntryAdmin)
 
 
 class TournamentGameAdmin(admin.ModelAdmin):
-    search_fields = ['gameid', 'id']
+    search_fields = ['gameid', 'id', 'tournament__name', 'tournament__id', "teams"]
     raw_id_fields = ['winning_team', 'tournament']
 
 admin.site.register(TournamentGame, TournamentGameAdmin)
