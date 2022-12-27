@@ -671,9 +671,9 @@ class Tournament(models.Model):
         if invites:
             table = '<table class="table table-hover">'
             for invite in invites:
-                if current_player is 0:
+                if current_player == 0:
                     table += '<tr>'
-                if current_player is 4:
+                if current_player == 4:
                     table += '</tr><tr>'
                     current_player = 0
 
@@ -1241,10 +1241,10 @@ class Tournament(models.Model):
         # min_teams to start
 
         # if debugging we can always start it unless there are partial teams
-        if settings.DEBUG and (self.partial_filled_teams is 0):
+        if settings.DEBUG and (self.partial_filled_teams == 0):
             return True
 
-        return (self.current_filled_teams >= self.min_teams) and (self.partial_filled_teams is 0)
+        return (self.current_filled_teams >= self.min_teams) and (self.partial_filled_teams == 0)
 
     @property
     def time_since_created(self):
@@ -1930,7 +1930,7 @@ class SeededTournament(Tournament):
                         log_tournament("Round [{}], Bucket [{}]: {}".format(round.round_number, index, game_data), self)
                         team1 = game_data[0]
                         team2 = game_data[1]
-                        if team1 is not '0' and team2 is not '0':
+                        if team1 != '0' and team2 != '0':
                             game_data = "{}.{}".format(team1, team2)
                             game_buckets_current_round[index] = game_data
 
@@ -2109,7 +2109,7 @@ class SeededTournament(Tournament):
             end_time = game.game_finished_time.strftime(
                 "%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
 
-            if end_time is not "N/A":
+            if end_time != "N/A":
                 unix_time = time.mktime(end_time.timetuple())
                 game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
             else:
@@ -2889,7 +2889,7 @@ class RoundRobinTournament(Tournament):
             end_time = game.game_finished_time.strftime(
                 "%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
 
-            if end_time is not "N/A":
+            if end_time != "N/A":
                 unix_time = time.mktime(game.game_finished_time.timetuple())
                 game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
             else:
@@ -3222,7 +3222,7 @@ class RoundRobinRandomTeams(RoundRobinTournament):
             end_time = game.game_finished_time.strftime(
                 "%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
 
-            if end_time is not "N/A":
+            if end_time != "N/A":
                 unix_time = time.mktime(game.game_finished_time.timetuple())
                 game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
             else:
@@ -4145,7 +4145,7 @@ class MonthlyTemplateRotation(Tournament):
             end_time = entry.game.game_finished_time.strftime(
                 "%b %d, %Y %H:%M:%S %p") if entry.game.is_finished and entry.game.game_finished_time else 'N/A'
 
-            if end_time is not "N/A":
+            if end_time != "N/A":
                 unix_time = time.mktime(entry.game.game_finished_time.timetuple())
                 game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
             else:
@@ -5528,7 +5528,7 @@ class ClanLeague(Tournament):
                 end_time = game.game_finished_time.strftime(
                     "%b %d, %Y %H:%M:%S %p") if game.is_finished and game.game_finished_time else 'N/A'
 
-                if end_time is not "N/A":
+                if end_time != "N/A":
                     unix_time = time.mktime(game.game_finished_time.timetuple())
                     game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
                 else:
@@ -5803,7 +5803,7 @@ class RealTimeLadder(Tournament):
             end_time = entry.game.game_finished_time.strftime(
                 "%b %d, %Y %H:%M:%S %p") if entry.game.is_finished and entry.game.game_finished_time else 'N/A'
 
-            if end_time is not "N/A":
+            if end_time != "N/A":
                 unix_time = time.mktime(entry.game.game_finished_time.timetuple())
                 game_log += '<td data-order={}>{}</td>'.format(unix_time, end_time)
             else:

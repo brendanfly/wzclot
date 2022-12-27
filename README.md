@@ -7,9 +7,10 @@ Fork the repo to a local directory.
 This web application is written in the Django framework and the server side pieces are entirely written in python. The database used is postgreSQL and connection pooling with max 20 active connections runs on the server.
 To setup a local test site you will need to do the following. 
 
-Install `Python 3.10` - https://www.python.org/downloads/windows/  
-Install `virtualenv` - pip install virtualenv (you might need to open a new command windows after installing python, windows only)  
-Install `postgreSQL 11.6-3` - https://www.enterprisedb.com/downloads/postgres-postgresql-downloads  
+- Install `Python 3.10` - https://www.python.org/downloads/windows/
+- Install `Pip 22.3.1` - `python -m pip install --upgrade pip`
+- Install `virtualenv` - pip install virtualenv (you might need to open a new command windows after installing python, windows only)  
+- Install `postgreSQL 11.6-3` - https://www.enterprisedb.com/downloads/postgres-postgresql-downloads  
 
 In the project folder run:  
 `pip install -r requirements.txt`

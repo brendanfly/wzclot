@@ -323,7 +323,7 @@ class Clot(commands.Cog, name="clot"):
                         return
                     tournament_round = tournament_round[0]
                     # check to make sure the game_data is valid for this tournament
-                    if (len(arg2) == 0) or (len(arg2.split('.')) is not 2):
+                    if (len(arg2) == 0) or (len(arg2.split('.')) != 2):
                         await ctx.send("You must specify game data in the format of Team1_Id.Team2_Id")
                         return
                     # validate the game data
