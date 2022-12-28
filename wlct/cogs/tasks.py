@@ -290,7 +290,8 @@ class Tasks(commands.Cog, name="tasks"):
             gc.collect()
 
     async def handle_process_queue(self):
-        for i in range(0, len(self.bot.process_queue)):
+        i = 0
+        while i < len(self.bot.process_queue):
             gc.collect()
             t = await self.bot.bridge.findTournamentById(self.bot.process_queue[i], True)
             if t:
@@ -303,15 +304,20 @@ class Tasks(commands.Cog, name="tasks"):
                     gc.collect()
                 await self.bot.bridge.process_new_games(t)
                 self.bot.process_queue.pop(i)
+            else:
+                i += 1
 
     async def handle_cache_queue(self):
-        for i in range(0, len(self.bot.cache_queue)):
+        i = 0
+        while i < len(self.bot.cache_queue):
             gc.collect()
             t = await self.bot.bridge.findTournamentById(self.bot.cache_queue[i], True)
             if t:
                 self.bot.debug_print("Caching data for {}".format(t.name))
                 await self.bot.bridge.cache_data(t)
                 self.bot.cache_queue.pop(i)
+            else:
+                i += 1
 
     async def handle_players_clan_queue(self):
         while len(self.bot.players_clan_queue):
