@@ -768,7 +768,7 @@ class Clot(commands.Cog, name="clot"):
                                 if hasattr(tournament, 'parent_tournament'):
                                     if tournament.parent_tournament:
                                         print("Tournament Parent ID {}".format(tournament.parent_tournament_id))
-                                    if player.id != tournament.created_by_id and (tournament.id != 168) and (tournament.id != 109) and (tournament.id != 167) and (tournament.parent_tournament and tournament.parent_tournament_id != 681 and tournament.parent_tournament_id != 490 and tournament.parent_tournament.id != 369):  # hard code this for clan league
+                                    if player.id != tournament.created_by_id and (tournament.id != 168) and (tournament.id != 109) and (tournament.id != 167) and (tournament.parent_tournament and tournament.parent_tournament_id != 777 and tournament.parent_tournament_id != 681 and tournament.parent_tournament_id != 490 and tournament.parent_tournament.id != 369):  # hard code this for clan league
                                         await ctx.send("The creator of {} (ID: {}) is the only one who can link private tournaments.".format(tournament.name, tournament.id))
                                         continue
                                 else:
@@ -902,7 +902,7 @@ class Clot(commands.Cog, name="clot"):
                           bb!divisions [id] : Displays CL Divisions. If [id] of league is not provided, output defaults to official CL
                           ''',
                       category="clot")
-    async def divisions(self, ctx, id=681):
+    async def divisions(self, ctx, id=777):
         try:
             await ctx.send("Gathering tournament data....")
 
@@ -984,7 +984,7 @@ class Clot(commands.Cog, name="clot"):
                         if child_tournament.has_started and not child_tournament.private:
                             tournament_data += "{} (Id: {}) | <{}>\n".format(child_tournament.name, child_tournament.id, link_text)
                     elif option == "-cl":  # only in progress
-                        if child_tournament.id == 681 and child_tournament.has_started:
+                        if child_tournament.id == 777 and child_tournament.has_started:
                             cl_tourneys = await self.bot.bridge.getClanLeagueTournamentsOrderById(parent_tournament=child_tournament)
                             for cl_tourney in cl_tourneys:
                                 tournament_data += "{} (Id: {})\n".format(cl_tourney.name, cl_tourney.id)
