@@ -66,7 +66,7 @@ class TournamentForm:
         elif (self.players_per_team < self.min_players_per_team) or (self.players_per_team > self.max_players_per_team):
             self.errors = FormError({'error': "Players per team must be between {}-{}.".format(self.min_players_per_team, self.max_players_per_team)}).msgs
             return False
-        elif (self.number_teams % 2) is not 0:
+        elif (self.number_teams % 2) != 0:
             self.errors = FormError({'error': "This tournament can only contain an even number of teams."}).msgs
             return False
 

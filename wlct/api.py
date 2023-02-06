@@ -108,9 +108,9 @@ class API2:
                             else:
                                 fmt = '{0.days} days {0.hours} hours'
 
-                            if directbootTimeMinutes is not 'none':
+                            if directbootTimeMinutes != 'none':
                                 ret['directBoot'] = fmt.format(rd(minutes=directbootTimeMinutes))
-                            if autobootTimeMinutes is not 'none':
+                            if autobootTimeMinutes != 'none':
                                 ret['autoBoot'] = fmt.format(rd(minutes=autobootTimeMinutes))
             else:
                 # not good, error, TODO: Log???
@@ -119,7 +119,7 @@ class API2:
         except:
             # catch the error, if we have created the game delete it here
             log_exception()
-            if gameID is not 0 and 'success' not in ret:
+            if gameID != 0 and 'success' not in ret:
                 data = {}
                 data['gameID'] = gameID
                 deleteGame = self.api_delete_game(int(gameID))

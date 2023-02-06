@@ -76,17 +76,17 @@
                       </div>
 
                     <div class="form-group row">
-                        {% ifequal type '4' %}
+                        {% if type == '4' %}
                         <label class="col-for-label" for="players_team"><b>Players Per Team: </b><span id="players_team_text">2</span></label>
                         {% else %}
                         <label class="col-for-label" for="players_team"><b>Players Per Team: </b><span id="players_team_text">1</span></label>
-                        {% endifequal %}
+                        {% endif %}
                         <div class="input-group">
-                            {% ifequal type '4' %}
+                            {% if type == '4' %}
                             <input type="hidden" readonly="readonly" value="2" class="slider" id="players_team" name="players_team"/>
                             {% else %}
                             <input type="range" min="1" max="4" value="1" class="slider" id="players_team" name="players_team" oninput="playersPerTeamChanged();"/>
-                            {% endifequal %}
+                            {% endif %}
                         </div>
                     </div>
 
@@ -98,21 +98,21 @@
                     <div class="form-group row">
                         <label class="col-for-label" for="number_teams"><b>Max Number of Teams: </b><span id="number_teams_text">4</span></label>
                         <div class="input-group">
-                            {% ifequal type '1' %}
+                            {% if type == '1' %}
                             <input type="range" min="8" max="256" value="8" class="slider" id="number_teams" name="number_teams" oninput="numberOfTeamsChanged();"/>
-                            {% endifequal %}
+                            {% endif %}
 
-                            {% ifequal type '2' %}
+                            {% if type == '2' %}
                             <input type="range" min="4" max="256" value="4" class="slider" id="number_teams" name="number_teams" oninput="numberOfTeamsChanged();"/>
-                            {% endifequal %}
+                            {% endif %}
 
-                            {% ifequal type '3' %}
+                            {% if type == '3' %}
                             <input type="range" min="4" max="256" value="4" class="slider" id="number_teams" name="number_teams" oninput="numberOfTeamsChanged();"/>
-                            {% endifequal %}
+                            {% endif %}
 
-                            {% ifequal type '4' %}
+                            {% if type == '4' %}
                             <input type="range" min="4" max="256" value="4" class="slider" id="number_teams" name="number_teams" oninput="numberOfTeamsChanged();"/>
-                            {% endifequal %}
+                            {% endif %}
                         </div>
                     </div>
 
@@ -124,7 +124,7 @@
                     </div>
 
                     <!-- Group stage tournaments -->
-                    {% ifequal type '1' %}
+                    {% if type == '1' %}
                     <div class="form-group row">
                         <label class="col-for-label" for="rounds"><b>Number of Groups: </b><span id="rounds_text">4</span></label>
                         <input type="hidden" value="4" id="rounds" name="rounds" />
@@ -137,9 +137,9 @@
                         <label class="col-for-label" for="knockout_teams"><b>Teams participating in knockouts: </b><span id="knockout_teams_text">4</span></label>
                         <input type="hidden" value="2" id="knockout_teams" name="knockout_teams" />
                     </div>
-                    {% endifequal %}
+                    {% endif %}
 
-                    {% ifequal type '2' %}
+                    {% if type == '2' %}
                     <!-- Custom controls for Swiss tournaments -->
 
                     <div class="form-group row">
@@ -160,25 +160,25 @@
                             <option name="no">no</option>
                         </select>
                     </div>
-                    {% endifequal %}
+                    {% endif %}
 
                     <!-- Seeded tournaments -->
-                    {% ifequal type '3' %}
+                    {% if type == '3' %}
 
                     <div class="form-group row">
                         <label class="col-for-label" for="rounds"><b>Number of Rounds: </b><span id="rounds_text">4</span></label>
                         <input type="hidden" value="4" id="rounds" name="rounds" />
                     </div>
-                    {% endifequal %}
+                    {% endif %}
 
                     <!-- Random Teams -->
-                    {% ifequal type '4' %}
+                    {% if type == '4' %}
 
                     <div class="form-group row">
                         <label class="col-for-label" for="rounds"><b>Number of Rounds: </b><span id="rounds_text">4</span></label>
                         <input type="hidden" value="4" id="rounds" name="rounds" />
                     </div>
-                    {% endifequal %}
+                    {% endif %}
 
                   <div class="form-group row">
                     <div class="offset-4 col-8">
