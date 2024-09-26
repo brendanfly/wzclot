@@ -426,6 +426,7 @@ class Tournament(models.Model):
     start_option_when_full = models.BooleanField(default=True)
     host_sets_tourney = models.BooleanField(default=False)
     start_locked = models.BooleanField(default=False)  # used by tournament that are locked to join, but haven't started
+    process_new_games_allowed = models.BooleanField(default=True)
     max_players = models.IntegerField(default=-1)
     template_settings = models.TextField(default="", null=True, blank=True)
     multi_day = models.BooleanField(default=False)
@@ -1673,6 +1674,7 @@ class SwissTournament(Tournament):
             return "<p>You cannot start this tournament until the minimum number of players have joined</p>"
 
     def start(self, tournament_data):
+        self.process_new_games_allowed = False
         # start the tournament calculating the max_rounds again based on the number of players
         # in the tournament
         #
@@ -1726,6 +1728,7 @@ class SwissTournament(Tournament):
 
         # once we've done everything else, mark has_started and save the tournament
         self.has_started = True
+        self.process_new_games_allowed = True
         self.save()
 
 class SeededTournament(Tournament):
@@ -1743,6 +1746,7 @@ class SeededTournament(Tournament):
             #
             # the tournament can be started once the minimum # of players have joined, so recalculate
             # set the common parent settings
+            self.process_new_games_allowed = False
             super(SeededTournament, self).start()
 
             self.number_rounds = self.current_rounds
@@ -1821,6 +1825,9 @@ class SeededTournament(Tournament):
                     self.create_game(tournament_round, game)
         except Exception:
             log_exception()
+        finally:
+            self.process_new_games_allowed = True
+            self.save()
 
     def process_new_games(self):
         # loop through the rounds, computing any new matchups for the next round if possible
@@ -2170,6 +2177,7 @@ class GroupStageTournament(Tournament):
     min_teams = 4
 
     def start(self, tournament_data):
+        self.process_new_games_allowed = False
         super(GroupStageTournament, self).start()
 
         log("Starting Group Stage tournament id: {} name: {} players: {} rounds: {}".format(self.id, self.name,
@@ -2219,6 +2227,8 @@ class GroupStageTournament(Tournament):
                     tournament_team[0].save()
             # start the tournament...
             rr_tourney.start()
+        self.process_new_games_allowed = True
+        self.save()
 
     def get_bracket_game_data(self):
         if self.bracket_game_data == "" or len(self.bracket_game_data) == 0:
@@ -2805,6 +2815,11 @@ class RoundRobinTournament(Tournament):
             log("Tournament ID {} Name {} already started, and trying to start again!".format(self.name, self.id), LogLevel.critical)
             return
 
+        self.process_new_games_allowed = False
+
+        # start the round robin tournament
+        super(RoundRobinTournament, self).start()
+
         # There should be number_teams-1 games which is stored in self.number_rounds as well
         # based off of this start pairing up giving players no more than 2 games
         self.total_games = int((self.number_teams * (self.number_teams - 1)) / 2)
@@ -2816,14 +2831,10 @@ class RoundRobinTournament(Tournament):
                                            number_games=self.number_teams)
         tournament_round.save()
 
-        # Remove empty teams... Done in parent super call but need to run before processing games
-        self.remove_partial_teams()
-
         # now just process the games, which will in turn create them
         self.process_new_games()
-
-        # start the round robin tournament
-        super(RoundRobinTournament, self).start()
+        self.process_new_games_allowed = True
+        self.save()
 
     def should_create_game(self):
         return True
@@ -3105,10 +3116,12 @@ class RoundRobinRandomTeams(RoundRobinTournament):
     def start(self, tournament_data):
         tplayers = TournamentPlayer.objects.filter(tournament=self)
         self.max_players = tplayers.count()
+        self.process_new_games_allowed = False
         self.save()
 
         super(RoundRobinRandomTeams, self).start()
-
+        self.process_new_games_allowed = True
+        self.save()
 
     def get_bracket_game_data(self):
         return "There is no bracket or game data for this. Please see the game log tab for a history of the games."
@@ -4293,6 +4306,7 @@ class PromotionalRelegationLeagueSeason(Tournament):
             return
 
         self.has_started = True
+        self.process_new_games_allowed = False
         self.save()
 
         log_tournament("{}.has_started = True...creating RR for divisions".format(self.name), self)
@@ -4309,6 +4323,7 @@ class PromotionalRelegationLeagueSeason(Tournament):
             tournament.start()
 
         self.game_creation_allowed = True
+        self.process_new_games_allowed = True
         self.save()
 
     def get_pause_resume(self, player):
