@@ -259,7 +259,7 @@ class Tasks(commands.Cog, name="tasks"):
             msg += "**Games finished with no winning team found**"
         for game in games:
             for cc in self.bot.critical_error_channels:
-                msg += "\n{} | ID: {} \nLink: <{}> \nLogs: <http://wzclot.com/admin/wlct/processgamelog/?q={}>".format(game.tournament.name, game.gameid, game.game_link, game.gameid)
+                msg += "\n{} | ID: {} \nLink: <{}> \nLogs: <http://wzclot.eastus.cloudapp.azure.com/admin/wlct/processgamelog/?q={}>".format(game.tournament.name, game.gameid, game.game_link, game.gameid)
                 msg = msg[:1999]
                 await cc.send(msg)
                 await self.bot.bridge.updateGameNoWinningTeamSent(game)

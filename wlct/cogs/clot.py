@@ -1108,7 +1108,7 @@ class Clot(commands.Cog, name="clot"):
                 player = await self.bot.bridge.getPlayers(discord_member__memberid=discord_id)
                 if len(player):
                     player = player[0]
-                    await ctx.send("{} | <http://wzclot.com/stats/{}> | <https://warzone.com/Profile?p={}>".format(player.name, player.token, player.token))
+                    await ctx.send("{} | <http://wzclot.eastus.cloudapp.azure.com/stats/{}> | <https://warzone.com/Profile?p={}>".format(player.name, player.token, player.token))
                 else:
                     await ctx.send("Your discord account is not linked to the CLOT. Please see http://wzclot.eastus.cloudapp.azure.com/me/ for instructions.")
             else:
@@ -1118,7 +1118,7 @@ class Clot(commands.Cog, name="clot"):
                 current_player = 0
                 for player in players:
                     current_player += 1
-                    data += "{} | {} | <http://wzclot.com/stats/{}> | <https://warzone.com/Profile?p={}>\n".format(player.name, player.token, player.token, player.token)
+                    data += "{} | {} | <http://wzclot.eastus.cloudapp.azure.com/stats/{}> | <https://warzone.com/Profile?p={}>\n".format(player.name, player.token, player.token, player.token)
                     if current_player % 20 == 0:
                         if data != "" and len(data) > 0:
                             await ctx.send(data)
