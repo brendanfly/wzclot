@@ -175,10 +175,12 @@ def update_player_clans(players, engine=None):
         except:
             continue
 
+
 class PlayerAdmin(admin.ModelAdmin):
     search_fields = ['name', 'token', 'clan__name']
 
 admin.site.register(Player, PlayerAdmin)
+
 
 # Default User Admin
 class UserAdmin(admin.ModelAdmin):
@@ -186,15 +188,30 @@ class UserAdmin(admin.ModelAdmin):
 
 admin.site.register(User, UserAdmin)
 
+
 class DiscordUserAdmin(admin.ModelAdmin):
     pass
 
 admin.site.register(DiscordUser, DiscordUserAdmin)
 
+
 class DiscordChannelTournamentLinkAdmin(admin.ModelAdmin):
-    pass
+    search_fields = ['name', 'tournament__id', 'tournament__name']
 
 admin.site.register(DiscordChannelTournamentLink, DiscordChannelTournamentLinkAdmin)
+
+
+class DiscordChannelClanFilterAdmin(admin.ModelAdmin):
+    search_fields = ['clan__name', 'link__id']
+
+admin.site.register(DiscordChannelClanFilter, DiscordChannelClanFilterAdmin)
+
+
+class DiscordChannelPlayerFilterAdmin(admin.ModelAdmin):
+    search_fields = ['player__name', 'player__token', 'link__id']
+
+admin.site.register(DiscordChannelPlayerFilter, DiscordChannelPlayerFilterAdmin)
+
 
 class DiscordTournamentUpdateAdmin(admin.ModelAdmin):
     pass

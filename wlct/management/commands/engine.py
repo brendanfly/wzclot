@@ -175,9 +175,9 @@ class Command(BaseCommand):
                     # we have the tournament player objects which have the team objects and player objects
                     # create both game entries + game objects so that the bot can log them
                     teams = "{}.{}".format(tplayers[0].team.id, tplayers[1].team.id)
-                    finished = datetime.datetime.strptime(game_data['finish_date'], 'a, %d %b %Y %H:%M:%S %Z').replace(
+                    finished = datetime.datetime.strptime(game_data['finish_date'], '%a, %d %b %Y %H:%M:%S %Z').replace(
                         tzinfo=pytz.UTC)
-                    created = datetime.datetime.strptime(game_data['created_date'], 'a, %d %b %Y %H:%M:%S %Z').replace(
+                    created = datetime.datetime.strptime(game_data['created_date'], '%a, %d %b %Y %H:%M:%S %Z').replace(
                         tzinfo=pytz.UTC)
                     game_link = 'https://www.warzone.com/MultiPlayer?GameID={}'.format(game_id)
                     game = TournamentGame(game_link=game_link, gameid=game_id,
