@@ -91,6 +91,7 @@ class Command(BaseCommand):
             try:
                 # Updates every player's name and clan
                 self.update_all_player_clans()
+                self.patch_tournament_game_logs()
             except:
                 log_exception()
             print("[WAIT - PLAYER PROFILE UPDATE]")
@@ -272,6 +273,18 @@ class Command(BaseCommand):
             log_exception()
             return False
 
+    def patch_tournament_game_logs(self):
+        log("Running patch_tournament_game_logs to reset game_logs", LogLevel.engine)
+        tournaments = Tournament.objects.all()
+        patch_count = 0
+        for tournament in tournaments:
+            if tournament.game_log:
+                patch_count += 1
+                tournament.game_log = ""
+
+                tournament.save()
+        log("Finished patch_tournament_game_logs with {} updates".format(patch_count), LogLevel.engine)
+
     def cache_games(self, **kwargs):
         tournaments = Tournament.objects.filter(**kwargs)
         for tournament in tournaments:
@@ -399,7 +412,7 @@ class Command(BaseCommand):
                 else:
                     engine = engine[0]
                     engine.last_run_time = timezone.now()
-                    engine.next_run_time = timezone.now() + datetime.timedelta(seconds=get_run_time())
+                    engine.next_run_time = timezone.now() + datetime.timedelta(seconds=get_run_time()*10)
                     engine.save()
 
                 print("Process Games Starting...")
@@ -414,7 +427,7 @@ class Command(BaseCommand):
                 log_exception()
             finally:
                 finished_time = timezone.now()
-                next_run = timezone.now() + datetime.timedelta(seconds=get_run_time())
+                next_run = timezone.now() + datetime.timedelta(seconds=get_run_time()*10)
                 total_run_time = (finished_time - engine.last_run_time).total_seconds()
                 log("Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time, total_run_time, next_run),
                     LogLevel.engine)
