@@ -18,16 +18,20 @@ from dotenv import load_dotenv
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
+
+
+dotenv_path = join(BASE_DIR, '.env')
+load_dotenv(dotenv_path)
 
 # SECURITY WARNING: change this before deploying to production!
 SECRET_KEY = os.environ['SECRET_KEY']
 
 AUTH_USER_MODEL = 'wlct.User'
 
-ALLOWED_HOSTS = ["localhost", "0.0.0.0", "wzclot", "wzclot.com", "127.0.0.1", "40.117.82.60", ".azure.com", ".wzclot.com"]
+ALLOWED_HOSTS = ["localhost", "0.0.0.0", "wzclot", "wzclot.com", "127.0.0.1", "40.117.82.60", ".azure.com",
+                 ".wzclot.com"]
 
 # Application definition
 
@@ -83,7 +87,8 @@ WSGI_APPLICATION = 'wltourney.wsgi.application'
 DATABASES = {}
 
 # Parse database configuration from $DATABASE_URL
-DATABASES['default'] = dj_database_url.config(conn_max_age=0)  # we pool connections using pgbouncer, so this terminates them from Django at the end of every request
+DATABASES['default'] = dj_database_url.config(
+    conn_max_age=0)  # we pool connections using pgbouncer, so this terminates them from Django at the end of every request
 
 # Enable Connection Pooling (if desired)
 DATABASES['default']['ENGINE'] = 'django_postgrespool'
@@ -114,6 +119,7 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -174,9 +180,6 @@ LOGGING = {
         },
     }
 }
-
-dotenv_path = join(BASE_DIR, '.env')
-load_dotenv(dotenv_path)
 
 # load local settings if there are any
 # you must have a settings_local.py file next to settings.py for this to not pass on ImportError
