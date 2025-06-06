@@ -399,7 +399,7 @@ class Command(BaseCommand):
                 else:
                     engine = engine[0]
                     engine.last_run_time = timezone.now()
-                    engine.next_run_time = timezone.now() + datetime.timedelta(seconds=get_run_time())
+                    engine.next_run_time = timezone.now() + datetime.timedelta(seconds=get_run_time()*10)
                     engine.save()
 
                 print("Process Games Starting...")
@@ -414,7 +414,7 @@ class Command(BaseCommand):
                 log_exception()
             finally:
                 finished_time = timezone.now()
-                next_run = timezone.now() + datetime.timedelta(seconds=get_run_time())
+                next_run = timezone.now() + datetime.timedelta(seconds=get_run_time()*10)
                 total_run_time = (finished_time - engine.last_run_time).total_seconds()
                 log("Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time, total_run_time, next_run),
                     LogLevel.engine)
