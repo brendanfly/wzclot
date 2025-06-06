@@ -18,6 +18,8 @@ from dotenv import load_dotenv
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
+dotenv_path = join(BASE_DIR, '.env')
+load_dotenv(dotenv_path)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
@@ -174,9 +176,6 @@ LOGGING = {
         },
     }
 }
-
-dotenv_path = join(BASE_DIR, '.env')
-load_dotenv(dotenv_path)
 
 # load local settings if there are any
 # you must have a settings_local.py file next to settings.py for this to not pass on ImportError

@@ -1,23 +1,18 @@
 # the main engine for the scheduler
-import threading
 import datetime
-from wlct.logging import log, LogLevel, log_exception, Logger, TournamentLog, TournamentGameLog, TournamentGameStatusLog, ProcessGameLog, ProcessNewGamesLog, BotLog, LogManager
+from wlct.logging import log, LogLevel, log_exception, LogManager
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
 from wlct.models import Clan, Engine, Player, update_player_clans
-from wlct.tournaments import ClanLeague, ClanLeagueTournament, find_tournament_by_id, Tournament, TournamentGame, TournamentPlayer, TournamentTeam, TournamentGameEntry, TournamentRound, get_multi_day_ladder
-from django.conf import settings
+from wlct.tournaments import find_tournament_by_id, Tournament, TournamentGame, TournamentPlayer, TournamentTeam, TournamentGameEntry, TournamentRound, get_multi_day_ladder
 import pytz
-import threading
-from apscheduler.schedulers.background import BlockingScheduler, BackgroundScheduler
-from apscheduler.jobstores.base import ConflictingIdError
-from django_apscheduler.jobstores import DjangoJobStore
 from django.core.management.base import BaseCommand
 import gc
 from django.utils import timezone
 import urllib.request
 import os
-import sys, threading, json, time, traceback
+import sys, threading, json, time
+
 
 import ssl
 
@@ -288,14 +283,11 @@ class Command(BaseCommand):
                     child_tournament.cache_data()
                 except Exception as e:
                     log_exception()
-                finally:
-                    log("[CACHE]: Child tournament {} update done.".format(tournament.name), LogLevel.engine)
 
                 # if the tournament is finished and there are no more outstanding games that are in progress
                 # the cache is no longer dirty and we should stop looking at it
                 log("[CACHE]: {} has {} games in progress, is_finished: {}".format(child_tournament.name, games_in_progress, child_tournament.is_finished), LogLevel.engine)
                 if child_tournament.is_finished and games_in_progress == 0:
-                    log("[CACHE]: Child tournament {} cache is no longer dirty.".format(tournament.name), LogLevel.engine)
                     child_tournament.is_cache_dirty = False
                     child_tournament.save()
                 elif games_in_progress > 0:
@@ -320,7 +312,8 @@ class Command(BaseCommand):
                 try:
                     games = TournamentGame.objects.filter(is_finished=False, tournament=tournament)
                     games_in_progress = games.count()
-                    log("[PROCESS GAMES]: Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.engine)
+                    if games_in_progress:
+                        log("[PROCESS GAMES]: Processing {} games for tournament {}".format(games.count(), tournament.name), LogLevel.engine)
                     for game in games.iterator():
                         # process the game
                         # query the game status
@@ -383,7 +376,7 @@ class Command(BaseCommand):
                 total_run_time = (finished_time - now_run_time).total_seconds()
                 log("RT Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time,
                                                                                                       total_run_time, next_run),
-                    LogLevel.engine)
+                    LogLevel.schedule)
                 print("RT Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time, total_run_time, next_run))
 
     def tournament_engine(self):
@@ -399,7 +392,7 @@ class Command(BaseCommand):
                 else:
                     engine = engine[0]
                     engine.last_run_time = timezone.now()
-                    engine.next_run_time = timezone.now() + datetime.timedelta(seconds=get_run_time())
+                    engine.next_run_time = timezone.now() + datetime.timedelta(seconds=get_run_time()*10)
                     engine.save()
 
                 print("Process Games Starting...")
@@ -414,10 +407,10 @@ class Command(BaseCommand):
                 log_exception()
             finally:
                 finished_time = timezone.now()
-                next_run = timezone.now() + datetime.timedelta(seconds=get_run_time())
+                next_run = timezone.now() + datetime.timedelta(seconds=get_run_time()*10)
                 total_run_time = (finished_time - engine.last_run_time).total_seconds()
                 log("Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time, total_run_time, next_run),
-                    LogLevel.engine)
+                    LogLevel.schedule)
                 print("Engine done running at {}, ran for a total of {} seconds. Next run at {}".format(finished_time,
                                                                                                       total_run_time, next_run))
                 engine.last_run_time = finished_time
