@@ -114,7 +114,7 @@ class Command(BaseCommand):
         mdl_url = "https://warlight-mtl.com/api/v1.0/games/?topk=10"
 
         try:
-            content = urllib.request.urlopen(mdl_url).read()
+            content = urllib.request.urlopen(mdl_url, timeout=120).read()
         except Exception as e:
             log(traceback.format_exc(), LogLevel.critical)
             return

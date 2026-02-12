@@ -6292,7 +6292,7 @@ class MultiDayLadder(Tournament):
         try:
             mdl_url = "http://md-ladder.cloudapp.net/api/v1.0/players/"
 
-            content = urllib.request.urlopen(mdl_url).read()
+            content = urllib.request.urlopen(mdl_url, timeout=120).read()
 
             data = json.loads(content)
             num_players = 0

@@ -157,7 +157,7 @@ class Common(commands.Cog, name="general"):
             """displays the top 10 on Deadman's MDL"""
             mdl_url = "http://md-ladder.cloudapp.net/api/v1.0/players/?topk=10"
 
-            content = urllib.request.urlopen(mdl_url).read()
+            content = urllib.request.urlopen(mdl_url, timeout=120).read()
 
             data = json.loads(content)
             mdl_data = "Deadman's Multi-Day Ladder Top 10"
@@ -184,7 +184,7 @@ class Common(commands.Cog, name="general"):
             ladder_pageurls = ['https://www.warzone.com/LadderSeason?ID=0', 'http://www.warzone.com/LadderSeason?ID=1',
                                'https://www.warzone.com/LadderSeason?ID=4']
             for ladder_pageurl in ladder_pageurls:
-                ladder_page = urllib.request.urlopen(ladder_pageurl)
+                ladder_page = urllib.request.urlopen(ladder_pageurl, timeout=120)
                 soup = BeautifulSoup(ladder_page, 'html.parser')
                 tables = soup.find_all('table')
 
